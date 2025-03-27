@@ -1,114 +1,64 @@
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins
-import numpy as np
-import seaborn as sns
-import datetime
-import openpyxl
-
 
 root = 'W:'
 path1 = root+'\\NiMBaLWEAR\\OND09\\analytics\\'
 nimbal_drive = 'O:'
 out_path = nimbal_drive +'\\Student_Projects\\gait_pattern_paper_feb2024\\'
 
-''' 
-read gait files - steps and bouts 
-read sleep files  - for sleep time window - classify night time stepping
-read nonwear for wear time and days to use - only 24 days??
-Loop for all peopel with data available 
-- criteria - need sleep, and gait for X days?
-'''
-
-'''
-read in the cleaned data file for the HANNDS methods paper for the number of
-Code from vanessa
-'''
-
-#Import data files
-demodata = pd.read_csv("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/LabKey Data/OND09_RELEASE_CLIN files/OND09_ALL_01_CLIN_DEMOG/OND09_ALL_01_CLIN_DEMOG_2023JUL04_DATA.csv")
-scrndata = pd.read_csv("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/LabKey Data/OND09_RELEASE_CLIN files/OND09_ALL_01_CLIN_SCRN/OND09_ALL_01_CLIN_SCRN_2023SEP13_DATA.csv")
-pptlist = pd.read_excel("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/Number of Days_By Sensor_Bill outputs_20Aug2024_WithCohorts.xlsx")
-
-#Adjust for cohort discrepancy
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0060', 'cohort'] = 'MCI;CVD'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0175', 'cohort'] = 'AD'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0186', 'cohort'] = 'Community Dwelling'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0338', 'cohort'] = 'PD'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0361', 'cohort'] = 'MCI;CVD'
-
-#Assign participants with 2 diagnoses to 1 cohort
-def cohortrecode(cohort):
-    if cohort == "AD;MCI":
-        return "AD/MCI"
-    elif cohort == "AD":
-        return "AD/MCI"
-    elif cohort == "MCI":
-        return "AD/MCI"
-    elif cohort == "MCI;CVD":
-        return "CVD"
-    elif cohort == "MCI;PD":
-        return "PD"
-    else:
-        return cohort
-
-#New cohort count
-demodata["cohort"] = demodata.apply(lambda x: cohortrecode(x["cohort"]), axis=1)
-newcohortcount = demodata["cohort"].count()
-print(newcohortcount)
-
-newcohortcountgrouped = demodata.groupby("cohort").size()
-print(newcohortcountgrouped)
-
-# List of subjects to check
-subjects = ['OND09_SBH_0060', 'OND09_SBH_0175', 'OND09_SBH_0186', 'OND09_SBH_0338', 'OND09_SBH_0361']
-
-# Print 'newcohort' for the specified subjects
-for subject in subjects:
-    print(f"Subject {subject}: cohort = {demodata.loc[demodata['subject'] == subject, 'cohort'].values[0]}")
-
-'''
-step 1 - time series of steps/time - intervals - 15 secs 30 secs 1 min
-cluster by disease cohort and occupation - demodata[.cohort']
-'''
-
-
-
-###########################################################
-# step 1 find nonwear and sleep time data
-# only want data for 24 days midnight to midnight for pattern data
-# so need the start and stop from first midnight to last midnight of data
-###########################################################
-
-
-
-###########################################################
-# Create PA and step density data, plot and write to file
-# location to write?
-# PA_gait_pattern_analysis
-#
-###########################################################
-
-
 #Review non-wear for subjects that match criteria
-nw_path = 'nonwear\\daily_cropped\\'
-bout_path = 'gait\\bouts\\'
 step_path = 'gait\\steps\\'
-daily_path = 'gait\\daily\\'
-sptw_path = 'sleep\\sptw\\'
 
-
-
-file_list = os.listdir(path1+nw_path)
+#search for fiels with GAIT_STEPS in filename
+file_list = os.listdir(path1+step_path)
 #select only files - no directories
-file_list = [file for file in file_list if os.path.isfile(os.path.join(path1+nw_path, file))]
+file_list = [file for file in file_list if os.path.isfile(os.path.join(path1+step_path, file))]
 print ('N of all files: ' + str(len(file_list)))
-file_list = [file for file in file_list if 'Ankle' in file]
-print ('N of Ankle files: ' + str(len(file_list)))
+file_list = [file for file in file_list if 'GAIT_STEPS' in file]
+print ('N of Step files: ' + str(len(file_list)))
 
+#loop trhough file list
+for file in file_list:
+
+    step_data = pd.read_csv(path1+step_path+file)
+    # Ensure timestamp column is a datetime type and set as index
+    step_data['timestamp'] = pd.to_datetime(step_data['step_time'])
+    step_data.set_index('timestamp', inplace=True)
+    print ('\nFile: '+file, end=" ")
+    start_time = step_data.iloc[0]['step_time']
+    end_time = step_data.iloc[-1]['step_time']
+    print (start_time, end_time)
+
+    #loop through different intervls to plot and view
+    windows = ['15S', '30S','60S','180S', '300S']
+    colors = ['yellow','orange', 'red', 'green', 'blue']
+    plt.figure(figsize=(10, 5))
+    for  window, color in zip(windows, colors):
+        # Resample into 15-second bins and count occurrences
+        step_2 = step_data.resample(window).size().reset_index()
+        step_2.columns = ['time', 'count']
+        plt.plot(step_2['time'], step_2['count'], color=color, label=f'Interval {window}')
+        # Rename columns for clarity
+
+        #print (len(step_data), len(resampled_step))
+
+
+    # Graph labels and legend
+    plt.xlabel('Time')
+    plt.ylabel('Row Count')
+    plt.title('Row Counts for Different Time Intervals')
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+    print ('stop')
 #Find Ankle files with enough data - midnight to midnight
 step1 = pd.DataFrame()
+
+
+
+
 
 #create blank panda dataframe for summary data
 summary = pd.DataFrame(columns=['subj','visit', 'date', 'total_steps', 'sleep_steps', 'wake_steps','wake','bed'])

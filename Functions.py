@@ -122,3 +122,7 @@ def bout_bins (data, bin_list):
             bout_bin[j+1] += bout_len
     return bout_bin
 
+def step_density(steps, time, window, overlapping):
+
+
+    return

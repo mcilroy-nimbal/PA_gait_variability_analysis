@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
-
+import pingouin as pg
 '''
 ######################################
 # AAIC2025
@@ -35,39 +35,58 @@ var_table = subj_sum_sub2[['sedentary', 'mvpa','total_steps','se_total','sleep_d
 
 
 # Group data using groupby and extract values
-groups = subj_sum_sub2.groupby('sa_class')['se_total'].apply(list)
+groups = subj_sum_sub1.groupby('sa_class')['se_total'].apply(list)
 # Perform independent t-test
 t_stat, p_value = ttest_ind(*groups, equal_var=False)  # Unpacking the groups
 print('SE_total')
 print(t_stat, p_value)
 
-groups = subj_sum_sub2.groupby('sa_class')['total_steps'].apply(list)
+# Cohen's d calculation
+cohen_d = pg.compute_effsize(groups['Control'], groups['SuperAger'], eftype='cohen')
+print("se_total - Cohen's d:", cohen_d)
+
+groups = subj_sum_sub1.groupby('sa_class')['total_steps'].apply(list)
 # Perform independent t-test
 t_stat, p_value = ttest_ind(*groups, equal_var=False)  # Unpacking the groups
 print('Steps')
 print(t_stat, p_value)
 
+# Cohen's d calculation
+cohen_d = pg.compute_effsize(groups['Control'], groups['SuperAger'], eftype='cohen')
+print("steps_total - Cohen's d:", cohen_d)
+
 # Group data using groupby and extract values
-groups = subj_sum_sub2.groupby('sa_class')['sedentary'].apply(list)
+groups = subj_sum_sub1.groupby('sa_class')['sedentary'].apply(list)
 # Perform independent t-test
 t_stat, p_value = ttest_ind(*groups, equal_var=False)  # Unpacking the groups
 print('Sedentary')
 print(t_stat, p_value)
 
+# Cohen's d calculation
+cohen_d = pg.compute_effsize(groups['Control'], groups['SuperAger'], eftype='cohen')
+print("sedentary - Cohen's d:", cohen_d)
+
 # Group data using groupby and extract values
-groups = subj_sum_sub2.groupby('sa_class')['mvpa'].apply(list)
+groups = subj_sum_sub1.groupby('sa_class')['mvpa'].apply(list)
 # Perform independent t-test
 t_stat, p_value = ttest_ind(*groups, equal_var=False)  # Unpacking the groups
 print('mvpa')
 print(t_stat, p_value)
 
+# Cohen's d calculation
+cohen_d = pg.compute_effsize(groups['Control'], groups['SuperAger'], eftype='cohen')
+print("mvpa - Cohen's d:", cohen_d)
+
 # Group data using groupby and extract values
-groups = subj_sum_sub2.groupby('sa_class')['sleep_duration_total'].apply(list)
+groups = subj_sum_sub1.groupby('sa_class')['sleep_duration_total'].apply(list)
 # Perform independent t-test
 t_stat, p_value = ttest_ind(*groups, equal_var=False)  # Unpacking the groups
 print('sleep')
 print(t_stat, p_value)
 
+# Cohen's d calculation
+cohen_d = pg.compute_effsize(groups['Control'], groups['SuperAger'], eftype='cohen')
+print("sleep_total - Cohen's d:", cohen_d)
 
 #All subjects
 wear_table = subj_sum_sub1[['ankle_wear_duration', 'wrist_wear_duration', 'chest_wear_duration']].agg(['count','mean', 'std']).T
