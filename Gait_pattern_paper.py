@@ -82,7 +82,6 @@ cluster by disease cohort and occupation - demodata[.cohort']
 ###########################################################
 
 
-
 ###########################################################
 # Create PA and step density data, plot and write to file
 # location to write?
