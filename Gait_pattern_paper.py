@@ -1,4 +1,5 @@
 import pandas as pd
+import glob
 import os
 import matplotlib.pyplot as plt
 from Functions import wake_sleep, bout_bins
@@ -7,156 +8,134 @@ import seaborn as sns
 import datetime
 import openpyxl
 
-
+#set up paths
 root = 'W:'
-path1 = root+'\\NiMBaLWEAR\\OND09\\analytics\\'
+#check - but use this one - \prd\nimbalwear\OND09
+path1 = root+'\\prd\\NiMBaLWEAR\\OND09\\analytics\\'
+
 nimbal_drive = 'O:'
-out_path = nimbal_drive +'\\Student_Projects\\gait_pattern_paper_feb2024\\'
+paper_path =  '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
+log_out_path = nimbal_drive + paper_path + 'Log_files\\'
+summary_path = nimbal_drive + paper_path + 'Summary_data\\'
 
-''' 
-read gait files - steps and bouts 
-read sleep files  - for sleep time window - classify night time stepping
-read nonwear for wear time and days to use - only 24 days??
-Loop for all peopel with data available 
-- criteria - need sleep, and gait for X days?
-'''
-
-'''
-read in the cleaned data file for the HANNDS methods paper for the number of
-Code from vanessa
-'''
-
-#Import data files
-demodata = pd.read_csv("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/LabKey Data/OND09_RELEASE_CLIN files/OND09_ALL_01_CLIN_DEMOG/OND09_ALL_01_CLIN_DEMOG_2023JUL04_DATA.csv")
-scrndata = pd.read_csv("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/LabKey Data/OND09_RELEASE_CLIN files/OND09_ALL_01_CLIN_SCRN/OND09_ALL_01_CLIN_SCRN_2023SEP13_DATA.csv")
-pptlist = pd.read_excel("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/Number of Days_By Sensor_Bill outputs_20Aug2024_WithCohorts.xlsx")
-
-#Adjust for cohort discrepancy
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0060', 'cohort'] = 'MCI;CVD'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0175', 'cohort'] = 'AD'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0186', 'cohort'] = 'Community Dwelling'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0338', 'cohort'] = 'PD'
-demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0361', 'cohort'] = 'MCI;CVD'
-
-#Assign participants with 2 diagnoses to 1 cohort
-def cohortrecode(cohort):
-    if cohort == "AD;MCI":
-        return "AD/MCI"
-    elif cohort == "AD":
-        return "AD/MCI"
-    elif cohort == "MCI":
-        return "AD/MCI"
-    elif cohort == "MCI;CVD":
-        return "CVD"
-    elif cohort == "MCI;PD":
-        return "PD"
-    else:
-        return cohort
-
-#New cohort count
-demodata["cohort"] = demodata.apply(lambda x: cohortrecode(x["cohort"]), axis=1)
-newcohortcount = demodata["cohort"].count()
-print(newcohortcount)
-
-newcohortcountgrouped = demodata.groupby("cohort").size()
-print(newcohortcountgrouped)
-
-# List of subjects to check
-subjects = ['OND09_SBH_0060', 'OND09_SBH_0175', 'OND09_SBH_0186', 'OND09_SBH_0338', 'OND09_SBH_0361']
-
-# Print 'newcohort' for the specified subjects
-for subject in subjects:
-    print(f"Subject {subject}: cohort = {demodata.loc[demodata['subject'] == subject, 'cohort'].values[0]}")
-
-'''
-step 1 - time series of steps/time - intervals - 15 secs 30 secs 1 min
-cluster by disease cohort and occupation - demodata[.cohort']
-'''
-
-
-
-###########################################################
-# step 1 find nonwear and sleep time data
-# only want data for 24 days midnight to midnight for pattern data
-# so need the start and stop from first midnight to last midnight of data
-###########################################################
-
-
-###########################################################
-# Create PA and step density data, plot and write to file
-# location to write?
-# PA_gait_pattern_analysis
-#
-###########################################################
-
-
-#Review non-wear for subjects that match criteria
 nw_path = 'nonwear\\daily_cropped\\'
 bout_path = 'gait\\bouts\\'
 step_path = 'gait\\steps\\'
 daily_path = 'gait\\daily\\'
 sptw_path = 'sleep\\sptw\\'
 
-
-
-file_list = os.listdir(path1+nw_path)
-#select only files - no directories
-file_list = [file for file in file_list if os.path.isfile(os.path.join(path1+nw_path, file))]
-print ('N of all files: ' + str(len(file_list)))
-file_list = [file for file in file_list if 'Ankle' in file]
-print ('N of Ankle files: ' + str(len(file_list)))
-
-#Find Ankle files with enough data - midnight to midnight
-step1 = pd.DataFrame()
-
-#create blank panda dataframe for summary data
-summary = pd.DataFrame(columns=['subj','visit', 'date', 'total_steps', 'sleep_steps', 'wake_steps','wake','bed'])
-#set the bin widths fro step/strides counting
-bin_list = [3, 5, 10, 20, 50, 100, 300, 600]
-
-# convert bin list to header
-str_bin_list=[]
-for i in range(len(bin_list)):
-  new = f'{'<'}_{bin_list[i]}'
-  str_bin_list.append(new)
-last = '>_' + str(bin_list[len(bin_list)-1])
-str_bin_list.append(last)
-header = ['subj','visit','date']
-header.extend(str_bin_list)
-
-#create empty data frames
-non_sleep_bouts = pd.DataFrame(columns=header)
-sleep_bouts = pd.DataFrame(columns=header)
-
 # files to log details of processing
 curr_date = datetime.datetime.now().strftime('%Y_%m_%d')
 filen = f'{'log_read_step_bouts_'}_{curr_date}.txt'
-log_file = open (out_path + filen, 'w')
+log_file = open(log_out_path + filen, 'w')
 y = 0
-#loop through files
-for file in file_list:
 
-    nw_data = pd.read_csv(path1+nw_path+file)
-    print ('\nFile: '+file, end=" ")
-    # only data with 7 days
+###########################################
+#read in the cleaned data file for the HANNDS methods paper
+
+nimbal_dr = 'o:'
+new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
+
+#Import data files
+demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS.csv")
+
+########################################################
+# loop through each eligible subject
+# File the time series in a paper specific forlder?
+master_subj_list = []
+for i, subject in enumerate(demodata['SUBJECT']):
+    print(f'\rFind subjs - Progress: {i}' + ' of ' + str(len(demodata)), end='', flush=True)
+    #remove the underscoe that is in the subject code from the demodata file
+    parts = subject.split('_', 2)  # Split into at most 3 parts
+    if len(parts) == 3:
+        subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
+
+    #find non-wear to see if enough data
+    # first find the Ankle, Wrist and other nonwear
+    temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
+    match = glob.glob(temp)
+
+    ankle_list = [file for file in match if 'Ankle' in file]
+    wrist_list = [file for file in match if 'Wrist' in file]
+    chest_list = [file for file in match if 'Chest' in file]
+
+    if len(ankle_list) < 1:
+        log_file.write('file: ' + subject + ' no ankle nonwear file' +'\n')
+        continue
+    elif len(ankle_list) > 2:
+        #select the first ? if there are more than 1
+        log_file.write('file: ' + subject + ' 2 ankle non-wear - took 1st' + '\n')
+
+    master_subj_list.append(subject)
+log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
+
+
+#PART A - loop and do bin counts
+#create blank panda dataframe for summary data
+summary = pd.DataFrame(columns=['subj','visit', 'date', 'total_steps', 'sleep_steps', 'wake_steps','wake','bed'])
+
+#set the bin widths fro step/strides counting
+bin_list = [3, 5, 10, 20, 50, 100, 300, 600]
+
+#create header
+str_bin_list=[]
+for i in range(len(bin_list)):
+    new = f'{'<'}_{bin_list[i]}'
+    str_bin_list.append(new)
+    last = '>_' + str(bin_list[len(bin_list)-1])
+    str_bin_list.append(last)
+    header = ['subj','visit','date']
+    header.extend(str_bin_list)
+
+non_sleep_bouts = pd.DataFrame(columns=header)
+sleep_bouts = pd.DataFrame(columns=header)
+
+log_file.write('Part A - step counts in bins \n')
+for j, subject in enumerate(master_subj_list):
+    visit = '01'
+    print(f'\rBins - Progress: {j}' + ' of ' + str(len(master_subj_list)), end='', flush=True)
+
+    #get step data for subject
+    try:
+        steps = pd.read_csv(path1 + step_path + subject + '_' + visit + '_GAIT_STEPS.csv')
+    except:
+        log_file.write('Steps file not found - Subject: '+subject+ '\n')
+        continue
+    try:
+        daily = pd.read_csv(path1 + daily_path + subject + '_'+ visit + '_GAIT_DAILY.csv')
+    except:
+        log_file.write('Daily steps file not found - Subject: ' + subject + '\n')
+        continue
+    try:
+        sleep = pd.read_csv(path1 + sptw_path + subject + '_'+ visit + '_SPTW.csv')
+    except:
+        log_file.write('Sleep file not found - Subject: ' + subject + '\n')
+        continue
+    try:
+        temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
+        match = glob.glob(temp)
+        ankle_nw = [file for file in match if 'Ankle' in file]
+        file =  ankle_nw[0]
+        nw_data = pd.read_csv(file)
+    except:
+        log_file.write('nonwear file not found - Subject: ' + subject + '\n')
+        continue
+
+    #checks that there is seven days and enough sleep
     if len(nw_data) < 7:
-        log_file.write('file: '+ file + ' less than 7 days in NWEAR file  - ndays = '+str(len(nw_data)) +'\n')
+        log_file.write('Subject: ' + subject + ' less than 7 days in NONWEAR file  - ndays = ' + str(len(nw_data)) + '\n')
         continue
-    log_file.write('File: ' + file + '  OK - NON WEAR'+'\n')
-
-    file_noext = file.split(".")[0]
-    parts = file.split("_")
-    subj = parts[1]
-    visit = parts[2]
-    file_start = parts[0]+"_"+ parts[1]+"_"+parts[2]
-    daily = pd.read_csv(path1 + daily_path + file_start+ '_GAIT_DAILY.csv')
-    steps = pd.read_csv(path1 + step_path + file_start + '_GAIT_STEPS.csv')
-    sleep = pd.read_csv(path1 + sptw_path + file_start + '_SPTW.csv')
-
-    #ignore if sleep is not avaibale (OR we shoudl just do totals??)
-    if len(sleep) < (len(daily) -2):
-        log_file.write('    Error - not enough sleep data:   len-sleep -' + str(len(sleep))+ ' len-daily - '+ str(len(daily))+'\n')
+    if len(sleep) < (len(daily) - 2):
+        log_file.write('Subject: '+subject + ' not enough sleep data:   len-sleep -' + str(len(sleep)) + ' len-daily - ' + str(
+            len(daily)) + '\n')
         continue
+
+    ###########################################################
+    # PART A - bins - wake and sleep
+    # find nonwear and sleep time data
+    # only want data for 24 days midnight to midnight for pattern data
+    # so need the start and stop from first midnight to last midnight of data
+    ###########################################################
     sleep['end_time'] = pd.to_datetime(sleep['end_time'])
     sleep['start_time'] = pd.to_datetime(sleep['start_time'])
     sleep['relative_date'] = pd.to_datetime(sleep['relative_date'])
@@ -221,7 +200,7 @@ for file in file_list:
             log_file.write('  '+str(curr_date)+ '  Wake: '+ str(sleep_row.iloc[0].loc['wake']) + '   Bed: '+ str(sleep_row.iloc[0].loc['bed'])
                            + ' N sleep steps: '+ str(n_sleep_steps) + '   Wake steps: '+ str(n_wake_steps)+ '\n')
 
-            new_row = [subj, visit, curr_day, total_steps, n_sleep_steps, n_wake_steps, sleep_row['wake'], sleep_row['bed']]
+            new_row = [subject, visit, curr_day, total_steps, n_sleep_steps, n_wake_steps, sleep_row['wake'], sleep_row['bed']]
             new_row_series = pd.DataFrame([new_row], columns=summary.columns)
             summary = pd.concat([summary, new_row_series], ignore_index=True)
 
@@ -230,33 +209,10 @@ for file in file_list:
             #bow windows passed as list and also names the bout_bins header
             #sleep_bouts = sleep_bouts.append(bout_bin)
             bout_bin = bout_bins(sleep_steps, bin_list)
-            sleep_bouts.loc[len(sleep_bouts)] = [subj, visit, curr_day, *bout_bin]
+            sleep_bouts.loc[len(sleep_bouts)] = [subject, visit, curr_day, *bout_bin]
             #non_sleep bouts
             bout_bin = bout_bins(wake_steps, bin_list)
-            non_sleep_bouts.loc[len(non_sleep_bouts)] = [subj, visit, curr_day, *bout_bin]
-
-'''
-            if raw_plot:
-                ###############################
-                #plots the step times for all steps
-                #plotting each row adds 1 to Y?
-                #X is time (exldue date)
-                y = y+0.01
-                #non_sleep_steps['time'] = non_sleep_steps['step_time'].dt.time
-                hours = ((wake_steps['step_time'].dt.hour) + (wake_steps['step_time'].dt.minute / 60)
-                         + (wake_steps['step_time'].dt.second / 3600))# + (non_sleep_steps['step_time'].dt.microsecond) / 3600000)
-                yarray= [y] * len(hours)
-                #First non-sleep
-                plt.scatter(hours, yarray, color='orange',s=1)
-                #sleep
-                hours = ((sleep_steps['step_time'].dt.hour) + (sleep_steps['step_time'].dt.minute / 60)
-                         + (sleep_steps['step_time'].dt.second / 3600))  # + (sleep_steps['step_time'].dt.microsecond) / 3600000)
-                yarray = [y] * len(hours)
-                plt.scatter(hours, yarray, color='blue', s=1)
-plt.show()
-'''
-
-#write the different files to data location
+            non_sleep_bouts.loc[len(non_sleep_bouts)] = [subject, visit, curr_day, *bout_bin]
 
 log_file.close()
 
@@ -286,9 +242,32 @@ for i in subj:
 
 #write stats file to CSV
 out_file = 'stats1_feb25.csv'
-stats.to_csv(out_path+out_file, index=False)
+stats.to_csv(summary_path+out_file, index=False)
 out_file2 = 'wake_bouts_feb25.csv'
-non_sleep_bouts.to_csv(out_path+out_file2, index=False)
+non_sleep_bouts.to_csv(summary_path+out_file2, index=False)
 out_file3 = 'sleep_bouts_feb25.csv'
-sleep_bouts.to_csv(out_path+out_file3, index=False)
+sleep_bouts.to_csv(summary_path+out_file3, index=False)
 print ('done')
+
+
+'''
+            if raw_plot:
+                ###############################
+                #plots the step times for all steps
+                #plotting each row adds 1 to Y?
+                #X is time (exldue date)
+                y = y+0.01
+                #non_sleep_steps['time'] = non_sleep_steps['step_time'].dt.time
+                hours = ((wake_steps['step_time'].dt.hour) + (wake_steps['step_time'].dt.minute / 60)
+                         + (wake_steps['step_time'].dt.second / 3600))# + (non_sleep_steps['step_time'].dt.microsecond) / 3600000)
+                yarray= [y] * len(hours)
+                #First non-sleep
+                plt.scatter(hours, yarray, color='orange',s=1)
+                #sleep
+                hours = ((sleep_steps['step_time'].dt.hour) + (sleep_steps['step_time'].dt.minute / 60)
+                         + (sleep_steps['step_time'].dt.second / 3600))  # + (sleep_steps['step_time'].dt.microsecond) / 3600000)
+                yarray = [y] * len(hours)
+                plt.scatter(hours, yarray, color='blue', s=1)
+plt.show()
+'''
+

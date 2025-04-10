@@ -7,6 +7,8 @@ path1 = root+'\\NiMBaLWEAR\\OND09\\analytics\\'
 nimbal_drive = 'O:'
 out_path = nimbal_drive +'\\Student_Projects\\gait_pattern_paper_feb2024\\'
 
+path_sensors = root+'\\NiMBaLWEAR\\OND09\\wearables\\device_edf_cropped\\'
+
 #Review non-wear for subjects that match criteria
 step_path = 'gait\\steps\\'
 
@@ -18,9 +20,21 @@ print ('N of all files: ' + str(len(file_list)))
 file_list = [file for file in file_list if 'GAIT_STEPS' in file]
 print ('N of Step files: ' + str(len(file_list)))
 
+
 #loop trhough file list
 for file in file_list:
 
+    file_noext = file.split(".")[0]
+    parts = file.split("_")
+    subj = parts[1]
+    visit = parts[2]
+    file_start = parts[0] + "_" + parts[1] + "_" + parts[2]
+
+    #daily = pd.read_csv(path1 + daily_path + file_start + '_GAIT_DAILY.csv')
+    #sleep = pd.read_csv(path1 + sptw_path + file_start + '_SPTW.csv')
+
+    ## read steps files
+    steps = pd.read_csv(path1 + step_path + file_start + '_GAIT_STEPS.csv')
     step_data = pd.read_csv(path1+step_path+file)
     # Ensure timestamp column is a datetime type and set as index
     step_data['timestamp'] = pd.to_datetime(step_data['step_time'])
@@ -30,29 +44,30 @@ for file in file_list:
     end_time = step_data.iloc[-1]['step_time']
     print (start_time, end_time)
 
-    #loop through different intervls to plot and view
-    windows = ['15S', '30S','60S','180S', '300S']
-    colors = ['yellow','orange', 'red', 'green', 'blue']
-    plt.figure(figsize=(10, 5))
-    for  window, color in zip(windows, colors):
-        # Resample into 15-second bins and count occurrences
-        step_2 = step_data.resample(window).size().reset_index()
-        step_2.columns = ['time', 'count']
-        plt.plot(step_2['time'], step_2['count'], color=color, label=f'Interval {window}')
-        # Rename columns for clarity
+    #read sensor file
+    #bitium ? for prone?
+    #read ankle for horizontal
+    rawfile = study + "_" + subj + "_" + visit + '_' + sensor + '_' + loc + ".edf"
+    print('reading sensor file # :'+ rawfile)
+    # read raw data header
+    device.import_edf(file_path=path_sensor + rawfile)
+    #accel_x_sig = device.get_signal_index('Accelerometer x')
+    #accel_y_sig = device.get_signal_index('Accelerometer y')
+    accel_z_sig = device.get_signal_index('Accelerometer z')
+    cropped = device.crop()
+    #x = cropped.signals[accel_x_sig]
+    #y = cropped.signals[accel_y_sig]
+    z = cropped.signals[accel_z_sig]
+    #t = cropped.get_timestamps(accel_x_sig)
+    sample_rate.append(device.signal_headers[accel_z_sig]['sample_rate'])
+    start_date.append(device.header['start_datetime'])
+    max_len.append(len(z))
 
-        #print (len(step_data), len(resampled_step))
 
 
-    # Graph labels and legend
-    plt.xlabel('Time')
-    plt.ylabel('Row Count')
-    plt.title('Row Counts for Different Time Intervals')
-    plt.legend()
-    plt.xticks(rotation=45)
-    plt.grid()
-    plt.show()
-    print ('stop')
+
+
+
 #Find Ankle files with enough data - midnight to midnight
 step1 = pd.DataFrame()
 
@@ -60,24 +75,8 @@ step1 = pd.DataFrame()
 
 
 
-#create blank panda dataframe for summary data
-summary = pd.DataFrame(columns=['subj','visit', 'date', 'total_steps', 'sleep_steps', 'wake_steps','wake','bed'])
-#set the bin widths fro step/strides counting
-bin_list = [3, 5, 10, 20, 50, 100, 300, 600]
+#####################################################################
 
-# convert bin list to header
-str_bin_list=[]
-for i in range(len(bin_list)):
-  new = f'{'<'}_{bin_list[i]}'
-  str_bin_list.append(new)
-last = '>_' + str(bin_list[len(bin_list)-1])
-str_bin_list.append(last)
-header = ['subj','visit','date']
-header.extend(str_bin_list)
-
-#create empty data frames
-non_sleep_bouts = pd.DataFrame(columns=header)
-sleep_bouts = pd.DataFrame(columns=header)
 
 # files to log details of processing
 curr_date = datetime.datetime.now().strftime('%Y_%m_%d')

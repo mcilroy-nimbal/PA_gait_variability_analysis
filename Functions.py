@@ -123,6 +123,63 @@ def bout_bins (data, bin_list):
     return bout_bin
 
 def step_density(steps, time, window, overlapping):
+    #passes full step file with step time
+    #
 
 
+
+
+
+
+    return
+
+def read_orig_clean_demo():
+    nimbal_dr = 'o:'
+    new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
+
+    #Import data files
+    demodata = pd.read_csv("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/LabKey Data/OND09_RELEASE_CLIN files/OND09_ALL_01_CLIN_DEMOG/OND09_ALL_01_CLIN_DEMOG_2023JUL04_DATA.csv")
+    scrndata = pd.read_csv("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/LabKey Data/OND09_RELEASE_CLIN files/OND09_ALL_01_CLIN_SCRN/OND09_ALL_01_CLIN_SCRN_2023SEP13_DATA.csv")
+    pptlist = pd.read_excel("W:/OND09 (HANDDS-ONT)/HANDDS methods paper data/Data/Number of Days_By Sensor_Bill outputs_20Aug2024_WithCohorts.xlsx")
+
+    #Adjust for cohort discrepancy
+    demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0060', 'cohort'] = 'MCI;CVD'
+    demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0175', 'cohort'] = 'AD'
+    demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0186', 'cohort'] = 'Community Dwelling'
+    demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0338', 'cohort'] = 'PD'
+    demodata.loc[demodata['SUBJECT'] == 'OND09_SBH_0361', 'cohort'] = 'MCI;CVD'
+
+    #Assign participants with 2 diagnoses to 1 cohort
+
+
+    def cohortrecode(cohort):
+        if cohort == "AD;MCI":
+            return "AD/MCI"
+        elif cohort == "AD":
+            return "AD/MCI"
+        elif cohort == "MCI":
+            return "AD/MCI"
+        elif cohort == "MCI;CVD":
+            return "CVD"
+        elif cohort == "MCI;PD":
+            return "PD"
+        else:
+            return cohort
+
+    #New cohort count
+    demodata["cohort"] = demodata.apply(lambda x: cohortrecode(x["cohort"]), axis=1)
+    newcohortcount = demodata["cohort"].count()
+    print(newcohortcount)
+
+    newcohortcountgrouped = demodata.groupby("cohort").size()
+    print(newcohortcountgrouped)
+
+    # List of subjects to check
+    subjects = ['OND09_SBH_0060', 'OND09_SBH_0175', 'OND09_SBH_0186', 'OND09_SBH_0338', 'OND09_SBH_0361']
+
+    # Print 'newcohort' for the specified subjects
+    for subject in subjects:
+        print(f"Subject {subject}: cohort = {demodata.loc[demodata['SUBJECT'] == subject, 'cohort'].values[0]}")
+
+    demodata.to_csv(nimbal_dr+new_path+'OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS.csv')
     return
