@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_orig_clean_demo
 import numpy as np
 import seaborn as sns
 import datetime
@@ -36,10 +36,17 @@ y = 0
 nimbal_dr = 'o:'
 new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 
+#demodata = read_orig_clean_demo()
+
 #Import data files
-demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS.csv")
+demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
 
-
+#read summary bin file
+#bouts = pd.read_csv(summary_path + 'steps_daily_bins.csv')
+#n_subj = bouts['subj'].unique()
+#for subj in range(n_subj):
+#    sub_set = bouts
+#print(len(n_subj))
 
 
 
@@ -78,7 +85,7 @@ log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
 #PART A - loop and do bin counts
 
 #set the bin widths fro step/strides counting
-bin_list = [3, 5, 10, 20, 50, 100, 300, 600]
+bin_list = [3, 5, 10, 20, 50, 100, 300]
 
 #create header
 str_bin_list=[]
@@ -109,11 +116,11 @@ for j, subject in enumerate(master_subj_list):
     except:
         log_file.write('Daily steps file not found - Subject: ' + subject + '\n')
         continue
-    try:
-        sleep = pd.read_csv(path1 + sptw_path + subject + '_'+ visit + '_SPTW.csv')
-    except:
-        log_file.write('Sleep file not found - Subject: ' + subject + '\n')
-        continue
+    #try:
+    #    sleep = pd.read_csv(path1 + sptw_path + subject + '_'+ visit + '_SPTW.csv')
+    #except:
+    #    log_file.write('Sleep file not found - Subject: ' + subject + '\n')
+    #    continue
     try:
         temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
         match = glob.glob(temp)
@@ -131,13 +138,14 @@ for j, subject in enumerate(master_subj_list):
     merged_daily = pd.merge(nw_data, daily, on='day_num')
 
     # remove days that are only partial (nwear <70000?)
-    merged_daily = merged_daily[merged_daily['wear'] > 79200]  # 86400 secs in 24 hours
+    # minimimum of 20 hours of wear time
+    merged_daily = merged_daily[merged_daily['wear'] > 72000]  # 86400 secs in 24 hours
     merged_daily['date'] = pd.to_datetime(merged_daily['date'])
     merged_daily['date'] = merged_daily['date'].dt.date
 
     ###############################################################
     #creates bins
-    #summary = steps_by_day(summary, steps, merged_daily, subject, visit, bin_list, group='all')
+    summary = steps_by_day(summary, steps, merged_daily, subject, visit, bin_list, group='all')
 
 
     ##############################################################
@@ -146,13 +154,9 @@ for j, subject in enumerate(master_subj_list):
     #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_1min_density.csv')
 
 
-
-
-
-
 # write bins file summary
-#summary.to_csv(summary_path + 'steps_daily_bins.csv', index=False)
-
+summary.to_csv(summary_path + 'steps_daily_bins.csv', index=False)
+log_file.close()
 print('done')
 
 
