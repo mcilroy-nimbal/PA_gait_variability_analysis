@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min
 import numpy as np
 import seaborn as sns
 import datetime
@@ -39,6 +39,11 @@ new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 #Import data files
 demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS.csv")
 
+
+
+
+
+
 ########################################################
 # loop through each eligible subject
 # File the time series in a paper specific forlder?
@@ -71,26 +76,24 @@ log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
 
 
 #PART A - loop and do bin counts
-#create blank panda dataframe for summary data
-summary = pd.DataFrame(columns=['subj','visit', 'date', 'total_steps', 'sleep_steps', 'wake_steps','wake','bed'])
 
 #set the bin widths fro step/strides counting
 bin_list = [3, 5, 10, 20, 50, 100, 300, 600]
 
 #create header
 str_bin_list=[]
-for i in range(len(bin_list)):
-    new = f'{'<'}_{bin_list[i]}'
+for k in range(len(bin_list)):
+    new = f'{'<'}_{bin_list[k]}'
     str_bin_list.append(new)
-    last = '>_' + str(bin_list[len(bin_list)-1])
-    str_bin_list.append(last)
-    header = ['subj','visit','date']
-    header.extend(str_bin_list)
+last = '>_' + str(bin_list[len(bin_list)-1])
+str_bin_list.append(last)
+header = ['subj','visit','date','group', 'total']
+header.extend(str_bin_list)
 
-non_sleep_bouts = pd.DataFrame(columns=header)
-sleep_bouts = pd.DataFrame(columns=header)
-
+#create blank panda dataframe for summary data
+summary = pd.DataFrame(columns=header)
 log_file.write('Part A - step counts in bins \n')
+
 for j, subject in enumerate(master_subj_list):
     visit = '01'
     print(f'\rBins - Progress: {j}' + ' of ' + str(len(master_subj_list)), end='', flush=True)
@@ -121,14 +124,42 @@ for j, subject in enumerate(master_subj_list):
         log_file.write('nonwear file not found - Subject: ' + subject + '\n')
         continue
 
-    #checks that there is seven days and enough sleep
-    if len(nw_data) < 7:
-        log_file.write('Subject: ' + subject + ' less than 7 days in NONWEAR file  - ndays = ' + str(len(nw_data)) + '\n')
-        continue
-    if len(sleep) < (len(daily) - 2):
-        log_file.write('Subject: '+subject + ' not enough sleep data:   len-sleep -' + str(len(sleep)) + ' len-daily - ' + str(
-            len(daily)) + '\n')
-        continue
+    # drop duplicate columns from daily before merge with NW
+    daily.drop(['study_code', 'subject_id', 'coll_id', 'date', ], axis=1, inplace=True)
+
+    # combine nonwear and daily steps by day_num
+    merged_daily = pd.merge(nw_data, daily, on='day_num')
+
+    # remove days that are only partial (nwear <70000?)
+    merged_daily = merged_daily[merged_daily['wear'] > 79200]  # 86400 secs in 24 hours
+    merged_daily['date'] = pd.to_datetime(merged_daily['date'])
+    merged_daily['date'] = merged_daily['date'].dt.date
+
+    ###############################################################
+    #creates bins
+    #summary = steps_by_day(summary, steps, merged_daily, subject, visit, bin_list, group='all')
+
+
+    ##############################################################
+    #runs density function for each subejct and day
+    #data = step_density_1min(steps, merged_daily)
+    #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_1min_density.csv')
+
+
+
+
+
+
+# write bins file summary
+#summary.to_csv(summary_path + 'steps_daily_bins.csv', index=False)
+
+print('done')
+
+
+##########################
+'''
+
+
 
     ###########################################################
     # PART A - bins - wake and sleep
@@ -142,16 +173,6 @@ for j, subject in enumerate(master_subj_list):
     steps['step_time'] = pd.to_datetime(steps['step_time'])
     steps['date'] = steps['step_time'].dt.date
 
-    # drop duplicate columns from daily before merge with NW
-    daily.drop(['study_code','subject_id','coll_id','date',], axis=1, inplace=True)
-
-    #combine nonwear and daily steps by day_num
-    merged_daily = pd.merge(nw_data, daily, on='day_num')
-
-    #remove days that are only partial (nwear <70000?)
-    merged_daily = merged_daily[merged_daily['wear'] > 79200]  #86400 secs in 24 hours
-    merged_daily['date'] = pd.to_datetime(merged_daily['date'])
-    merged_daily['date'] = merged_daily['date'].dt.date
 
     # re-aligning sleep so that wake and sleep on same calendar day on same line
     # needed for the 24 hour midnight to midnight approach with steps
@@ -214,7 +235,7 @@ for j, subject in enumerate(master_subj_list):
             bout_bin = bout_bins(wake_steps, bin_list)
             non_sleep_bouts.loc[len(non_sleep_bouts)] = [subject, visit, curr_day, *bout_bin]
 
-log_file.close()
+_timelog_file.close()
 
 stats = pd.DataFrame(columns=['subj','ndays', 'total_med', 'total_std', 'total_max',
                               'sleep_med', 'sleep_std', 'sleep_max',
@@ -250,7 +271,7 @@ sleep_bouts.to_csv(summary_path+out_file3, index=False)
 print ('done')
 
 
-'''
+
             if raw_plot:
                 ###############################
                 #plots the step times for all steps
@@ -269,5 +290,6 @@ print ('done')
                 yarray = [y] * len(hours)
                 plt.scatter(hours, yarray, color='blue', s=1)
 plt.show()
-'''
 
+
+'''

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime
 
 def wake_sleep (sleep_data):
     #rules - wake
@@ -97,6 +98,26 @@ def wake_sleep (sleep_data):
 
     return new_sleep
 
+def steps_by_day (summary, steps, merged_daily, subject, visit, bin_list, group):
+
+    #loop through days
+    for i, row in merged_daily.iterrows():
+        curr_day = row['date']
+        #print(' #: '+str(i)+" -"+ str(curr_day), end=" ")
+        steps['date'] = pd.to_datetime(steps['step_time']).dt.date
+        all = steps[steps['date'] == curr_day]
+
+        #count total number of steps
+        total_steps = len(all)
+
+        # steps within each bout bin
+        # create bout_bin (steps within bouts - from the step file) - set the bout windws
+        #bow windows passed as list and also names the bout_bins header
+        bout_bin = bout_bins(all, bin_list)
+        summary.loc[len(all)] = [subject, visit, curr_day,group,total_steps, *bout_bin]
+
+    return summary
+
 def bout_bins (data, bin_list):
     # steps within each bout bin
     # create bout_bin (steps within bouts - from the step file) - set the bout windows
@@ -122,16 +143,31 @@ def bout_bins (data, bin_list):
             bout_bin[j+1] += bout_len
     return bout_bin
 
-def step_density(steps, time, window, overlapping):
-    #passes full step file with step time
-    #
+def step_density_1min(steps, merged_daily):
 
+    # loop through days
+    header_days = [f'day_{i + 1}' for i in range(len(merged_daily))]
+    data = pd.DataFrame(columns=header_days)
+    count=0
+    for i, row in merged_daily.iterrows():
 
+        curr_day = row['date']
+        steps['date'] = pd.to_datetime(steps['step_time']).dt.date
+        all = steps[steps['date'] == curr_day]
+        #loop through every minute and find step count - index is minutes of day
 
-
-
-
-    return
+        time = pd.to_datetime(all['step_time']).dt.time
+        all['time_sec'] = time.apply(lambda t: t.hour * 3600 + t.minute * 60 + t.second)
+        min_array = []
+        for step in range(1440):
+            start = step * 60
+            end = (step+1) * 60
+            sub = all[(all['time_sec'] > start) & (all['time_sec'] <= end)]
+            min_array.append(len(sub))
+        data[header_days[count]] = min_array
+        #print ('Total - '+ header_days[count] + ':  '+str(sum(min_array)))
+        count = count+1
+    return data
 
 def read_orig_clean_demo():
     nimbal_dr = 'o:'
