@@ -102,6 +102,7 @@ def steps_by_day (summary, steps, merged_daily, subject, visit, bin_list, group)
 
     #loop through days
     for i, row in merged_daily.iterrows():
+        wear = row['wear']
         curr_day = row['date']
         #print(' #: '+str(i)+" -"+ str(curr_day), end=" ")
         steps['date'] = pd.to_datetime(steps['step_time']).dt.date
@@ -114,7 +115,7 @@ def steps_by_day (summary, steps, merged_daily, subject, visit, bin_list, group)
         # create bout_bin (steps within bouts - from the step file) - set the bout windws
         #bow windows passed as list and also names the bout_bins header
         bout_bin = bout_bins(all, bin_list)
-        summary.loc[len(all)] = [subject, visit, curr_day,group,total_steps, *bout_bin]
+        summary.loc[len(all)] = [subject, visit, curr_day, wear, group,total_steps, *bout_bin]
 
     return summary
 

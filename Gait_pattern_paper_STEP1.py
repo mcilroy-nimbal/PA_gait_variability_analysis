@@ -1,3 +1,7 @@
+#THIS CODE: CREATES BIN FILES AND DENSITY DATA FROM ELIGIBLE SUBJECTS
+#Output Files locate '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'Summary_data\\''
+#THIS DATA IS THEN USED IN STEP2 analysis
+
 import pandas as pd
 import glob
 import os
@@ -32,23 +36,14 @@ y = 0
 
 ###########################################
 #read in the cleaned data file for the HANNDS methods paper
-
 nimbal_dr = 'o:'
 new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 
+#this woudl read in the elegible subejcts with demogrpahic data
 #demodata = read_orig_clean_demo()
 
-#Import data files
+#Import data files - use this if file already created
 demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
-
-#read summary bin file
-#bouts = pd.read_csv(summary_path + 'steps_daily_bins.csv')
-#n_subj = bouts['subj'].unique()
-#for subj in range(n_subj):
-#    sub_set = bouts
-#print(len(n_subj))
-
-
 
 
 ########################################################
@@ -81,7 +76,6 @@ for i, subject in enumerate(demodata['SUBJECT']):
     master_subj_list.append(subject)
 log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
 
-
 #PART A - loop and do bin counts
 
 #set the bin widths fro step/strides counting
@@ -94,7 +88,7 @@ for k in range(len(bin_list)):
     str_bin_list.append(new)
 last = '>_' + str(bin_list[len(bin_list)-1])
 str_bin_list.append(last)
-header = ['subj','visit','date','group', 'total']
+header = ['subj','visit','date','wear', 'group', 'total']
 header.extend(str_bin_list)
 
 #create blank panda dataframe for summary data
@@ -147,12 +141,10 @@ for j, subject in enumerate(master_subj_list):
     #creates bins
     summary = steps_by_day(summary, steps, merged_daily, subject, visit, bin_list, group='all')
 
-
     ##############################################################
     #runs density function for each subejct and day
     #data = step_density_1min(steps, merged_daily)
     #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_1min_density.csv')
-
 
 # write bins file summary
 summary.to_csv(summary_path + 'steps_daily_bins.csv', index=False)
