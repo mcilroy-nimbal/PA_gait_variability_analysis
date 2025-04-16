@@ -56,14 +56,16 @@ bouts_all['subj'] = bouts_all['subj'].astype(str).str.replace('_', '')
 #bouts = bouts_all[(bouts_all['total'] / bouts_all['ndays']) > 5000]
 
 #by demographic
-subset = demodata[(demodata['COHORT'] != 'Community Dwelling')]
+#subset = demodata[(demodata['COHORT'] != 'Community Dwelling')]
 #subset = demodata[(demodata['AGE'] > 55) & (demodata['AGE'] < 75)]
 
 
-gait_bout = True
+gait_bout = False
 write_density = False
-plot_density = False
+plot_density_summary = False
+plot_density_raw = True
 plot_demo = False
+
 
 if plot_demo:
     bins = [20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -207,7 +209,7 @@ if write_density:
     hist.to_csv(summary_path+'freq_step_per_min.csv')
 
 
-if plot_density:
+if plot_density_summary:
     # plot the bout density file
     data_path = summary_path+'freq_step_per_min.csv'
     hist_all = pd.read_csv(data_path)
@@ -227,3 +229,42 @@ if plot_density:
 
     plt.show()
     print ()
+
+if plot_density_raw:
+    # bout density data
+    # plot density summary file
+    data_path = summary_path+'density\\'
+    files = [f for f in os.listdir(data_path) if os.path.isfile(os.path.join(data_path, f))]
+
+
+    for index, file in enumerate(files):
+        print(f'\rSubj #: {index}' + ' of ' + str(len(files)), end='', flush=True)
+        parts = file.split('_')
+        subj = parts[0] + parts[1]
+        cohort = demodata.loc[demodata['SUBJECT'] == subj, 'COHORT'].values[0]
+        age = demodata.loc[demodata['SUBJECT'] == subj, 'AGE'].values[0]
+
+        subj_density = pd.read_csv(data_path+file)
+        del subj_density[subj_density.columns[0]]
+
+        count = 0
+        fig, ax = plt.subplots(figsize=(10,6))
+        time = np.linspace(1, 1440, 1440)
+
+        # plot by day and subject
+        for day, col in enumerate(subj_density.columns):
+            data1 = subj_density[col].values
+            data2 = data1.reshape(1, -1)
+            ax.imshow(data2, aspect = 'auto', cmap='viridis', interpolation=None, extent=[time[0], time[-1], count, count+1])
+            print(f'\rCount #: {count}', end='', flush=True)
+            count=count+1
+        ax.set_ylim(0, count)
+        ax.set_ylabel("Step density")
+        ax.set_xlabel("Time (mins/day")
+        ax.set_title("Step Density time series - Subject: "+ subj+"  Cohort: "+cohort+"  Age: "+str(age))
+        plt.colorbar(ax.images[0], ax=ax, label='Step density (steps/minute)')  # colorbar from the first image
+        plt.tight_layout()
+        plt.savefig(data_path+'images\\'+subj+'_density_days.pdf')
+        #plt.show()
+
+print()
