@@ -29,13 +29,17 @@ def alpha_gini_index(data, plot=False):
     larger alpha indicates distribution of ambulatory bouts is derived from a greater proportion of shorter bouts
     - gini index = accumulation of sedentary and walking time (by bout length); high gini index indicates greater contribution of long bouts
     - See Godfrey supplement in Teams channel for calculations
+
+
+
+
 '''
 
     # Fit the data to a power-law distribution
     fit = powerlaw.Fit(data)
     # Get the estimated alpha (scaling exponent)
-    print("Alpha (scaling exponent):", fit.alpha)
-    print("Xmin (cutoff value):", fit.xmin)
+    #print("Alpha (scaling exponent):", fit.alpha)
+    #print("Xmin (cutoff value):", fit.xmin)
 
     #gini
     data = np.sort(data)  # Sort values
@@ -51,7 +55,7 @@ def alpha_gini_index(data, plot=False):
         plt.legend()
         plt.show()
 
-    return
+    return gini, fit.alpha, fit.xmin, n
 
 
 
