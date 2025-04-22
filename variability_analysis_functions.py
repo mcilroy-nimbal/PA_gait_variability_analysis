@@ -29,10 +29,6 @@ def alpha_gini_index(data, plot=False):
     larger alpha indicates distribution of ambulatory bouts is derived from a greater proportion of shorter bouts
     - gini index = accumulation of sedentary and walking time (by bout length); high gini index indicates greater contribution of long bouts
     - See Godfrey supplement in Teams channel for calculations
-
-
-
-
 '''
 
     # Fit the data to a power-law distribution
