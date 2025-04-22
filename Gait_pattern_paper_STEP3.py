@@ -14,7 +14,8 @@ import matplotlib.gridspec as gridspec
 import datetime
 import openpyxl
 
-gini = False
+bland = True
+gini = True
 plot_gini_steps = True
 plot_gini_groups = True
 
@@ -58,8 +59,9 @@ if gini:
     #extract on a few variabels from the demo
 
     demodata = demodata[['SUBJECT','COHORT','AGE']]
-    demodata['gini_steps', 'alpha_steps', 'xmin_steps', 'gini_dur', 'alpha_dur','xmin_dur'] = None
-
+    demodata['gini_steps', 'alpha_steps', 'xmin_steps','fit_steps', 'gini_dur', 'alpha_dur','xmin_dur', 'fit_dur'] = None
+    all_steps=[]
+    all_dur=[]
     for index, row in demodata.iterrows():
         print(f'\rFind subjs - Progress: {index}' + ' of ' + str(len(demodata)), end='', flush=True)
         #remove the underscoe that is in the subject code from the demodata file
@@ -78,27 +80,41 @@ if gini:
                 continue
             #by step number
             data = bouts['step_count']
-            g_steps, a_steps, xmin_steps, n_steps = alpha_gini_index (data, plot=False)
-            demodata.at[index,'gini_steps'] = g_steps
-            demodata.at[index, 'alpha_steps'] = a_steps
-            demodata.at[index, 'xmin_steps'] = xmin_steps
-
+            all_steps.extend(bouts['step_count'])
+            #g_steps, a_steps, xmin_steps, n_steps, fit_steps = alpha_gini_index (data, plot=False)
+            #demodata.at[index,'gini_steps'] = g_steps
+            #demodata.at[index, 'alpha_steps'] = a_steps
+            #demodata.at[index, 'xmin_steps'] = xmin_steps
+            #demodata.at[index, 'fit_steps'] = fit_steps
             #by duration
             bouts['start'] = pd.to_datetime(bouts['start_time'])
             bouts['end'] = pd.to_datetime(bouts['end_time'])
 
             # Calculate difference in seconds
             bouts['duration'] = (bouts['end'] - bouts['start']).dt.total_seconds()
-            g_dur, a_dur, xmin_dur, n_dur = alpha_gini_index(bouts['duration'], plot=False)
-            demodata.at[index, 'gini_dur'] = g_dur
-            demodata.at[index, 'alpha_dur'] = a_dur
-            demodata.at[index, 'xmin_dur'] = xmin_dur
+            all_dur.extend(bouts['duration'].values.tolist())
+            #g_dur, a_dur, xmin_dur, n_dur , fit_dur = alpha_gini_index(bouts['duration'], plot=False)
+            #demodata.at[index, 'gini_dur'] = g_dur
+            #demodata.at[index, 'alpha_dur'] = a_dur
+            #demodata.at[index, 'xmin_dur'] = xmin_dur
+            #demodata.at[index, 'fit_dur'] = fit_dur
 
-    demodata.to_csv(summary_path +'alpha_gini.csv')
+    #demodata.to_csv(summary_path +'alpha_gini_bouts.csv')
+    #all_df = pd.DataFrame({'steps': all_steps, 'dur': all_dur})
+
+    #sns.histplot(x=all_steps, bins=100, kde=False)
+    #drop strides <5
+    #all_steps = [x for x in all_steps if x >= 4]
+    #plt.hist(all_steps, bins=200)
+    #plt.show()
+    #all_steps = [x for x in all_steps if x >= 10]
+    #sns.histplot(x=all_dur, bins=200, kde=False)
+    #plt.show()
+
 
 if plot_gini_steps:
 
-    power_data = pd.read_csv(summary_path+'alpha_gini.csv')
+    power_data = pd.read_csv(summary_path+'alpha_gini_bouts.csv')
     power_data['m_subj'] = power_data['SUBJECT'].str.replace('_', '')
     bout_data = pd.read_csv(summary_path + 'steps_daily_bins.csv')
     bout_data['m_subj'] = bout_data['subj'].str.replace('_', '')
@@ -154,18 +170,25 @@ if plot_gini_steps:
     axs[2,0].set_ylabel = ('Frequency')
     axs[2,0].legend()
 
-    axs[2,1].scatter(all_data['alpha_steps'], all_data['gini_steps'], color='black', label='steps')
-    axs[2,1].scatter(all_data['alpha_dur'], all_data['gini_dur'], color='green', label='dur')
-    axs[2,1].set_title('Alpha versus Gini')
-    axs[2,1].set_xlabel = ('Alpha')
-    axs[2,1].set_ylabel = ('Gini')
-    axs[2,1].legend()
+    axs[2, 1].hist(all_data['fit_steps'], bins=15, alpha=0.6, label='Step #', color='blue', edgecolor='black')
+    axs[2, 1].hist(all_data['fit_dur'], bins=15, alpha=0.6, label='Duration', color='orange', edgecolor='black')
+    axs[2, 1].set_title('Fit (steps and duration)')
+    axs[2, 1].set_xlabel = ('Fit')
+    axs[2, 1].set_ylabel = ('Frequency')
+    axs[2, 1].legend()
+
+    axs[2,2].scatter(all_data['alpha_steps'], all_data['gini_steps'], color='black', label='steps')
+    axs[2,2].scatter(all_data['alpha_dur'], all_data['gini_dur'], color='green', label='dur')
+    axs[2,2].set_title('Alpha versus Gini')
+    axs[2,2].set_xlabel = ('Alpha')
+    axs[2,2].set_ylabel = ('Gini')
+    axs[2,2].legend()
 
 
     plt.show()
 
 if plot_gini_groups:
-    power_data = pd.read_csv(summary_path + 'alpha_gini.csv')
+    power_data = pd.read_csv(summary_path + 'alpha_gini_bouts.csv')
     power_data['m_subj'] = power_data['SUBJECT'].str.replace('_', '')
     bout_data = pd.read_csv(summary_path + 'steps_daily_bins.csv')
     bout_data['m_subj'] = bout_data['subj'].str.replace('_', '')
@@ -217,3 +240,27 @@ if plot_gini_groups:
 
     #plt.tight_layout()
     #plt.show()
+
+
+if bland:
+    #all_data['mean_gini'] = (all_data['gini_steps'] + all_data['gini_dur']) / 2
+    all_data['diff_gini'] = all_data['gini_steps'] - all_data['gini_dur']
+
+    plt.figure(figsize=(8, 6))
+    sns.scatterplot(data=all_data, x='AGE', y='diff_gini', alpha=0.7)
+
+    # Plot mean difference and limits of agreement
+    mean_diff = all_data['diff_gini'].mean()
+    std_diff = all_data['diff_gini'].std()
+
+    plt.axhline(mean_diff, color='red', linestyle='--', label='Mean Diff Gini')
+    plt.axhline(mean_diff + 1.96*std_diff, color='gray', linestyle='--', label='+1.96 SD')
+    plt.axhline(mean_diff - 1.96*std_diff, color='gray', linestyle='--', label='-1.96 SD')
+
+    plt.xlabel('Age')
+    plt.ylabel('Difference (Steps − Duration)')
+    plt.title('Bland-Altman Plot vs Age')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()

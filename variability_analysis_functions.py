@@ -22,7 +22,7 @@ def intra_day_stab():
 
     return
 
-def alpha_gini_index(data, plot=False):
+def alpha_gini_index(data, plot=False, xmin=None):
     '''
     Alpha and Gini (pattern)
     (Barry et al 2015; Chastin and Granat 2010) - alpha = power law distribution exponent (distribution of sedentary and ambulatory bouts according to their time;
@@ -32,7 +32,10 @@ def alpha_gini_index(data, plot=False):
 '''
 
     # Fit the data to a power-law distribution
-    fit = powerlaw.Fit(data)
+    if xmin == None:
+        fit = powerlaw.Fit(data)
+    else:
+        fit = powerlaw.Fit(data, xmin=xmin)
     # Get the estimated alpha (scaling exponent)
     #print("Alpha (scaling exponent):", fit.alpha)
     #print("Xmin (cutoff value):", fit.xmin)
@@ -51,7 +54,7 @@ def alpha_gini_index(data, plot=False):
         plt.legend()
         plt.show()
 
-    return gini, fit.alpha, fit.xmin, n
+    return gini, fit.alpha, fit.xmin, n, fit.D
 
 
 
