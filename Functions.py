@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+
+def read_demo_ondri_data(drive, path):
+    ###########################################
+    # read in the cleaned data file for the HANNDS methods paper
+    # this woudl read in the elegible subejcts with demogrpahic data
+    # demodata = read_orig_clean_demo()
+    # Import data files - use this if file already created
+    demodata = pd.read_csv(drive + path + "OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
+
+    # merge dual diagonis - other MCI
+    demodata['COHORT'] = demodata['COHORT'].replace('MCI;CVD', 'CVD')
+    demodata['COHORT'] = demodata['COHORT'].replace('MCI;PD', 'PD')
+    demodata['COHORT'] = demodata['COHORT'].replace('AD;MCI', 'MCI')
+    # collapse AD MCI
+    demodata['COHORT'] = demodata['COHORT'].replace('AD', 'MCI')
+    demodata['COHORT'] = demodata['COHORT'].replace('MCI', 'AD/MCI')
+
+
+
+    return demodata
+
 def wake_sleep (sleep_data):
     #rules - wake
     # - earliest endTime on curr day that does have a sleep time start < 1 hr
@@ -170,7 +191,7 @@ def step_density_1min(steps, merged_daily):
         count = count+1
     return data
 
-def read_orig_clean_demo():
+def read_orig_fix_clean_demo():
     nimbal_dr = 'o:'
     new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 

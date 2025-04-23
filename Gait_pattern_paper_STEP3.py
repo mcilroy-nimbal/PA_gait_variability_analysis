@@ -6,7 +6,7 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_orig_clean_demo
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_orig_fix_clean_demo, read_demo_ondri_data
 from variability_analysis_functions import alpha_gini_index
 import numpy as np
 import seaborn as sns
@@ -14,7 +14,7 @@ import matplotlib.gridspec as gridspec
 import datetime
 import openpyxl
 
-bland = True
+bland = False
 gini = True
 plot_gini_steps = True
 plot_gini_groups = True
@@ -35,23 +35,23 @@ step_path = 'gait\\steps\\'
 daily_path = 'gait\\daily\\'
 sptw_path = 'sleep\\sptw\\'
 
+
+data_opt = pd.read_csv(summary_path + 'alpha_gini_bouts.csv')
+data_fixed = pd.read_csv(summary_path + 'alpha_gini_bouts_xmins.csv')
+
+#plt.plot (data_opt['gini_steps'], data_fixed['gini_steps'])
+plt.scatter(data_opt['gini_dur'], data_fixed['gini_dur'])
+plt.show()
+
+
+#gini_steps', 'alpha_steps', 'xmin_steps','fit_steps', 'gini_dur', 'alpha_dur','xmin_dur', 'fit_dur'
+
 if gini:
     ###########################################
     #read in the cleaned data file for the HANNDS methods paper
     nimbal_dr = 'o:'
     new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
-    #this woudl read in the elegible subejcts with demogrpahic data
-    #demodata = read_orig_clean_demo()
-    #Import data files - use this if file already created
-    demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
-
-    #merge dual diagonis - other MCI
-    demodata['COHORT'] = demodata['COHORT'].replace('MCI;CVD','CVD')
-    demodata['COHORT'] = demodata['COHORT'].replace('MCI;PD','PD')
-    demodata['COHORT'] = demodata['COHORT'].replace('AD;MCI','MCI')
-    #collapse AD MCI
-    demodata['COHORT'] = demodata['COHORT'].replace('AD','MCI')
-    demodata['COHORT'] = demodata['COHORT'].replace('MCI','AD/MCI')
+    demodata = read_demo_ondri_data(nimbal_dr, new_path)
 
     ########################################################
     # loop through each eligible subject
@@ -81,11 +81,11 @@ if gini:
             #by step number
             data = bouts['step_count']
             all_steps.extend(bouts['step_count'])
-            #g_steps, a_steps, xmin_steps, n_steps, fit_steps = alpha_gini_index (data, plot=False)
-            #demodata.at[index,'gini_steps'] = g_steps
-            #demodata.at[index, 'alpha_steps'] = a_steps
-            #demodata.at[index, 'xmin_steps'] = xmin_steps
-            #demodata.at[index, 'fit_steps'] = fit_steps
+            g_steps, a_steps, xmin_steps, n_steps, fit_steps = alpha_gini_index (data, plot=False, xmin=5)
+            demodata.at[index,'gini_steps'] = g_steps
+            demodata.at[index, 'alpha_steps'] = a_steps
+            demodata.at[index, 'xmin_steps'] = xmin_steps
+            demodata.at[index, 'fit_steps'] = fit_steps
             #by duration
             bouts['start'] = pd.to_datetime(bouts['start_time'])
             bouts['end'] = pd.to_datetime(bouts['end_time'])
@@ -93,13 +93,13 @@ if gini:
             # Calculate difference in seconds
             bouts['duration'] = (bouts['end'] - bouts['start']).dt.total_seconds()
             all_dur.extend(bouts['duration'].values.tolist())
-            #g_dur, a_dur, xmin_dur, n_dur , fit_dur = alpha_gini_index(bouts['duration'], plot=False)
-            #demodata.at[index, 'gini_dur'] = g_dur
-            #demodata.at[index, 'alpha_dur'] = a_dur
-            #demodata.at[index, 'xmin_dur'] = xmin_dur
-            #demodata.at[index, 'fit_dur'] = fit_dur
+            g_dur, a_dur, xmin_dur, n_dur , fit_dur = alpha_gini_index(bouts['duration'], plot=False, xmin=5)
+            demodata.at[index, 'gini_dur'] = g_dur
+            demodata.at[index, 'alpha_dur'] = a_dur
+            demodata.at[index, 'xmin_dur'] = xmin_dur
+            demodata.at[index, 'fit_dur'] = fit_dur
 
-    #demodata.to_csv(summary_path +'alpha_gini_bouts.csv')
+    demodata.to_csv(summary_path +'alpha_gini_bouts_xmins.csv')
     #all_df = pd.DataFrame({'steps': all_steps, 'dur': all_dur})
 
     #sns.histplot(x=all_steps, bins=100, kde=False)
@@ -114,7 +114,8 @@ if gini:
 
 if plot_gini_steps:
 
-    power_data = pd.read_csv(summary_path+'alpha_gini_bouts.csv')
+    power_data = pd.read_csv(summary_path+'alpha_gini_bouts_xmins.csv')
+    power_data = power_data.fillna('')
     power_data['m_subj'] = power_data['SUBJECT'].str.replace('_', '')
     bout_data = pd.read_csv(summary_path + 'steps_daily_bins.csv')
     bout_data['m_subj'] = bout_data['subj'].str.replace('_', '')

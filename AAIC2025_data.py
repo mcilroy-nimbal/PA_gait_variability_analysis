@@ -35,8 +35,8 @@ subj_sd = sd_by_subj.loc[sd_by_subj['sa_class'].isin(['Control', 'SuperAger'])]
 print (len(subj_med), len(subj_sd))
 
 save_file=False
-within_day=True
-all_subjs=False
+within_day=False
+all_subjs=True
 
 #################################
 #range of within day variability
@@ -65,15 +65,19 @@ if within_day:
             print(f"{var}:\t {t_stat:.3f},\t {p_value:.3f},\t {cohen_d:.3f}")
         # Controls subjects
         print("\r")
+        print ('CONTROL')
         table = df1.loc[df1['sa_class'] == 'Control']
         print(table[['sedentary', 'mvpa', 'total_steps', 'se_total', 'sleep_duration_total']].agg(['count', 'median', 'std']))
+        print('SUPERAGER')
         table = df1.loc[df1['sa_class'] == 'SuperAger']
         print(table[['sedentary', 'mvpa', 'total_steps', 'se_total', 'sleep_duration_total']].agg(['count', 'median', 'std']))
-
+        print('ALL')
+        print(df1[['sedentary', 'mvpa', 'total_steps', 'se_total', 'sleep_duration_total']].agg(['count', 'median', 'std']))
     print ('done')
 #All subjects
 if all_subjs:
     all_med_table = subj_med[['sedentary', 'mvpa','total_steps','se_total','sleep_duration_total']].agg(['count', 'median', 'std'])
+    print (all_med_table)
     #wear_table = df1[['ankle_wear_duration', 'wrist_wear_duration', 'chest_wear_duration']].agg(['count','median', 'std']).T
     #activity_table = subj_sum_sub1[['sedentary', 'light', 'mvpa']].agg(['count','median', 'std']).T
     #gait_table = subj_sum_sub1[['total_steps', 'bouted_steps', 'unbouted_steps','total_walking_duration']].agg(['count','median', 'std']).T
@@ -81,8 +85,8 @@ if all_subjs:
     #final_by_group_table = pd.concat([wear_table, activity_table, gait_table, sleep_table])
 
     #if save_file:
-        # Write to CSV file
-        #final_by_group_table.to_csv(drive + path + "AIC2025_data_ALL_median_results2.csv")
+    #    #Write to CSV file
+    #    final_by_group_table.to_csv(drive + path + "AIC2025_data_ALL_median_results2.csv")
 
     # Group data using groupby and extract values
     #groups = final_by_group_table.groupby('Group')['Value'].apply(list)
@@ -92,9 +96,9 @@ if all_subjs:
 
 
     #Controls subjects
-    controls = df1.loc[df1['sa_class'] == 'Control']
-    con_med_table = controls[['sedentary', 'mvpa', 'total_steps', 'se_total', 'sleep_duration_total']].agg(
-                        ['count', 'median', 'std'])
+    #controls = df1.loc[df1['sa_class'] == 'Control']
+    #con_med_table = controls[['sedentary', 'mvpa', 'total_steps', 'se_total', 'sleep_duration_total']].agg(
+    #                    ['count', 'median', 'std'])
     #wear_table = controls[['ankle_wear_duration', 'wrist_wear_duration', 'chest_wear_duration']].agg(['count','median', 'std']).T
     #activity_table = controls[['sedentary', 'light', 'mvpa']].agg(['count','median', 'std']).T
     #gait_table = controls[['total_steps', 'bouted_steps', 'unbouted_steps','total_walking_duration']].agg(['count','median', 'std']).T
@@ -105,9 +109,9 @@ if all_subjs:
         #final_controls.to_csv(drive + path + "AIC2025_data_CONTROL_median_results2.csv")
 
     #superagers
-    sa = df1.loc[df1['sa_class'] == 'SuperAger']
-    sa_med_table = sa[['sedentary', 'mvpa', 'total_steps', 'se_total', 'sleep_duration_total']].agg(
-        ['count', 'median', 'std'])
+    #sa = df1.loc[df1['sa_class'] == 'SuperAger']
+    #sa_med_table = sa[['sedentary', 'mvpa', 'total_steps', 'se_total', 'sleep_duration_total']].agg(
+    #    ['count', 'median', 'std'])
 
     #SA = subj_sum_sub1.loc[subj_sum_sub1['sa_class'] == 'SuperAger']
     #wear_table = SA[['ankle_wear_duration', 'wrist_wear_duration', 'chest_wear_duration']].agg(['count','mean', 'std']).T
