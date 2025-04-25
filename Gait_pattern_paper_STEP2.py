@@ -7,7 +7,7 @@ import glob
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_orig_clean_demo
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_demo_ondri_data
 import numpy as np
 import seaborn as sns
 import datetime
@@ -26,25 +26,7 @@ summary_path = nimbal_drive + paper_path + 'Summary_data\\'
 nimbal_dr = 'o:'
 new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 #Import data files - use this if file already created
-demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
-demodata['SUBJECT'] = demodata['SUBJECT'].astype(str).str.replace('_', '')
-#merge dual diagonis - other MCI
-demodata['COHORT'] = demodata['COHORT'].replace('MCI;CVD','CVD')
-demodata['COHORT'] = demodata['COHORT'].replace('MIC;PD','PD')
-demodata['COHORT'] = demodata['COHORT'].replace('AD;MCI','MCI')
-#collapse AD MCI
-demodata['COHORT'] = demodata['COHORT'].replace('AD','MCI')
-demodata['COHORT'] = demodata['COHORT'].replace('MCI','AD/MCI')
-
-#nimbaldata$ / OND09(HANDDS - ONT) / HANDDS methods paper data / HANDDS Methods Paper - Data Cleaning and Analysis Methods.docx
-#persons self report vereus clincian - so we need to be careful
-
-#select subset
-#loop through disease cohorts
-#demodata['COHORT']
-#demodata['AGE']
-#demodata['SEX']
-#demodata['MRTL_STATUS']
+demodata = read_demo_ondri_data(nimbal_drive, new_path)
 
 #reads bout file as well
 bouts_all = pd.read_csv(summary_path + 'steps_daily_bins.csv')

@@ -135,8 +135,8 @@ def steps_by_day (summary, steps, merged_daily, subject, visit, bin_list, group)
         # steps within each bout bin
         # create bout_bin (steps within bouts - from the step file) - set the bout windws
         #bow windows passed as list and also names the bout_bins header
-        bout_bin = bout_bins(all, bin_list)
-        summary.loc[len(all)] = [subject, visit, curr_day, wear, group,total_steps, *bout_bin]
+        bout_bin, not_bouted = bout_bins(all, bin_list)
+        summary.loc[len(all)] = [subject, visit, curr_day, wear, group,total_steps, not_bouted, *bout_bin]
 
     return summary
 
@@ -149,21 +149,25 @@ def bout_bins (data, bin_list):
     for i in unique_bouts:
         temp = data[data['gait_bout_num'] == i]
         bout_len = len(temp)
-        #loop through bin_list
-        for j in range(len(bin_list)):
-            #set start (st) and end (end)
-            if j == 0:
-                st = -1
-            else:
-                st = bin_list[j-1]
-            end = bin_list[j]
-            #figure out where the bout_length fits into the bin_list
-            if bout_len > st and bout_len <= end:
-                bout_bin[j] += bout_len
-        #chaeck the last bin outside the loop - is it greater than that last bin_list value
-        if bout_len > bin_list[j]:
-            bout_bin[j+1] += bout_len
-    return bout_bin
+        if i == 0:
+            nbouted = bout_len
+        else:
+            #loop through bin_list
+            for j in range(len(bin_list)):
+                #set start (st) and end (end)
+                if j == 0:
+                    st = -1
+                else:
+                    st = bin_list[j-1]
+                end = bin_list[j]
+                #figure out where the bout_length fits into the bin_list
+                if bout_len > st and bout_len <= end:
+                    bout_bin[j] += bout_len
+            #check the last bin outside the loop - is it greater than that last bin_list value
+            if bout_len > bin_list[j]:
+                bout_bin[j+1] += bout_len
+
+    return bout_bin, nbouted
 
 def step_density_1min(steps, merged_daily):
 

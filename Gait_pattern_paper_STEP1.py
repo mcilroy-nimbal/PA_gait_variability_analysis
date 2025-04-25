@@ -6,7 +6,7 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_orig_clean_demo
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_demo_ondri_data
 import numpy as np
 import seaborn as sns
 import datetime
@@ -40,10 +40,7 @@ nimbal_dr = 'o:'
 new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 
 #this woudl read in the elegible subejcts with demogrpahic data
-#demodata = read_orig_clean_demo()
-
-#Import data files - use this if file already created
-demodata = pd.read_csv(nimbal_dr+new_path+"OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
+demodata = read_demo_ondri_data(nimbal_dr, new_path)
 
 
 ########################################################
@@ -88,7 +85,7 @@ for k in range(len(bin_list)):
     str_bin_list.append(new)
 last = '>_' + str(bin_list[len(bin_list)-1])
 str_bin_list.append(last)
-header = ['subj','visit','date','wear', 'group', 'total']
+header = ['subj','visit','date','wear', 'group', 'total', 'not_bouted']
 header.extend(str_bin_list)
 
 #create blank panda dataframe for summary data
@@ -147,7 +144,7 @@ for j, subject in enumerate(master_subj_list):
     #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_1min_density.csv')
 
 # write bins file summary
-summary.to_csv(summary_path + 'steps_daily_bins.csv', index=False)
+summary.to_csv(summary_path + 'steps_daily_bins_with_unbouted.csv', index=False)
 log_file.close()
 print('done')
 

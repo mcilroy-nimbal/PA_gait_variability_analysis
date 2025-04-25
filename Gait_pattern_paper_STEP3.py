@@ -15,7 +15,7 @@ import datetime
 import openpyxl
 
 bland = False
-gini = True
+gini = False
 plot_gini_steps = True
 plot_gini_groups = True
 
@@ -36,32 +36,43 @@ daily_path = 'gait\\daily\\'
 sptw_path = 'sleep\\sptw\\'
 
 
-data_opt = pd.read_csv(summary_path + 'alpha_gini_bouts.csv')
-data_fixed = pd.read_csv(summary_path + 'alpha_gini_bouts_xmins.csv')
-
-#plt.plot (data_opt['gini_steps'], data_fixed['gini_steps'])
-plt.scatter(data_opt['gini_dur'], data_fixed['gini_dur'])
-plt.show()
-
-
+#data_opt = pd.read_csv(summary_path + 'alpha_gini_bouts.csv')
+#data_fixed = pd.read_csv(summary_path + 'alpha_gini_bouts_xmins.csv')
 #gini_steps', 'alpha_steps', 'xmin_steps','fit_steps', 'gini_dur', 'alpha_dur','xmin_dur', 'fit_dur'
 
+###########################################
+#read in the cleaned data file for the HANNDS methods paper
+nimbal_dr = 'o:'
+new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
+demodata = read_demo_ondri_data(nimbal_dr, new_path)
+
+
+#gini runs
+bouts_not_density = True #if using bout data TRUE else False for density
+bout_step = False # if using n steps in bout - False if using duration
+set_xmin = -1 #-1 if no setting of XMIN
+
+if bouts_not_density:
+    source = 'bouts'
+    if bout_step:
+        type = 'nsteps'
+    else:
+        type = 'duration'
+else:
+    source = 'density'
+    type = 'min'
+
+
 if gini:
-    ###########################################
-    #read in the cleaned data file for the HANNDS methods paper
-    nimbal_dr = 'o:'
-    new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
-    demodata = read_demo_ondri_data(nimbal_dr, new_path)
 
     ########################################################
     # loop through each eligible subject
     # File the time series in a paper specific forlder?
     #extract on a few variabels from the demo
 
-    demodata = demodata[['SUBJECT','COHORT','AGE']]
-    demodata['gini_steps', 'alpha_steps', 'xmin_steps','fit_steps', 'gini_dur', 'alpha_dur','xmin_dur', 'fit_dur'] = None
-    all_steps=[]
-    all_dur=[]
+    demodata = demodata[['SUBJECT','COHORT','AGE', 'EMPLOY_STATUS']]
+    demodata['gini', 'alpha', 'xmin','fits', 'npts'] = None
+
     for index, row in demodata.iterrows():
         print(f'\rFind subjs - Progress: {index}' + ' of ' + str(len(demodata)), end='', flush=True)
         #remove the underscoe that is in the subject code from the demodata file
@@ -69,64 +80,158 @@ if gini:
         parts = row['SUBJECT'].split('_', 2)  # Split into at most 3 parts
         if len(parts) == 3:
             subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
-
             visit = '01'
-            #get step data for subject
-            try:
-                bouts = pd.read_csv(path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv')
-                ''' study_code, subject_id, coll_id, gait_bout_num, start_time, end_time, step_count'''
-            except:
-                #log_file.write('Steps file not found - Subject: '+subject+ '\n')
-                continue
-            #by step number
-            data = bouts['step_count']
-            all_steps.extend(bouts['step_count'])
-            g_steps, a_steps, xmin_steps, n_steps, fit_steps = alpha_gini_index (data, plot=False, xmin=5)
-            demodata.at[index,'gini_steps'] = g_steps
-            demodata.at[index, 'alpha_steps'] = a_steps
-            demodata.at[index, 'xmin_steps'] = xmin_steps
-            demodata.at[index, 'fit_steps'] = fit_steps
-            #by duration
-            bouts['start'] = pd.to_datetime(bouts['start_time'])
-            bouts['end'] = pd.to_datetime(bouts['end_time'])
 
-            # Calculate difference in seconds
-            bouts['duration'] = (bouts['end'] - bouts['start']).dt.total_seconds()
-            all_dur.extend(bouts['duration'].values.tolist())
-            g_dur, a_dur, xmin_dur, n_dur , fit_dur = alpha_gini_index(bouts['duration'], plot=False, xmin=5)
-            demodata.at[index, 'gini_dur'] = g_dur
-            demodata.at[index, 'alpha_dur'] = a_dur
-            demodata.at[index, 'xmin_dur'] = xmin_dur
-            demodata.at[index, 'fit_dur'] = fit_dur
+            if bouts_not_density:
+                #get step data for subject
+                try:
+                    bouts = pd.read_csv(path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv')
+                    ''' study_code, subject_id, coll_id, gait_bout_num, start_time, end_time, step_count'''
+                except:
+                    #log_file.write('Steps file not found - Subject: '+subject+ '\n')
+                    continue
+                if bout_step:
+                    #by step number
+                    data = bouts['step_count']
+                else:
+                    #by duration
+                    bouts['start'] = pd.to_datetime(bouts['start_time'])
+                    bouts['end'] = pd.to_datetime(bouts['end_time'])
+                    # Calculate difference in seconds
+                    data = (bouts['end'] - bouts['start']).dt.total_seconds()
 
-    demodata.to_csv(summary_path +'alpha_gini_bouts_xmins.csv')
-    #all_df = pd.DataFrame({'steps': all_steps, 'dur': all_dur})
+            else:
+                #FIND ALL THE DENSITY FIELS THAT MACTH
+                #read in density and append to one array
+                #use that data for gini
+                try:
+                    #subejct has hyphen between OND)( and subj in this file name
+                    density = pd.read_csv(summary_path+'density\\'+ subject + '_' + visit + '_1min_density.csv')
 
-    #sns.histplot(x=all_steps, bins=100, kde=False)
-    #drop strides <5
-    #all_steps = [x for x in all_steps if x >= 4]
-    #plt.hist(all_steps, bins=200)
-    #plt.show()
-    #all_steps = [x for x in all_steps if x >= 10]
-    #sns.histplot(x=all_dur, bins=200, kde=False)
-    #plt.show()
+                except:
+                    #log_file.write('Steps file not found - Subject: '+subject+ '\n')
+                    continue
+                #mergae all the data columns to one array and remove zeros
+                data = density.to_numpy().flatten()
+                data = data[data != 0]
+
+            if set_xmin == -1:
+                gini_val, alpha_val, xmin_val, n_val, fit_val = alpha_gini_index (data, plot=False)
+            else:
+                gini_val, alpha_val, xmin_val, n_val, fit_val = alpha_gini_index(data, plot=False, xmin=set_xmin)
+
+            demodata.at[index,'gini'] = gini_val
+            demodata.at[index, 'alpha'] = alpha_val
+            demodata.at[index, 'xmin'] = xmin_val
+            demodata.at[index, 'fit'] = fit_val
+            demodata.at[index, 'npts'] = n_val
+
+    demodata.to_csv(summary_path +'alpha_gini_'+source+'_'+type+'.csv')
 
 
 if plot_gini_steps:
 
-    power_data = pd.read_csv(summary_path+'alpha_gini_bouts_xmins.csv')
+    power_data = pd.read_csv(summary_path + 'alpha_gini_bouts_duration.csv')
+    #power_data = pd.read_csv(summary_path+'alpha_gini_bouts_nsteps.csv')
+
     power_data = power_data.fillna('')
     power_data['m_subj'] = power_data['SUBJECT'].str.replace('_', '')
     bout_data = pd.read_csv(summary_path + 'steps_daily_bins.csv')
     bout_data['m_subj'] = bout_data['subj'].str.replace('_', '')
-    all_data = pd.merge(power_data, bout_data, on='m_subj', how='inner')
-    print ('merged')
-    #left_on='subject_id', right_on='participant_id',
+    bout_short = bout_data[['m_subj','total']]
+    subject_sum = bout_short.groupby('m_subj').sum().reset_index()
+    subject_n = bout_short.groupby('m_subj').size().reset_index()
+    subject_n.columns.values[1] = 'n'
+    bout_short = pd.merge(subject_n, subject_sum, on='m_subj')
+    bout_short['total/day'] = bout_short['total']/bout_short['n']
+    all_data = pd.merge(power_data, bout_short, on='m_subj', how='inner')
+    med_gini = all_data['gini'].median()
+    med_steps = all_data['total/day'].median()
+    conditions = [(all_data['gini'] >= med_gini) & (all_data['total/day'] >= med_steps),
+                (all_data['gini'] >= med_gini) & (all_data['total/day'] < med_steps),
+                (all_data['gini'] < med_gini) & (all_data['total/day'] >= med_steps),
+                (all_data['gini'] < med_gini) & (all_data['total/day'] < med_steps)]
+
+    # Define category labels
+    categories = ['Long bouts - Many steps','Long bouts - Few steps',
+                  'Short bouts - Many steps','Short bouts - Few steps']
+
+    # Create new column
+    all_data['accum_bin'] = np.select(conditions, categories, default='Unknown')
+
+    sns.scatterplot(data=all_data, x='npts', y='gini', hue='COHORT', palette='Set2')
+    #plt.axvline(x=med_steps, color='black', linestyle='--', linewidth=0.5)
+    #plt.axhline(y=med_gini, color='black', linestyle='--', linewidth=0.5)
+
+    plt.title("Number of bouts versus Gini Index")
+    plt.xlabel("Steps")
+    plt.ylabel("Gini")
+    plt.legend(title='Category')
+    plt.show()
+
+    # Set axis limits for consistency across subplots
+    xlim = (0, all_data['total/day'].max())
+    ylim = (0,1)
+
+    # Create subplots: one for each category
+    categories = all_data['COHORT'].unique()
+    fig, axes = plt.subplots(nrows=1, ncols=len(categories), figsize=(12, 4), sharex=True, sharey=True)
+
+    # If only one category, axes will not be an array, so handle that case
+    if len(categories) == 1:
+        axes = [axes]
+
+    # Loop through each category and create a scatter plot
+    for ax, category in zip(axes, categories):
+        # Filter data by category
+        category_data = all_data[all_data['COHORT'] == category]
+
+        # Plot scatter
+        ax.scatter(category_data['total/day'], category_data['gini'], label=category, color='blue')
+
+        # Add vertical and horizontal lines for each point in the category
+        for _, row in category_data.iterrows():
+            ax.axvline(x=med_steps, color='black', linestyle='--', linewidth=0.5)
+            ax.axhline(y=med_gini, color='black', linestyle='--', linewidth=0.5)
+
+        # Set title and axis labels
+        ax.set_title(f"Category: {category}")
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.set_xlabel("Steps/day")
+        ax.set_ylabel("Gini index")
+
+        # Optional: add a legend
+        ax.legend()
+
+    # Final touch
+    plt.suptitle("Scatter Plots by Category", y=1.05)
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+    fig, axs = plt.subplots(1, 3, figsize=(12, 12))
+    axs[0, 1].scatter(all_data['total'], all_data['gini_steps'], color='black', label='steps')
+    axs[0, 1].set_title('Gini versus total steps')
+    axs[0, 1].set_xlabel = ('Total steps')
+    axs[0, 1].set_ylabel = ('Gini')
+    axs[0, 1].legend()
+
+
+
+
+
+
+
+
 
     fig, axs = plt.subplots(3,3, figsize=(12,12))
 
     axs[0,0].hist(all_data['gini_steps'], bins=15, alpha=0.6, label='Step #', color='blue', edgecolor='black')
-    axs[0,0].hist(all_data['gini_dur'], bins=15, alpha=0.6, label='Duration', color='orange', edgecolor='black')
     axs[0,0].set_title('Gini index (steps and duration)')
     axs[0,0].set_xlabel=('Gini Index')
     axs[0,0].set_ylabel = ('Frequency')
