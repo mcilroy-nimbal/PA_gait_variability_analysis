@@ -145,16 +145,29 @@ if plot_gini_steps:
     bout_short = pd.merge(subject_n, subject_sum, on='m_subj')
     bout_short['total/day'] = bout_short['total']/bout_short['n']
     all_data = pd.merge(power_data, bout_short, on='m_subj', how='inner')
+
     med_gini = all_data['gini'].median()
     med_steps = all_data['total/day'].median()
+
+    '''
     conditions = [(all_data['gini'] >= med_gini) & (all_data['total/day'] >= med_steps),
                 (all_data['gini'] >= med_gini) & (all_data['total/day'] < med_steps),
                 (all_data['gini'] < med_gini) & (all_data['total/day'] >= med_steps),
                 (all_data['gini'] < med_gini) & (all_data['total/day'] < med_steps)]
-
     # Define category labels
     categories = ['Long bouts - Many steps','Long bouts - Few steps',
                   'Short bouts - Many steps','Short bouts - Few steps']
+    '''
+    conditions = [(all_data['AGE'] < 55),
+                  (all_data['AGE'] >= 55) & (all_data['AGE'] < 65),
+                  (all_data['AGE'] >= 65) & (all_data['AGE'] < 70),
+                  (all_data['AGE'] >= 70) & (all_data['AGE'] < 75),
+                  (all_data['AGE'] >= 75) & (all_data['AGE'] < 80),
+                  (all_data['AGE'] >= 80) & (all_data['AGE'] < 90),
+                  (all_data['AGE'] > 90)]
+
+    # Define category labels
+    categories = ['<55', '55-65', '65-70','70-75', '75-80','80-90', '>90']
 
     # Create new column
     all_data['accum_bin'] = np.select(conditions, categories, default='Unknown')
