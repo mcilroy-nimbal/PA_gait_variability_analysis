@@ -187,7 +187,23 @@
       <option name="project" value="LOCAL" />
       <updated>1745413051495</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1745595734553</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1745595734553</updated>
+    </task>
+    <task id="LOCAL-00018" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1745598464219</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1745598464219</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -215,53 +231,43 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP1.py</url>
-          <line>240</line>
+          <line>237</line>
           <option name="timeStamp" value="62" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP1.py</url>
-          <line>242</line>
+          <line>239</line>
           <option name="timeStamp" value="72" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP1.py</url>
-          <line>158</line>
+          <line>155</line>
           <option name="timeStamp" value="73" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP1.py</url>
-          <line>149</line>
-          <option name="timeStamp" value="116" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP2.py</url>
-          <line>230</line>
+          <line>212</line>
           <option name="timeStamp" value="160" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP2.py</url>
-          <line>175</line>
+          <line>157</line>
           <option name="timeStamp" value="163" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP2.py</url>
-          <line>276</line>
+          <line>258</line>
           <option name="timeStamp" value="165" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP3.py</url>
-          <line>114</line>
-          <option name="timeStamp" value="192" />
+          <line>229</line>
+          <option name="timeStamp" value="217" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP3.py</url>
-          <line>104</line>
-          <option name="timeStamp" value="193" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP3.py</url>
-          <line>48</line>
-          <option name="timeStamp" value="194" />
+          <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP1.py</url>
+          <line>148</line>
+          <option name="timeStamp" value="222" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

@@ -43,11 +43,11 @@ bouts_all['subj'] = bouts_all['subj'].astype(str).str.replace('_', '')
 
 
 gait_bout = False
-write_density = False
+write_density = True
 plot_density_summary = False
 plot_density_raw = False
 plot_demo = False
-run_variability_bouts = True
+run_variability_bouts = False
 
 if plot_demo:
     bins = [20, 30, 40, 50, 60, 70, 80, 90, 100]

@@ -15,7 +15,7 @@ import datetime
 import openpyxl
 
 bland = False
-gini = False
+gini = True
 plot_gini_steps = True
 plot_gini_groups = True
 
@@ -48,7 +48,7 @@ demodata = read_demo_ondri_data(nimbal_dr, new_path)
 
 
 #gini runs
-bouts_not_density = True #if using bout data TRUE else False for density
+bouts_not_density = False #if using bout data TRUE else False for density
 bout_step = False # if using n steps in bout - False if using duration
 set_xmin = -1 #-1 if no setting of XMIN
 
@@ -113,20 +113,29 @@ if gini:
                     continue
                 #mergae all the data columns to one array and remove zeros
                 data = density.to_numpy().flatten()
-                data = data[data != 0]
+                #data = data[data != 0]
 
-            if set_xmin == -1:
-                gini_val, alpha_val, xmin_val, n_val, fit_val = alpha_gini_index (data, plot=False)
-            else:
-                gini_val, alpha_val, xmin_val, n_val, fit_val = alpha_gini_index(data, plot=False, xmin=set_xmin)
+            #plt.hist(data, bins=30, alpha=0.5, density=True)
+            sns.kdeplot(data, fill=False, bw_adjust=0.01)
 
-            demodata.at[index,'gini'] = gini_val
-            demodata.at[index, 'alpha'] = alpha_val
-            demodata.at[index, 'xmin'] = xmin_val
-            demodata.at[index, 'fit'] = fit_val
-            demodata.at[index, 'npts'] = n_val
+            #if set_xmin == -1:
+            #    gini_val, alpha_val, xmin_val, n_val, fit_val = alpha_gini_index (data, plot=False)
+            #else:
+            #    gini_val, alpha_val, xmin_val, n_val, fit_val = alpha_gini_index(data, plot=False, xmin=set_xmin)
 
-    demodata.to_csv(summary_path +'alpha_gini_'+source+'_'+type+'.csv')
+            #demodata.at[index,'gini'] = gini_val
+            #demodata.at[index, 'alpha'] = alpha_val
+            #demodata.at[index, 'xmin'] = xmin_val
+            #demodata.at[index, 'fit'] = fit_val
+            #demodata.at[index, 'npts'] = n_val
+
+    plt.title('Overlayed Distributions')
+    plt.xlabel('Density steps/min -no zeros')
+    plt.ylabel('Density')
+    #plt.legend()
+    #plt.grid(True)
+    plt.show()
+    #demodata.to_csv(summary_path +'alpha_gini_'+source+'_'+type+'.csv')
 
 
 if plot_gini_steps:

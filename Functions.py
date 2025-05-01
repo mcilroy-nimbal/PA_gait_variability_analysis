@@ -169,7 +169,7 @@ def bout_bins (data, bin_list):
 
     return bout_bin, nbouted
 
-def step_density_1min(steps, merged_daily):
+def step_density_sec(steps, merged_daily, time_sec):
 
     # loop through days
     header_days = [f'day_{i + 1}' for i in range(len(merged_daily))]
@@ -185,9 +185,10 @@ def step_density_1min(steps, merged_daily):
         time = pd.to_datetime(all['step_time']).dt.time
         all['time_sec'] = time.apply(lambda t: t.hour * 3600 + t.minute * 60 + t.second)
         min_array = []
-        for step in range(1440):
-            start = step * 60
-            end = (step+1) * 60
+        full_range= int(1440 * 60 / time_sec)
+        for step in range(full_range):
+            start = step * time_sec
+            end = (step+1) * time_sec
             sub = all[(all['time_sec'] > start) & (all['time_sec'] <= end)]
             min_array.append(len(sub))
         data[header_days[count]] = min_array

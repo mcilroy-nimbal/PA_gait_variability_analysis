@@ -6,7 +6,7 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_demo_ondri_data
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_sec,read_demo_ondri_data
 import numpy as np
 import seaborn as sns
 import datetime
@@ -140,12 +140,13 @@ for j, subject in enumerate(master_subj_list):
 
     ##############################################################
     #runs density function for each subejct and day
-    #data = step_density_1min(steps, merged_daily)
-    #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_1min_density.csv')
+    time_sec=15
+    data = step_density_sec(steps, merged_daily, time_sec)
+    data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density.csv')
 
 # write bins file summary
-summary.to_csv(summary_path + 'steps_daily_bins_with_unbouted.csv', index=False)
-log_file.close()
+#summary.to_csv(summary_path + 'steps_daily_bins_with_unbouted.csv', index=False)
+#log_file.close()
 print('done')
 
 
