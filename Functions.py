@@ -185,7 +185,7 @@ def step_density_sec(steps, merged_daily, time_sec):
         time = pd.to_datetime(all['step_time']).dt.time
         all['time_sec'] = time.apply(lambda t: t.hour * 3600 + t.minute * 60 + t.second)
         min_array = []
-        full_range= int(1440 * 60 / time_sec)
+        full_range= int(86400 / time_sec)
         for step in range(full_range):
             start = step * time_sec
             end = (step+1) * time_sec
