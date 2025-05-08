@@ -191,7 +191,8 @@ def step_density_sec(steps, merged_daily, time_sec):
             end = (step+1) * time_sec
             sub = all[(all['time_sec'] > start) & (all['time_sec'] <= end)]
             min_array.append(len(sub))
-        data[header_days[count]] = min_array
+        data[header_days[count]] = [curr_day] + min_array
+
         #print ('Total - '+ header_days[count] + ':  '+str(sum(min_array)))
         count = count+1
     return data
@@ -248,3 +249,32 @@ def read_orig_fix_clean_demo():
 
     demodata.to_csv(nimbal_dr+new_path+'OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv', index=False)
     return demodata
+
+def summary_density_bins(data):
+    # set frequency of bins that meet cut points
+    zero_tot = np.sum(data == 0)
+    vlow_tot = np.sum((data > 0) & (data <= 5))
+    low_tot = np.sum((data > 5) & (data <= 20))
+    med_tot = np.sum((data > 20) & (data <= 40))
+    high_tot = np.sum(data > 40)
+
+    long_thresh = 40
+    long = data > long_thresh
+    padded = np.pad(long.astype(int), (1, 1), mode='constant')
+    diff = np.diff(padded)
+    starts = np.where(diff == 1)[0]
+    stops = np.where(diff == -1)[0]
+    total = []
+    bout_3 = 0
+    bout_3_dur = 3
+    bout_10 = 0
+    bout_10_dur = 10
+    for s, e in zip(starts, stops):
+        if e-s >= bout_3_dur:
+            bout_3 += 1
+        if e-s >= bout_10_dur:
+            bout_10 += 1
+
+    out_tot = [len(data), zero_tot, vlow_tot, low_tot, med_tot, high_tot, bout_3, bout_10]
+    return out_tot
+

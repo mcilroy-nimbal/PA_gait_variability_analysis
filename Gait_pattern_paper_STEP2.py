@@ -7,7 +7,7 @@ import glob
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_demo_ondri_data
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_sec,read_demo_ondri_data
 import numpy as np
 import seaborn as sns
 import datetime

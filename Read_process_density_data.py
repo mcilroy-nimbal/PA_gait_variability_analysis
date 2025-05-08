@@ -5,7 +5,8 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_sec,read_orig_fix_clean_demo, read_demo_ondri_data
+from Functions import (wake_sleep, bout_bins, steps_by_day, step_density_sec,read_orig_fix_clean_demo,
+                       read_demo_ondri_data, summary_density_bins)
 from variability_analysis_functions import alpha_gini_index
 import numpy as np
 import seaborn as sns
@@ -17,7 +18,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import gaussian_kde
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-
+import nolds
 
 
 #set up paths
@@ -50,7 +51,7 @@ set_xmin = -1 #-1 if no setting of XMIN
 
 source = 'density'
 type = 'min'
-dur_type ='1min'
+dur_type ='60sec'
 #dur_type ='15sec'
 
 ########################################################
@@ -60,12 +61,17 @@ dur_type ='1min'
 demodata = demodata[['SUBJECT','COHORT','AGE', 'EMPLOY_STATUS']]
 demodata['gini', 'alpha', 'xmin','fits', 'npts'] = None
 
+density_header = ['SUBJECT','COHORT','AGE', 'EMPLOY_STATUS', 'day', 'n_steps', 'DFA-alpha','Sample-entropy', 'n_total', 'zero_total', 'vlow_total', 'low_total', 'med_total', 'high_total', 'bout_3min', 'bout_10mn']
+density_sum = pd.DataFrame(columns=density_header)
+
+
 #with PdfPages(summary_path+'\\all_total_1min.pdf') as pdf:
 
 kde_x = np.linspace(0, 80, 100)
 kdes = []
 ages = []
 cohorts = []
+
 
 for index, row in demodata.iterrows():
     print(f'\rFind subjs - Progress: {index}' + ' of ' + str(len(demodata)), end='', flush=True)
@@ -79,7 +85,7 @@ for index, row in demodata.iterrows():
 
         #FIND ALL THE DENSITY FIELS THAT MACTH
         #read in density and append to one array
-        #use that data for gini
+
         try:
             #subejct has hyphen between OND)( and subj in this file name
             density = pd.read_csv(summary_path+'density\\'+ subject + '_' + visit + '_'+ dur_type+'_density.csv')
@@ -90,76 +96,56 @@ for index, row in demodata.iterrows():
 
         #loop through
         density = density.iloc[:,1:]
-        density = density[density != 0]
 
         #fig = plt.figure(figsize=(12, 6))
 
-        #for i, col in enumerate(density.columns):
+        # by day
+        signal_long = []
+        for i, col in enumerate(density.columns):
 
-        #    signal = density[col].values
-        #    signal = signal[~np.isnan(signal)]
-        #    kde = gaussian_kde(signal, bw_method='scott')
-        #    kdes.append()
-        #    plt.plot(kde_x, kde(kde_x))
+            curr_day = density.loc[0,col]
+            signal = density.loc[1:,col].values
+            signal = list(map(int, signal))
+            signal = np.array(signal)
+            total = sum(signal)
+            #signal = signal[~np.isnan(signal)]
+            #sum densoity across bins (each day)
+            sum_density = summary_density_bins(signal)
+            sum_density = [int(v) for v in sum_density]
+
+            #DFA for the day acvitites
+            alpha = float(nolds.dfa(signal))
+
+            #Sample entropy
+            apen = nolds.sampen(signal)
+
+            add_row = [subject,  row['COHORT'], row['AGE'], row['EMPLOY_STATUS'], curr_day, float(total),
+                       float(round(alpha,4)), float(round(apen,4))] + sum_density
+            density_sum.loc[len(density_sum)] = add_row
+            signal_long.extend(signal)
+
 
         #mergae all the data columns to one array and remove zeros
-        data = density.to_numpy().flatten()
-        data = data[~np.isnan(data)]
-        kde = gaussian_kde(data, bw_method='scott')
-        kde_values = kde(kde_x)
-        kdes.append(kde_values)
-        ages.append(row['AGE'])
-        cohorts.append(row['COHORT'])
-        #plt.plot(kde_x, kde(kde_x), color='black', linewidth='3')
-        #plt.title('Subj: '+str(row['SUBJECT']) +'  Cohort: '+str(row['COHORT'])+' Age: '+str(row['AGE']))
-        #plt.ylim(0, 0.2)
-        #pdf.savefig()  # Save to PDF
-        #plt.close()
-        #plt.show()
+        #density = density.iloc[1:,1:]
 
-cohorts = np.array(cohorts)
-ages = np.array(ages)
-kdes = np.array(kdes)  # Shape: (n_samples, len(x_grid))
+        #data = density.to_numpy().flatten(order='F')
+        signal_long = list(map(int, signal_long))
+        signal_long = np.array(signal_long)
+        total = sum(signal_long)
 
-# Step 3: Normalize
-scaler = StandardScaler()
-kdes_scaled = scaler.fit_transform(kdes)
+        # DFA for the ALL data
+        alpha = float(nolds.dfa(signal_long))
+        # Sample entropy
+        apen = nolds.sampen(signal_long)
 
-# Step 4: Cluster with KMeans
-kmeans = KMeans(n_clusters=3, random_state=0)
-labels = kmeans.fit_predict(kdes_scaled)
+        #summaize total across bin sizes
+        sum_density = summary_density_bins(signal_long)
+        sum_density = [int(v) for v in sum_density]
+        add_row = [subject, row['COHORT'], row['AGE'], row['EMPLOY_STATUS'], 'all', float(total),
+                   float(round(alpha, 4)), float(round(apen, 4))] + sum_density
+        density_sum.loc[len(density_sum)] = add_row
 
-# Step 4: Plot subplots
-unique_labels = np.unique(labels)
-n_clusters = len(unique_labels)
+#write sumamry data to
+summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+density_sum.to_csv(summary_path+'density_summary_v3.csv', index=False)
 
-fig, axes = plt.subplots(n_clusters, 1, figsize=(8, 4 * n_clusters), sharex=True)
-
-if n_clusters == 1:
-    axes = [axes]  # Ensure axes is iterable
-
-for idx, cluster_id in enumerate(unique_labels):
-    ax = axes[idx]
-    indices = np.where(labels == cluster_id)[0]
-
-    nsubj = len(indices)
-    age = ages[indices].mean()
-    cohort = cohorts[indices]
-    unique_vals, counts = np.unique(cohort, return_counts=True)
-    plt_head = 'n: '+str(nsubj)+' Age: '+ str(round(age,1))
-    for val, count in zip(unique_vals, counts):
-        plt_head = plt_head + '  Grp: '+ val + '% '+str(round(100 * count / nsubj,1))
-
-    for i in indices:
-        ax.plot(kde_x, kdes[i], alpha=0.7)
-
-    ax.set_title(plt_head)
-    ax.set_ylabel("Density")
-    ax.grid(True)
-    ax.legend()
-
-axes[-1].set_xlabel("x")  # Label bottom subplot x-axis
-plt.tight_layout()
-plt.show()
-
-print ('pause')

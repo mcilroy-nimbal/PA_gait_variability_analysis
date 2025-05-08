@@ -6,7 +6,7 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_1min,read_orig_fix_clean_demo, read_demo_ondri_data
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_sec,read_orig_fix_clean_demo, read_demo_ondri_data
 from variability_analysis_functions import alpha_gini_index
 import numpy as np
 import seaborn as sns
@@ -35,10 +35,10 @@ step_path = 'gait\\steps\\'
 daily_path = 'gait\\daily\\'
 sptw_path = 'sleep\\sptw\\'
 
-
 #data_opt = pd.read_csv(summary_path + 'alpha_gini_bouts.csv')
 #data_fixed = pd.read_csv(summary_path + 'alpha_gini_bouts_xmins.csv')
 #gini_steps', 'alpha_steps', 'xmin_steps','fit_steps', 'gini_dur', 'alpha_dur','xmin_dur', 'fit_dur'
+
 
 ###########################################
 #read in the cleaned data file for the HANNDS methods paper
@@ -129,7 +129,7 @@ if gini:
             #demodata.at[index, 'fit'] = fit_val
             #demodata.at[index, 'npts'] = n_val
 
-    plt.title('Overlayed Distributions')
+    2
     plt.xlabel('Density steps/min -no zeros')
     plt.ylabel('Density')
     #plt.legend()

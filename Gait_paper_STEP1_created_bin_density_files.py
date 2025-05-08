@@ -1,6 +1,6 @@
 #THIS CODE: CREATES BIN FILES AND DENSITY DATA FROM ELIGIBLE SUBJECTS
 #Output Files locate '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'Summary_data\\''
-#THIS DATA IS THEN USED IN STEP2 analysis
+
 
 import pandas as pd
 import glob
@@ -140,7 +140,7 @@ for j, subject in enumerate(master_subj_list):
 
     ##############################################################
     #runs density function for each subejct and day
-    time_sec=15
+    time_sec=60
     data = step_density_sec(steps, merged_daily, time_sec)
     data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density.csv')
 
