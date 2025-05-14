@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 # Sample summary table
 def table_plot(summary_table):
@@ -24,14 +25,62 @@ def table_plot(summary_table):
     # Show plot
     plt.show()
 
+def plot_density_raw (summary_path, files, bouts_all, demodata):
+    # bout density data
+    # plot density summary file
+    data_path = summary_path+'density\\'
+
+    count = 0
+    plt.rcParams.update({'font.size': 14})
+    fig, ax = plt.subplots(figsize=(10,6))
+    time = np.linspace(1, 1440, 1440)
+
+    for index, file in enumerate(files):
+        #print(f'\rSubj #: {index}' + ' of ' + str(len(files)), end='', flush=True)
+        parts = file.split('_')
+        subj = parts[0] + parts[1]
+
+        #cohort = demodata.loc[demodata['SUBJECT'] == subj, 'COHORT'].values[0]
+        #age = demodata.loc[demodata['SUBJECT'] == subj, 'AGE'].values[0]
+
+        #sub_set = bouts_all[bouts_all['subj'] == subj]
+        #n_days = len(sub_set)
+        #tot_steps = sub_set['total'].sum()
+        #tot_steps_day = tot_steps / n_days
+
+        print(f'\rSubj #: {subj} - {index} of ' + str(len(files)), end='', flush=True)
+        subj_density = pd.read_csv(data_path+file)
+        del subj_density[subj_density.columns[0]]
+        subj_density = subj_density.loc[1:,:]
+        # plot by day and subject
+        for day, col in enumerate(subj_density.columns):
+            data1 = subj_density[col].values
+            data1 = data1.astype(int)
+            data2 = data1.reshape(1, -1)
+            ax.imshow(data2, aspect = 'auto', cmap='viridis', interpolation=None, extent=[time[0], time[-1], count, count+1])
+            #print(f'\rCount #: {count}', end='', flush=True)
+            count=count+1
+        count=count+1
+    ax.set_ylim(0, count)
+    ax.set_ylabel("Subjects - and days within subjects")
+    ax.get_yaxis().set_visible(False)
+    ax.set_xlabel("Time (mins/day)")
+    #ax.set_title("Step Density time series - Subject: "+ subj+"  Cohort: "+cohort+"  Age: "+str(age))
+    ax.set_title("Step Density time series - ALL  > 10,000 steps/day")
+    plt.colorbar(ax.images[0], ax=ax, label='Density (strides/minute)')  # colorbar from the first image
+
+
+    plt.tight_layout()
+    plt.show()
+    #plt.savefig(data_path+'images\\'+subj+'_density_days.pdf')
+print()
 
 
 
 
 
 
-
-
+'''
 
 #these were for ANG
 
@@ -193,3 +242,5 @@ axs[1].set_title('Daily steps - median')
 #    ax.set_ylabel('Observed values')
 
 plt.show()
+
+'''

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, time
 
 
 def read_demo_ondri_data(drive, path):
@@ -19,128 +19,102 @@ def read_demo_ondri_data(drive, path):
     demodata['COHORT'] = demodata['COHORT'].replace('AD', 'MCI')
     demodata['COHORT'] = demodata['COHORT'].replace('MCI', 'AD/MCI')
 
-
-
     return demodata
 
 def wake_sleep (sleep_data):
     #rules - wake
     # - earliest endTime on curr day that does have a sleep time start < 1 hr
 
-    new_sleep = pd.DataFrame(columns=['day', 'wake', 'bed'])
-
     #Interleave start and end time rows
     #use this to find wake and bed for each day
+    sleep_data = sleep_data[sleep_data['overnight'] == True]
+    sleep_data['start_time'] = pd.to_datetime(sleep_data['start_time'])
+    sleep_data['end_time'] = pd.to_datetime(sleep_data['end_time'])
     sleep_data['bed_day'] = sleep_data['start_time'].dt.date
     sleep_data['wake_day'] = sleep_data['end_time'].dt.date
-    sleep_data['bed_time'] = sleep_data['start_time'].shift(-1) # bring the next row start to row with the wake
-    sleep_data['wake_time'] = sleep_data['end_time']
 
-    no_bed = sleep_data.iloc[len(sleep_data)-1].loc['bed_time'] == 'NaT'
-    no_wake = sleep_data.iloc[len(sleep_data)-1].loc['wake_time'] == 'NaT'
-    if not no_bed or not no_wake:
-        #drop the row
-        sleep_data = sleep_data.iloc[:-1]
-
-    unique_days = sleep_data['wake_day'].unique()
-
-    new_sleep['day'] = unique_days
-
-    for index, day in enumerate(unique_days):
-
-        new_sleep.loc[index, 'day'] = day
-        temp = sleep_data[sleep_data['wake_day'] == day]
-        temp.reset_index(drop=True, inplace=True)
-
-        b_index = 0 #bount row index
-        #if only 1 wake on day accept
-        if len(temp) == 1:
-            new_sleep.loc[index,'wake'] = temp.iloc[b_index].loc['wake_time']
-            new_sleep.loc[index, 'bed'] = temp.iloc[b_index].loc['bed_time']
-
-        # if more than 1 wake select one the meets criteria
+    rows=[]
+    unique_days = sleep_data['relative_date']
+    for day in unique_days:
+        day1 = pd.to_datetime(day).date()
+        temp = sleep_data[sleep_data['bed_day'] == day1]
+        if len(temp == 0):
+            bed = datetime.combine(day1, time(23, 59))
         else:
-            #find row with wake
-            wake=0
-            for j in range(len(temp)):
-                time2 = temp.iloc[j].loc['bed_time'].time()
-                bed_hour = (time2.hour * 3600 + time2.minute * 60 + time2.second) / 3600
+            bed = temp.loc[0,'start_time']
 
-                time1 = temp.iloc[j].loc['wake_time'].time()
-                wake_hour = (time1.hour * 3600 + time1.minute * 60 + time1.second) / 3600
-
-                diff = bed_hour - wake_hour
-
-                if wake == 0 and wake_hour < 4.0:
-                    continue
-                elif wake_hour < 12.0 and diff > 1:
-                    wake = j
-                else:
-                    continue
-
-            if wake == -1:
-                print ('error - no wake found'), #this is OK if last row - so corrected later by removign last row
-                continue
-            else:
-                new_sleep.loc[index, 'wake'] = temp.iloc[wake].loc['wake_time']
-
-
-            #why not just grab the last and check to see if the previous event was within an hour?
-            temp_backwards = temp.iloc[::-1]
-            temp_backwards.reset_index(drop=True, inplace=True)
-
-            bed = -1
-            for j in range(len(temp)):
-
-                time2 = temp_backwards.iloc[j].loc['bed_time'].time()
-                bed_hour = (time2.hour * 3600 + time2.minute * 60 + time2.second) / 3600
-                #bedtime is p[ast midnight add 24 to bed_hour
-                bed_day = temp_backwards.iloc[j].loc['bed_time'].date()
-                if bed_day != day:
-                    bed_hour = bed_hour+24
-
-                time1 = temp_backwards.iloc[j].loc['wake_time'].time()
-                wake_hour = (time1.hour * 3600 + time1.minute * 60 + time1.second) / 3600
-                diff = bed_hour - wake_hour
-
-                if diff > 2:
-                    bed = j
-                else:
-                    continue
-
-            if bed == -1:
-                print ('error - no bed found'),
-            else:
-                new_sleep.loc[index, 'bed'] = temp_backwards.iloc[bed].loc['bed_time']
-
-        #print(new_sleep.loc[index,])
-
-    #new_sleep = new_sleep.drop(new_sleep.index[-1]) #remove the last day sicne no bed-time
+        temp1 = sleep_data[sleep_data['wake_day'] == day1]
+        if len(temp1) == 0:
+            wake = None
+        elif len(temp1) == 1:
+            wake = temp1.loc[0, 'end_time']
+        else:
+            wake = temp1.loc[len(temp1)-1,'end_time']
+        rows.append({'day': day1, 'wake': wake, 'bed': bed})
+    new_sleep = pd.DataFrame(rows)
 
     return new_sleep
 
-def steps_by_day (summary, steps, merged_daily, subject, visit, bin_list, group):
+def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
+                  merged_daily, subject, visit, group='all'):
 
-    #loop through days
+    #loop through days all steps
     for i, row in merged_daily.iterrows():
         wear = row['wear']
         curr_day = row['date']
+        daily_tot_steps = row['steps']
+
         #print(' #: '+str(i)+" -"+ str(curr_day), end=" ")
         steps['date'] = pd.to_datetime(steps['step_time']).dt.date
-        all = steps[steps['date'] == curr_day]
+        all_steps = steps[steps['date'] == curr_day]
 
         #count total number of steps
-        total_steps = len(all)
+        total_steps = len(all_steps)
+
+
+        #unbouted steps
+        temp = all_steps[all_steps['gait_bout_num'] == i]
+        unbouted = len(temp)
+
+        bouts['date'] = pd.to_datetime(bouts['start_time']).dt.date
+        all_bouts = bouts[bouts['date'] == curr_day]
+
+        # bin by steps
+        bin_count=[]
+        bin_list_steps.extend(9999)
+        for i, step in enumerate(bin_list_steps):
+            #select only this rows that meet criteria
+            ed = step
+            if i == 0:
+                st = 0
+            else:
+                st=bin_list_steps[i-1]
+            temp = all_bouts[(all_bouts['step_count'] > st) & (all_bouts['step_count'] <= ed)]
+            bin_count.append(len(temp))
+            new_row = [subject, visit, curr_day, wear, group, 'all', total_steps, unbouted, *bin_count]
+            steps_summary.loc[len(steps_summary)] = new_row
+
+            #night time
+            temp = temp[(temp['start_time'] > st) & (all_bouts['step_count'] <= ed)]
+            bin_count.append(len(temp))
+            new_row = [subject, visit, curr_day, wear, group, 'all', daily_tot_steps, total_steps, unbouted, *bin_count]
+            steps_summary.loc[len(steps_summary)] = new_row
+
+        #bin by duration
+        #for i in bin_width_time:
+            # select only thios rows that meet criteria
 
         # steps within each bout bin
         # create bout_bin (steps within bouts - from the step file) - set the bout windws
-        #bow windows passed as list and also names the bout_bins header
-        bout_bin, not_bouted = bout_bins(all, bin_list)
-        summary.loc[len(all)] = [subject, visit, curr_day, wear, group,total_steps, not_bouted, *bout_bin]
+        #by steps - windows passed as list and also names the bout_bins header
+        #bout_bin_steps, not_bouted = bout_bins_steps(all_steps, bin_list)
+        #steps_summary.loc[len(all_steps)] = [subject, visit, curr_day, wear, group,total_steps, not_bouted, *bout_bin_steps]
 
-    return summary
 
-def bout_bins (data, bin_list):
+
+    return steps_summary, width_summary
+
+'''def bout_bins_steps (data, bin_list):
     # steps within each bout bin
     # create bout_bin (steps within bouts - from the step file) - set the bout windows
     # bow windows passed as list and also names the bout_bins header
@@ -168,6 +142,7 @@ def bout_bins (data, bin_list):
                 bout_bin[j+1] += bout_len
 
     return bout_bin, nbouted
+'''
 
 def step_density_sec(steps, merged_daily, time_sec):
 
@@ -277,4 +252,20 @@ def summary_density_bins(data):
 
     out_tot = [len(data), zero_tot, vlow_tot, low_tot, med_tot, high_tot, bout_3, bout_10]
     return out_tot
+
+def read_demo_data (study):
+    ###########################################
+    # read in the cleaned data file for the HANNDS methods paper
+    if study == 'OND09':
+        nimbal_dr = 'o:'
+        new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
+        demodata = read_demo_ondri_data(nimbal_dr, new_path)
+    elif study == 'SA-PR01':
+        new_path = 'W:\\SuperAging\\data\\summary\\RPPR 2025\\SA-PR01_collections.csv'
+        demodata = pd.read_csv(new_path)
+        demodata['AGE'] = demodata['age']
+        demodata['SUBJECT'] = demodata['subject_id']
+        demodata['COHORT'] = demodata['group']
+        demodata['EMPLOYMENT STATUS'] = None
+    return demodata
 

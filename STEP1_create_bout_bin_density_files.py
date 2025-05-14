@@ -6,16 +6,24 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_sec,read_demo_ondri_data
+from Functions import wake_sleep, steps_by_day, step_density_sec,read_demo_ondri_data, read_demo_data
 import numpy as np
 import seaborn as sns
 import datetime
 import openpyxl
 
+
+study = 'OND09'
+#study = 'SA-PR01'
+
 #set up paths
 root = 'W:'
+
 #check - but use this one - \prd\nimbalwear\OND09
-path1 = root+'\\prd\\NiMBaLWEAR\\OND09\\analytics\\'
+if study == 'OND09':
+    path1 = root+'\\prd\\NiMBaLWEAR\\OND09\\analytics\\'
+else:
+    path1 = root+'\\prd\\NiMBaLWEAR021\\SA-PR01\\analytics\\'
 
 nimbal_drive = 'O:'
 paper_path =  '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
@@ -34,25 +42,22 @@ filen = f'{'log_read_step_bouts_'}_{curr_date}.txt'
 log_file = open(log_out_path + filen, 'w')
 y = 0
 
-###########################################
-#read in the cleaned data file for the HANNDS methods paper
-nimbal_dr = 'o:'
-new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
-
-#this woudl read in the elegible subejcts with demogrpahic data
-demodata = read_demo_ondri_data(nimbal_dr, new_path)
-
+demodata = read_demo_data(study)
 
 ########################################################
 # loop through each eligible subject
 # File the time series in a paper specific forlder?
 master_subj_list = []
 for i, subject in enumerate(demodata['SUBJECT']):
+    # just foir SA
+    if study =='OND09':
+        parts = subject.split('_', 2)  # Split into at most 3 parts
+        if len(parts) == 3:
+            subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
+    elif study =='SA-PR01':
+        subject='SA-PR01_'+subject
+
     print(f'\rFind subjs - Progress: {i}' + ' of ' + str(len(demodata)), end='', flush=True)
-    #remove the underscoe that is in the subject code from the demodata file
-    parts = subject.split('_', 2)  # Split into at most 3 parts
-    if len(parts) == 3:
-        subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
 
     #find non-wear to see if enough data
     # first find the Ankle, Wrist and other nonwear
@@ -60,8 +65,8 @@ for i, subject in enumerate(demodata['SUBJECT']):
     match = glob.glob(temp)
 
     ankle_list = [file for file in match if 'Ankle' in file]
-    wrist_list = [file for file in match if 'Wrist' in file]
-    chest_list = [file for file in match if 'Chest' in file]
+    #wrist_list = [file for file in match if 'Wrist' in file]
+    #chest_list = [file for file in match if 'Chest' in file]
 
     if len(ankle_list) < 1:
         log_file.write('file: ' + subject + ' no ankle nonwear file' +'\n')
@@ -76,20 +81,33 @@ log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
 #PART A - loop and do bin counts
 
 #set the bin widths fro step/strides counting
-bin_list = [3, 5, 10, 20, 50, 100, 300]
+bin_list_steps = [3, 5, 10, 20, 50, 100, 300]
+bin_width_time = [15, 30, 60, 180, 600]
 
 #create header
-str_bin_list=[]
-for k in range(len(bin_list)):
-    new = f'{'<'}_{bin_list[k]}'
-    str_bin_list.append(new)
-last = '>_' + str(bin_list[len(bin_list)-1])
-str_bin_list.append(last)
-header = ['subj','visit','date','wear', 'group', 'total', 'not_bouted']
-header.extend(str_bin_list)
+bin_list_steps_header=[]
+for k in range(len(bin_list_steps)):
+    new = f'{'<'}_{bin_list_steps[k]}'
+    bin_list_steps_header.append(new)
+last = '>_' + str(bin_list_steps[len(bin_list_steps)-1])
+bin_list_steps_header.append(last)
+
+bin_width_time_header=[]
+for k in range(len(bin_width_time)):
+    new = f'{'<'}_{bin_width_time[k]}'
+    bin_width_time_header.append(new)
+last = '>_' + str(bin_width_time[len(bin_width_time)-1])
+bin_width_time_header.append(last)
+
+steps_header = ['subj','visit','date','wear', 'group', 'all/sleep', 'daily_total', 'total', 'not_bouted']
+width_header = steps_header
+steps_header.extend(bin_list_steps_header)
+width_header.extend(bin_width_time_header)
 
 #create blank panda dataframe for summary data
-summary = pd.DataFrame(columns=header)
+steps_summary = pd.DataFrame(columns=steps_header)
+width_summary = pd.DataFrame(columns=width_header)
+
 log_file.write('Part A - step counts in bins \n')
 
 for j, subject in enumerate(master_subj_list):
@@ -103,15 +121,23 @@ for j, subject in enumerate(master_subj_list):
         log_file.write('Steps file not found - Subject: '+subject+ '\n')
         continue
     try:
+        bouts = pd.read_csv(path1 + step_path + subject + '_' + visit + '_GAIT_STEPS.csv')
+    except:
+        log_file.write('Steps file not found - Subject: '+subject+ '\n')
+        bouts = None
+    try:
         daily = pd.read_csv(path1 + daily_path + subject + '_'+ visit + '_GAIT_DAILY.csv')
     except:
         log_file.write('Daily steps file not found - Subject: ' + subject + '\n')
         continue
-    #try:
-    #    sleep = pd.read_csv(path1 + sptw_path + subject + '_'+ visit + '_SPTW.csv')
-    #except:
-    #    log_file.write('Sleep file not found - Subject: ' + subject + '\n')
-    #    continue
+
+    try:
+        sleep_file = path1 + sptw_path + subject + '_' + visit + '_SPTW.csv'
+        sleep = pd.read_csv(sleep_file)
+
+    except:
+        log_file.write('Sleep file not found - Subject: ' + subject + '\n')
+        sleep = None
     try:
         temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
         match = glob.glob(temp)
@@ -134,19 +160,26 @@ for j, subject in enumerate(master_subj_list):
     merged_daily['date'] = pd.to_datetime(merged_daily['date'])
     merged_daily['date'] = merged_daily['date'].dt.date
 
+    # reset sleep to day, wake, to bed
+    new_sleep = wake_sleep(sleep)
+    print (new_sleep)
+
+
     ###############################################################
     #creates bins
-    summary = steps_by_day(summary, steps, merged_daily, subject, visit, bin_list, group='all')
+    steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time, merged_daily, subject, visit, group='all')
+
 
     ##############################################################
     #runs density function for each subejct and day
-    time_sec=60
-    data = step_density_sec(steps, merged_daily, time_sec)
-    data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density.csv')
+    #time_sec=60
+    #data = step_density_sec(steps, merged_daily, time_sec)
+    #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density.csv')
 
 # write bins file summary
-#summary.to_csv(summary_path + 'steps_daily_bins_with_unbouted.csv', index=False)
-#log_file.close()
+steps_summary.to_csv(summary_path + study+'_steps_daily_bins_with_unbouted.csv', index=False)
+
+log_file.close()
 print('done')
 
 

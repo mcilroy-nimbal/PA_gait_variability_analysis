@@ -7,7 +7,8 @@ import glob
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
-from Functions import wake_sleep, bout_bins, steps_by_day, step_density_sec,read_demo_ondri_data
+from Functions import wake_sleep, bout_bins, steps_by_day, step_density_sec,read_demo_ondri_data, read_demo_data
+from plot_tabulate_functions import plot_density_raw
 import numpy as np
 import seaborn as sns
 import datetime
@@ -25,13 +26,54 @@ summary_path = nimbal_drive + paper_path + 'Summary_data\\'
 #read in the cleaned data file for the HANNDS methods paper
 nimbal_dr = 'o:'
 new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
+
+study ='SA-PR01'
+demodata = read_demo_data(study)
+
 #Import data files - use this if file already created
-demodata = read_demo_ondri_data(nimbal_drive, new_path)
+#demodata = read_demo_ondri_data(nimbal_drive, new_path)
 
 #reads bout file as well
-bouts_all = pd.read_csv(summary_path + 'steps_daily_bins.csv')
+if study == 'SA-PR01':
+    file = 'SA_steps_daily_bins_with_unbouted.csv'
+else:
+    file = 'steps_daily_bins.csv'
+bouts_all = pd.read_csv(summary_path + file)
+
 #cleans up the subj id removes _
-bouts_all['subj'] = bouts_all['subj'].astype(str).str.replace('_', '')
+if study != 'SA-PR01':
+    bouts_all['subj'] = bouts_all['subj'].astype(str).str.replace('_', '')
+
+#select files
+data_path = summary_path+'density\\'
+temp = [f for f in os.listdir(data_path) if os.path.isfile(os.path.join(data_path, f))]
+temp = [f for f in temp if '60sec' in f]
+files = [f for f in temp if 'PR01' in f]
+select_list=[]
+for file in files:
+    parts = file.split('_')
+    if study == 'SA-PR01':
+        var='_'
+    else:
+        var=''
+    subj = parts[0] +var+ parts[1]
+
+    #cohort = demodata.loc[demodata['SUBJECT'] == subj, 'COHORT'].values[0]
+    #age = demodata.loc[demodata['SUBJECT'] == subj, 'AGE'].values[0]
+
+    sub_set = bouts_all[bouts_all['subj'] == subj]
+    n_days = len(sub_set)
+    tot_steps = sub_set['total'].sum()
+    tot_steps_day = tot_steps / n_days
+
+    if (tot_steps_day > 5000) and (n_days > 6):
+       select_list.append(file)
+
+
+plot_density_raw(summary_path, select_list, bouts_all, demodata)
+
+
+
 
 #selects subset
 #by step totals
@@ -45,7 +87,7 @@ bouts_all['subj'] = bouts_all['subj'].astype(str).str.replace('_', '')
 gait_bout = False
 write_density = True
 plot_density_summary = False
-plot_density_raw = False
+
 plot_demo = False
 run_variability_bouts = False
 
@@ -157,39 +199,6 @@ if gait_bout:
     plt.show()
     print()
 
-if write_density:
-    # bout density data
-    # create the bout density summary file
-    data_path = summary_path+'density\\'
-    files = [f for f in os.listdir(data_path) if os.path.isfile(os.path.join(data_path, f))]
-    counter = 0
-    bin_width = 5
-    # Compute bin edges
-    bins = np.arange(start=-bin_width, stop=100, step=bin_width)
-    bin_labels = [f"{bins[i]}-{bins[i+1]}" for i in range(len(bins) - 1)]
-    columns = ['subj','day'] + bin_labels
-    hist = pd.DataFrame(columns=columns)
-    step = -50
-    for index, file in enumerate(files):
-        #select subj name and visit name for writing to file
-        parts = file.split('_')
-        subj = parts[0]+parts[1]
-        visit = parts[2]
-        print(f'\rSubj #: {index}' + ' of ' + str(len(files)), end='', flush=True)
-        subj_density = pd.read_csv(data_path+file)
-        del subj_density[subj_density.columns[0]]
-
-        # Create histogram
-        for day, col in enumerate(subj_density.columns):
-            # Bin the data
-            binned = pd.cut(subj_density[col], bins=bins, right = True)
-            # Count the number of observations in each bin
-            counts = binned.value_counts().sort_index()
-            row = counts.values
-            row1 = [subj, day+1] + row.tolist()
-            hist.loc[len(hist)] = row1
-    hist.to_csv(summary_path+'freq_step_per_min.csv')
-
 
 if plot_density_summary:
     # plot the bout density file
@@ -211,52 +220,4 @@ if plot_density_summary:
 
     plt.show()
     print ()
-
-if plot_density_raw:
-    # bout density data
-    # plot density summary file
-    data_path = summary_path+'density\\'
-    files = [f for f in os.listdir(data_path) if os.path.isfile(os.path.join(data_path, f))]
-
-    count = 0
-    fig, ax = plt.subplots(figsize=(10,6))
-    time = np.linspace(1, 1440, 1440)
-
-    for index, file in enumerate(files):
-        #print(f'\rSubj #: {index}' + ' of ' + str(len(files)), end='', flush=True)
-        parts = file.split('_')
-        subj = parts[0] + parts[1]
-        #cohort = demodata.loc[demodata['SUBJECT'] == subj, 'COHORT'].values[0]
-        #age = demodata.loc[demodata['SUBJECT'] == subj, 'AGE'].values[0]
-
-        sub_set = bouts_all[bouts_all['subj'] == subj]
-        n_days = len(sub_set)
-        tot_steps = sub_set['total'].sum()
-        tot_steps_day = tot_steps / n_days
-
-        if (tot_steps_day > 0) and (tot_steps_day<2001):
-            print(f'\rSubj #: {index}' + ' of ' + str(len(files)), end='', flush=True)
-            subj_density = pd.read_csv(data_path+file)
-            del subj_density[subj_density.columns[0]]
-
-            # plot by day and subject
-            for day, col in enumerate(subj_density.columns):
-                data1 = subj_density[col].values
-                data2 = data1.reshape(1, -1)
-                ax.imshow(data2, aspect = 'auto', cmap='viridis', interpolation=None, extent=[time[0], time[-1], count, count+1])
-                #print(f'\rCount #: {count}', end='', flush=True)
-                count=count+1
-            count=count+1
-    ax.set_ylim(0, count)
-    ax.set_ylabel("Subjects - and days within subjects")
-    ax.set_xlabel("Time (mins/day")
-    #ax.set_title("Step Density time series - Subject: "+ subj+"  Cohort: "+cohort+"  Age: "+str(age))
-    ax.set_title("Step Density time series - aLL  < 2000 steps/day")
-    plt.colorbar(ax.images[0], ax=ax, label='Step density (steps/minute)')  # colorbar from the first image
-    plt.tight_layout()
-    plt.show()
-    #plt.savefig(data_path+'images\\'+subj+'_density_days.pdf')
-print()
-
-if run_variability_bouts:
 
