@@ -94,9 +94,9 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
 
         #unbouted steps
         temp = all_steps[all_steps['gait_bout_num'] == i]
-        unbouted = len(temp)
+        #TODO: fix this - unbouted = len(temp)
         sleep_temp = temp[(temp['step_time'] <= wake) | (temp['step_time'] >= bed)]
-        unbouted_sleep = len(sleep_temp)
+        #TODo: and this unbouted_sleep = len(sleep_temp)
 
         bouts['date'] = pd.to_datetime(bouts['start_time']).dt.date
         bouts['start_time'] = pd.to_datetime(bouts['start_time'])
