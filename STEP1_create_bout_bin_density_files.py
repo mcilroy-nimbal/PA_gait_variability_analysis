@@ -100,8 +100,8 @@ last = '>_' + str(bin_width_time[len(bin_width_time)-1])
 bin_width_time_header.append(last)
 
 basic = ['subj','visit','date','wear', 'group', 'all/sleep', 'daily_total', 'total', 'not_bouted']
-steps_header = basic.extend(bin_list_steps_header)
-width_header = basic.extend(bin_width_time_header)
+steps_header = basic + bin_list_steps_header
+width_header = basic + bin_width_time_header
 
 #create blank panda dataframe for summary data
 steps_summary = pd.DataFrame(columns=steps_header)
