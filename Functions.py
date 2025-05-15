@@ -34,55 +34,84 @@ def wake_sleep (sleep_data):
     sleep_data['wake_day'] = sleep_data['end_time'].dt.date
 
     rows=[]
-    unique_days = sleep_data['relative_date']
+    unique_days = sleep_data['relative_date'].unique()
+    #unique_days = unique_days[:-1]
     for day in unique_days:
         day1 = pd.to_datetime(day).date()
         temp = sleep_data[sleep_data['bed_day'] == day1]
-        if len(temp == 0):
+        temp = temp.reset_index(drop=True)
+        print (len(temp))
+        if len(temp) == 0:
             bed = datetime.combine(day1, time(23, 59))
-        else:
+        elif len(temp) == 1:
             bed = temp.loc[0,'start_time']
+        else:
+            last = temp.loc[temp['start_time'].idxmax()]
+            bed = last['start_time']
 
         temp1 = sleep_data[sleep_data['wake_day'] == day1]
+        temp1 = temp1.reset_index(drop=True)
         if len(temp1) == 0:
             wake = None
         elif len(temp1) == 1:
             wake = temp1.loc[0, 'end_time']
         else:
-            wake = temp1.loc[len(temp1)-1,'end_time']
+            target = pd.to_timedelta('09:00:00')
+            temp1['time_diff'] = temp1['end_time'].dt.time.apply(lambda t: abs(pd.to_timedelta(str(t)) - target))
+            close = temp1.loc[temp1['time_diff'].idxmin()]
+            wake = close['end_time']
+
         rows.append({'day': day1, 'wake': wake, 'bed': bed})
     new_sleep = pd.DataFrame(rows)
 
     return new_sleep
 
 def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
-                  merged_daily, subject, visit, group='all'):
+                  merged_daily, new_sleep, subject, visit, group='all'):
 
     #loop through days all steps
     for i, row in merged_daily.iterrows():
         wear = row['wear']
         curr_day = row['date']
-        daily_tot_steps = row['steps']
+        daily_tot_steps = row['total_steps']
+
+        #sleep row
+        sleep1 = new_sleep[new_sleep['day'] == curr_day]
+        sleep1 = sleep1.reset_index(drop=True)
+        wake = sleep1.loc[0,'wake']
+        bed = sleep1.loc[0,'bed']
 
         #print(' #: '+str(i)+" -"+ str(curr_day), end=" ")
         steps['date'] = pd.to_datetime(steps['step_time']).dt.date
         all_steps = steps[steps['date'] == curr_day]
+        all_steps = all_steps.reset_index(drop=True)
+        all_steps['step_time'] = pd.to_datetime(all_steps['step_time'])
 
         #count total number of steps
         total_steps = len(all_steps)
-
+        temp = all_steps[(all_steps['step_time'] <= wake) | (all_steps['step_time'] >= bed)]
+        total_steps_sleep = len(temp)
 
         #unbouted steps
         temp = all_steps[all_steps['gait_bout_num'] == i]
         unbouted = len(temp)
+        sleep_temp = temp[(temp['step_time'] <= wake) | (temp['step_time'] >= bed)]
+        unbouted_sleep = len(sleep_temp)
 
         bouts['date'] = pd.to_datetime(bouts['start_time']).dt.date
+        bouts['start_time'] = pd.to_datetime(bouts['start_time'])
+        bouts['end_time'] = pd.to_datetime(bouts['end_time'])
+
         all_bouts = bouts[bouts['date'] == curr_day]
+        sleep_bouts = all_bouts[((all_bouts['start_time'] <= wake) & (all_bouts['end_time'] <= wake)) |
+                                ((all_bouts['end_time'] >= bed) & (all_bouts['end_time'] >= bed))]
 
         # bin by steps
         bin_count=[]
-        bin_list_steps.extend(9999)
+        bin_count_sleep=[]
+        bin_list_steps.append(9999)
         for i, step in enumerate(bin_list_steps):
+
             #select only this rows that meet criteria
             ed = step
             if i == 0:
@@ -91,25 +120,47 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
                 st=bin_list_steps[i-1]
             temp = all_bouts[(all_bouts['step_count'] > st) & (all_bouts['step_count'] <= ed)]
             bin_count.append(len(temp))
-            new_row = [subject, visit, curr_day, wear, group, 'all', total_steps, unbouted, *bin_count]
-            steps_summary.loc[len(steps_summary)] = new_row
 
             #night time
-            temp = temp[(temp['start_time'] > st) & (all_bouts['step_count'] <= ed)]
-            bin_count.append(len(temp))
-            new_row = [subject, visit, curr_day, wear, group, 'all', daily_tot_steps, total_steps, unbouted, *bin_count]
-            steps_summary.loc[len(steps_summary)] = new_row
+            temp = sleep_bouts[(sleep_bouts['step_count'] > st) & (sleep_bouts['step_count'] <= ed)]
+            bin_count_sleep.append(len(temp))
 
-        #bin by duration
-        #for i in bin_width_time:
-            # select only thios rows that meet criteria
+        new_row = [subject, visit, curr_day, wear, group, 'all', total_steps, unbouted, *bin_count]
+        steps_summary.loc[len(steps_summary)] = new_row
+
+        new_row_sleep = [subject, visit, curr_day, wear, group, 'sleep', daily_tot_steps, total_steps_sleep, unbouted_sleep, *bin_count_sleep]
+        steps_summary.loc[len(steps_summary)] = new_row_sleep
+
+        bin_width_count = []
+        bin_width_count_sleep = []
+        bin_width_time.append(99999)
+        for i, step in enumerate(bin_width_time):
+
+            #select only the rows that meet criteria
+            ed = step
+            if i == 0:
+                st = 0
+            else:
+                st=bin_list_steps[i-1]
+            all_bouts['bout_dur'] =(all_bouts['end_time'] - all_bouts['start_time']).dt.total_seconds()
+            temp = all_bouts[(all_bouts['bout_dur'] > st) & (all_bouts['bout_dur'] <= ed)]
+            bin_width_count.append(len(temp))
+
+            #night time
+            temp = temp[(sleep_bouts['start_time'] > st) & (sleep_bouts['step_count'] <= ed)]
+            bin_width_count_sleep.append(len(temp))
+
+        new_row = [subject, visit, curr_day, wear, group, 'all', total_steps, unbouted, *bin_width_count]
+        width_summary.loc[len(steps_summary)] = new_row
+
+        new_row_sleep = [subject, visit, curr_day, wear, group, 'sleep', daily_tot_steps, total_steps_sleep, unbouted_sleep, *bin_width_count_sleep]
+        width_summary.loc[len(steps_summary)] = new_row_sleep
 
         # steps within each bout bin
         # create bout_bin (steps within bouts - from the step file) - set the bout windws
         #by steps - windows passed as list and also names the bout_bins header
         #bout_bin_steps, not_bouted = bout_bins_steps(all_steps, bin_list)
         #steps_summary.loc[len(all_steps)] = [subject, visit, curr_day, wear, group,total_steps, not_bouted, *bout_bin_steps]
-
 
 
     return steps_summary, width_summary

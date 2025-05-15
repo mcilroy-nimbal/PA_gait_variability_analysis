@@ -99,10 +99,9 @@ for k in range(len(bin_width_time)):
 last = '>_' + str(bin_width_time[len(bin_width_time)-1])
 bin_width_time_header.append(last)
 
-steps_header = ['subj','visit','date','wear', 'group', 'all/sleep', 'daily_total', 'total', 'not_bouted']
-width_header = steps_header
-steps_header.extend(bin_list_steps_header)
-width_header.extend(bin_width_time_header)
+basic = ['subj','visit','date','wear', 'group', 'all/sleep', 'daily_total', 'total', 'not_bouted']
+steps_header = basic.extend(bin_list_steps_header)
+width_header = basic.extend(bin_width_time_header)
 
 #create blank panda dataframe for summary data
 steps_summary = pd.DataFrame(columns=steps_header)
@@ -121,7 +120,7 @@ for j, subject in enumerate(master_subj_list):
         log_file.write('Steps file not found - Subject: '+subject+ '\n')
         continue
     try:
-        bouts = pd.read_csv(path1 + step_path + subject + '_' + visit + '_GAIT_STEPS.csv')
+        bouts = pd.read_csv(path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv')
     except:
         log_file.write('Steps file not found - Subject: '+subject+ '\n')
         bouts = None
@@ -162,12 +161,10 @@ for j, subject in enumerate(master_subj_list):
 
     # reset sleep to day, wake, to bed
     new_sleep = wake_sleep(sleep)
-    print (new_sleep)
-
 
     ###############################################################
     #creates bins
-    steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time, merged_daily, subject, visit, group='all')
+    steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time, merged_daily, new_sleep, subject, visit, group='all')
 
 
     ##############################################################
