@@ -11,7 +11,8 @@ import numpy as np
 import seaborn as sns
 import datetime
 import openpyxl
-
+import warnings
+warnings.filterwarnings("ignore")
 
 study = 'OND09'
 #study = 'SA-PR01'
@@ -82,22 +83,30 @@ log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
 
 #set the bin widths fro step/strides counting
 bin_list_steps = [3, 5, 10, 20, 50, 100, 300]
-bin_width_time = [15, 30, 60, 180, 600]
+bin_width_time = [5, 10, 15, 30, 60, 180, 600]
 
 #create header
-bin_list_steps_header=[]
+bin=[]
 for k in range(len(bin_list_steps)):
     new = f'{'<'}_{bin_list_steps[k]}'
-    bin_list_steps_header.append(new)
+    bin.append(new)
 last = '>_' + str(bin_list_steps[len(bin_list_steps)-1])
-bin_list_steps_header.append(last)
+bin.append(last)
+part1 = ['n_' + item for item in bin]
+bin_list_steps_header = part1
+part2 = ['strides_' + item for item in bin]
+bin_list_steps_header.extend(part2)
 
-bin_width_time_header=[]
+bin=[]
 for k in range(len(bin_width_time)):
     new = f'{'<'}_{bin_width_time[k]}'
-    bin_width_time_header.append(new)
+    bin.append(new)
 last = '>_' + str(bin_width_time[len(bin_width_time)-1])
-bin_width_time_header.append(last)
+bin.append(last)
+part1 = ['n_' + item for item in bin]
+bin_width_time_header = part1
+part2 = ['strides_' + item for item in bin]
+bin_width_time_header.extend(part2)
 
 basic = ['subj','visit','date','wear', 'group', 'all/sleep', 'daily_total', 'total', 'not_bouted']
 steps_header = basic + bin_list_steps_header
@@ -111,7 +120,7 @@ log_file.write('Part A - step counts in bins \n')
 
 for j, subject in enumerate(master_subj_list):
     visit = '01'
-    print(f'\rBins - Progress: {j}' + ' of ' + str(len(master_subj_list)), end='', flush=True)
+    print('Subject: ' + subject)
 
     #get step data for subject
     try:
@@ -133,10 +142,10 @@ for j, subject in enumerate(master_subj_list):
     try:
         sleep_file = path1 + sptw_path + subject + '_' + visit + '_SPTW.csv'
         sleep = pd.read_csv(sleep_file)
-
+        found_sleep = True
     except:
         log_file.write('Sleep file not found - Subject: ' + subject + '\n')
-        sleep = None
+        found_sleep = False
     try:
         temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
         match = glob.glob(temp)
@@ -160,13 +169,16 @@ for j, subject in enumerate(master_subj_list):
     merged_daily['date'] = merged_daily['date'].dt.date
 
     # reset sleep to day, wake, to bed
-    new_sleep = wake_sleep(sleep)
+    if found_sleep:
+        new_sleep = wake_sleep(sleep)
+    else:
+        new_sleep = None
 
     ###############################################################
     #creates bins
-    steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time, merged_daily, new_sleep, subject, visit, group='all')
+    steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time, merged_daily, found_sleep, new_sleep, subject, visit, group='all')
 
-
+    print ('pause')
     ##############################################################
     #runs density function for each subejct and day
     #time_sec=60
