@@ -82,6 +82,7 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
                 sleep1 = sleep1.reset_index(drop=True)
                 wake = sleep1.loc[0,'wake']
                 bed = sleep1.loc[0,'bed']
+            else:
                 found_sleep = False
 
         #print(' #: '+str(i)+" -"+ str(curr_day), end=" ")
@@ -116,9 +117,9 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
 
         # bin by steps
         bin_count = []
-        bin_sum = 0
-        bin_count_sleep=[]
-        bin_sum_sleep = 0
+        bin_sum = []
+        bin_count_sleep = []
+        bin_sum_sleep = []
         temp_list = bin_list_steps + [9999]
         for i, step in enumerate(temp_list):
 
@@ -130,18 +131,20 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
                 st = step
                 ed = 9999
             else:
-                st=bin_list_steps[i-1]
+                st = bin_list_steps[i-1]
 
             #daytime
             temp = all_bouts[(all_bouts['step_count'] > st) & (all_bouts['step_count'] <= ed)]
             bin_count.append(len(temp))
-            bin_sum.append(temp['stride_count'].sum())
+            bin_sum.append(temp['step_count'].sum())
 
             if found_sleep:
                 #night time
                 temp = sleep_bouts[(sleep_bouts['step_count'] > st) & (sleep_bouts['step_count'] <= ed)]
                 bin_count_sleep.append(len(temp))
-                bin_sum_sleep.append(temp['stride_count'].sum())
+                bin_sum_sleep.append(temp['step_count'].sum())
+
+
         new_row = [subject, visit, curr_day, wear, group, 'all', daily_tot_steps, total_steps, unbouted, *bin_count, *bin_sum]
         steps_summary.loc[len(steps_summary)] = new_row
 
@@ -171,14 +174,14 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
             all_bouts['bout_dur'] =(all_bouts['end_time'] - all_bouts['start_time']).dt.total_seconds()
             temp = all_bouts[(all_bouts['bout_dur'] > st) & (all_bouts['bout_dur'] <= ed)]
             bin_width_count.append(len(temp))
-            bin_width_sum.append(temp['stride_count'].sum())
+            bin_width_sum.append(temp['step_count'].sum())
 
             if found_sleep:
                 #night time
                 sleep_bouts['bout_dur'] = (sleep_bouts['end_time'] - sleep_bouts['start_time']).dt.total_seconds()
                 temp = sleep_bouts[(sleep_bouts['bout_dur'] > st) & (sleep_bouts['bout_dur'] <= ed)]
                 bin_width_count_sleep.append(len(temp))
-                bin_width_sum_sleep.append(temp['stride_count'].sum())
+                bin_width_sum_sleep.append(temp['step_count'].sum())
 
         new_row = [subject, visit, curr_day, wear, group, 'all', daily_tot_steps, total_steps,
                    unbouted, *bin_width_count, *bin_width_sum]

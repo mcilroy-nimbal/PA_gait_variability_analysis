@@ -5,73 +5,100 @@ import numpy as np
 import seaborn as sns
 import datetime
 
-################## Read to plot
-#out_path ='O:\\Student_Projects\\gait_pattern_paper_feb2024\\'
-#out_file = 'stats1_feb25.csv'
-#stats = pd.read_csv(out_path+out_file)
-#sns.jointplot(data=stats, x='total_med', y='no_sleep_med')
-#sns.jointplot(data=stats, x='no_sleep_med', y='sleep_med')
-#plt.scatter(stats['total_med'], stats['no_sleep_med'])
-#plt.errorbar(stats['total_med'], stats['wake_med'], xerr=stats['total_std'], yerr=stats['wake_std'])
-#plt.show()
+###############################################################
+#
+study = 'OND09'
+#study = 'SA-PR01'
 
+#set up paths
+root = 'W:'
+
+#check - but use this one - \prd\nimbalwear\OND09
+if study == 'OND09':
+    path1 = root+'\\prd\\NiMBaLWEAR\\OND09\\analytics\\'
+else:
+    path1 = root+'\\prd\\NiMBaLWEAR021\\SA-PR01\\analytics\\'
+
+nimbal_drive = 'O:'
+paper_path = '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
+summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+summary_steps_file = 'OND09_bout_steps_daily_bins_with_unbouted.csv'
+summary_dur_file = 'OND09_bout_width_daily_bins_with_unbouted.csv'
+
+#set the bin widths fro step/strides counting
+bin_list_steps = [3, 5, 10, 20, 50, 100, 300]
+bin_width_time = [5, 10, 15, 30, 60, 180, 600]
+
+
+#create header
+bin=[]
+for k in range(len(bin_list_steps)):
+    new = f'{'<'}_{bin_list_steps[k]}'
+    bin.append(new)
+last = '>_' + str(bin_list_steps[len(bin_list_steps)-1])
+bin.append(last)
+step_n_header = ['n_' + item for item in bin]
+step_tot_header = ['strides_' + item for item in bin]
+
+bin=[]
+for k in range(len(bin_width_time)):
+    new = f'{'<'}_{bin_width_time[k]}'
+    bin.append(new)
+last = '>_' + str(bin_width_time[len(bin_width_time)-1])
+bin.append(last)
+dur_n_header = ['n_' + item for item in bin]
+dur_tot_header = ['strides_' + item for item in bin]
+
+vars_step_tot = ['subj','not_bouted'] + step_tot_header
+vars_dur_tot = ['subj','not_bouted'] + dur_tot_header
+
+#var_list1_step_n = step_n_header
 
 #######################################################
-# sumamrizing sleep and non sleep bouts
-out_path ='O:\\Student_Projects\\gait_pattern_paper_feb2024\\'
+# mean values (across days - all values from bouts)
+steps = True
 
-sleep_all = pd.DataFrame(columns=['<3', '3-5', '5-10', '10-20', '20-30', '30-50', '50-100', '>100'])
-file = 'sleep_bouts_feb25.csv'
-bouts = pd.read_csv(out_path+file)
-#total_steps = bouts.iloc[:,3:].sum()
-#bouts['total'] = total_steps
-#bouts_sorted = bouts.sort_values(by='total', ascending=True)
+if steps:
+    file = summary_steps_file
+else:
+    file = summary_dur_file
 
-subj = bouts['subj'].unique()
-n_subjs = len(subj)
-for i in subj:
-    bout_sum = [0]*8
-    temp = bouts[bouts['subj'] == i]
-    ndays = len(temp)
-    total_steps = temp.iloc[:,3:].sum().sum()
+bout_data = pd.read_csv(summary_path+file)
 
-    for i in range(8):
-        bout_sum[i] = temp.iloc[:,i+3].median()
-        #bout_sum[i] = 100*(temp.iloc[:, i + 3].sum())/total_steps
-    sleep_all.loc[len(sleep_all)] = bout_sum
+all = bout_data[bout_data['all/sleep'] == 'all']
 
-###################################
-wake_all = pd.DataFrame(columns=['<3', '3-5', '5-10', '10-20', '20-50', '50-100', '100-300', '>300'])
-file = 'wake_bouts_feb25.csv'
-bouts = pd.read_csv(out_path+file)
-subj = bouts['subj'].unique()
-n_subjs = len(subj)
-for i in subj:
-    bout_sum = [0]*8
-    temp = bouts[bouts['subj'] == i]
-    ndays = len(temp)
-    total_steps = temp.iloc[:, 3:].sum().sum()
-    for i in range(8):
-        bout_sum[i] = temp.iloc[:,i+3].median()
-        #bout_sum[i] = 100*(temp.iloc[:, i + 3].sum()) / total_steps
+if steps:
+     subset = all[vars_step_tot]
+else:
+    subset = all[vars_dur_tot]
 
-    wake_all.loc[len(wake_all)] = bout_sum
+grouped = subset.groupby('subj').agg(['mean', 'std'])
 
+means = grouped.xs('mean', axis=1, level=1)
+stds = grouped.xs('std', axis=1, level=1)
+cvs = stds / means
 
+group_means = means.mean()
+group_std = means.std()
+group_cvs = cvs.mean()
+group_cvs_sd = cvs.std()
 
+# Plot
+plt.figure(figsize=(8, 6))
+
+data = group_means
+data_std = group_std
+
+plt.bar(data.index, data.values, color='blue')
+plt.errorbar(data.index,data.values, yerr=[np.zeros_like(data_std.values), data_std.values],
+            fmt='none', ecolor='black', capsize=5 )
+for i, col in enumerate(means.columns):
+    x = np.random.normal(i, 0.05, size=len(means[col]))  # jittered x-values
+    plt.scatter(x, means[col], color='orange', alpha=0.7, label='Data Points' if i == 0 else "")
 
 
-
-ax = plt.figure(figsize=(14, 5))
-ct = 0
-for col in wake_all.columns[:]:
-    ax = sns.violinplot(data=wake_all, y=col, x=ct)
-
-    ct += 2
-#ct = 1
-#for col in sleep_all.columns[:]:
-#    ax = sns.violinplot(data=sleep_all, y=col, x=ct)
-#    ct += 2
-#ax.set_xticklabels(['<3', '3-5', '5-10', '10-20', '20-50', '50-100', '100-300', '>300',
-#                    '<3', '3-5', '5-10', '10-20', '20-50', '50-100', '100-300', '>300'])
+plt.ylabel('Coefficient of variation')
+plt.title('Average Coefficient of variation (across days) per bout')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
 plt.show()

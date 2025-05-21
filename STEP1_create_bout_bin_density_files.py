@@ -186,7 +186,8 @@ for j, subject in enumerate(master_subj_list):
     #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density.csv')
 
 # write bins file summary
-steps_summary.to_csv(summary_path + study+'_steps_daily_bins_with_unbouted.csv', index=False)
+steps_summary.to_csv(summary_path + study+'_bout_steps_daily_bins_with_unbouted.csv', index=False)
+width_summary.to_csv(summary_path + study+'_bout_width_daily_bins_with_unbouted.csv', index=False)
 
 log_file.close()
 print('done')
