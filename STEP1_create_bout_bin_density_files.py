@@ -121,22 +121,23 @@ log_file.write('Part A - step counts in bins \n')
 for j, subject in enumerate(master_subj_list):
     visit = '01'
     print('Subject: ' + subject)
+    log_file.write('Subject: ' + subject + '\n')
 
     #get step data for subject
     try:
         steps = pd.read_csv(path1 + step_path + subject + '_' + visit + '_GAIT_STEPS.csv')
     except:
-        log_file.write('Steps file not found - Subject: '+subject+ '\n')
+        log_file.write('\tGAIT_STEPS file not found \n')
         continue
     try:
         bouts = pd.read_csv(path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv')
     except:
-        log_file.write('Steps file not found - Subject: '+subject+ '\n')
+        log_file.write('\tGAIT_BOUTS not found\n')
         bouts = None
     try:
         daily = pd.read_csv(path1 + daily_path + subject + '_'+ visit + '_GAIT_DAILY.csv')
     except:
-        log_file.write('Daily steps file not found - Subject: ' + subject + '\n')
+        log_file.write('\tGAIT_DAILY file not found \n')
         continue
 
     try:
@@ -144,7 +145,7 @@ for j, subject in enumerate(master_subj_list):
         sleep = pd.read_csv(sleep_file)
         found_sleep = True
     except:
-        log_file.write('Sleep file not found - Subject: ' + subject + '\n')
+        log_file.write('\tSPTW_file not found \n')
         found_sleep = False
     try:
         temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
@@ -153,7 +154,7 @@ for j, subject in enumerate(master_subj_list):
         file =  ankle_nw[0]
         nw_data = pd.read_csv(file)
     except:
-        log_file.write('nonwear file not found - Subject: ' + subject + '\n')
+        log_file.write('\tNONWEAR DAILY file not found \n')
         continue
 
     # drop duplicate columns from daily before merge with NW
@@ -161,12 +162,14 @@ for j, subject in enumerate(master_subj_list):
 
     # combine nonwear and daily steps by day_num
     merged_daily = pd.merge(nw_data, daily, on='day_num')
+    log_file.write('\tNumber of days' + str(len(merged_daily)) + '\n')
 
     # remove days that are only partial (nwear <70000?)
     # minimimum of 20 hours of wear time
     merged_daily = merged_daily[merged_daily['wear'] > 72000]  # 86400 secs in 24 hours
     merged_daily['date'] = pd.to_datetime(merged_daily['date'])
     merged_daily['date'] = merged_daily['date'].dt.date
+    log_file.write('\tNumber of days with > 72000 secs wear'+str(len(merged_daily))+'\n')
 
     # reset sleep to day, wake, to bed
     if found_sleep:
@@ -176,9 +179,10 @@ for j, subject in enumerate(master_subj_list):
 
     ###############################################################
     #creates bins
-    steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time, merged_daily, found_sleep, new_sleep, subject, visit, group='all')
+    steps_summary, width_summary = steps_by_day(log_file, steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time, merged_daily, found_sleep, new_sleep, subject, visit, group='all')
 
     print ('pause')
+
     ##############################################################
     #runs density function for each subejct and day
     #time_sec=60

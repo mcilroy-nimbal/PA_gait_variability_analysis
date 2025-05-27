@@ -66,7 +66,7 @@ def wake_sleep (sleep_data):
 
     return new_sleep
 
-def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
+def steps_by_day (log_file, steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
                   merged_daily, found_sleep, new_sleep, subject, visit, group='all'):
 
     #loop through days all steps
@@ -84,6 +84,7 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
                 bed = sleep1.loc[0,'bed']
             else:
                 found_sleep = False
+                log_file.write("\t\tNo sleep match for "+str(curr_day)+"\n")
 
         #print(' #: '+str(i)+" -"+ str(curr_day), end=" ")
         steps['date'] = pd.to_datetime(steps['step_time']).dt.date
@@ -96,6 +97,8 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
         if found_sleep:
             temp = all_steps[(all_steps['step_time'] <= wake) | (all_steps['step_time'] >= bed)]
             total_steps_sleep = len(temp)
+        else:
+            total_steps_sleep = -1
 
         #unbouted steps
         temp = all_steps[all_steps['gait_bout_num'] == 0]
@@ -104,6 +107,8 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
         if found_sleep:
             sleep_temp = temp[(temp['step_time'] <= wake) | (temp['step_time'] >= bed)]
             unbouted_sleep = len(sleep_temp)
+        else:
+            unbouted_sleep = -1
 
         bouts['date'] = pd.to_datetime(bouts['start_time']).dt.date
         bouts['start_time'] = pd.to_datetime(bouts['start_time'])
@@ -143,14 +148,15 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
                 temp = sleep_bouts[(sleep_bouts['step_count'] > st) & (sleep_bouts['step_count'] <= ed)]
                 bin_count_sleep.append(len(temp))
                 bin_sum_sleep.append(temp['step_count'].sum())
-
+            else:
+                bin_count_sleep.append(-1)
+                bin_sum_sleep.append(-1)
 
         new_row = [subject, visit, curr_day, wear, group, 'all', daily_tot_steps, total_steps, unbouted, *bin_count, *bin_sum]
         steps_summary.loc[len(steps_summary)] = new_row
 
-        if found_sleep:
-            new_row_sleep = [subject, visit, curr_day, wear, group, 'sleep', daily_tot_steps, total_steps_sleep, unbouted_sleep, *bin_count_sleep, *bin_sum_sleep]
-            steps_summary.loc[len(steps_summary)] = new_row_sleep
+        new_row_sleep = [subject, visit, curr_day, wear, group, 'sleep', daily_tot_steps, total_steps_sleep, unbouted_sleep, *bin_count_sleep, *bin_sum_sleep]
+        steps_summary.loc[len(steps_summary)] = new_row_sleep
 
         #bin by duration
         bin_width_count = []
@@ -182,15 +188,17 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
                 temp = sleep_bouts[(sleep_bouts['bout_dur'] > st) & (sleep_bouts['bout_dur'] <= ed)]
                 bin_width_count_sleep.append(len(temp))
                 bin_width_sum_sleep.append(temp['step_count'].sum())
+            else:
+                bin_width_count_sleep.append(-1)
+                bin_width_sum_sleep.append(-1)
 
         new_row = [subject, visit, curr_day, wear, group, 'all', daily_tot_steps, total_steps,
                    unbouted, *bin_width_count, *bin_width_sum]
         width_summary.loc[len(width_summary)] = new_row
 
-        if found_sleep:
-            new_row_sleep = [subject, visit, curr_day, wear, group, 'sleep', daily_tot_steps, total_steps_sleep,
-                             unbouted_sleep, *bin_width_count_sleep, *bin_width_sum_sleep]
-            width_summary.loc[len(width_summary)] = new_row_sleep
+        new_row_sleep = [subject, visit, curr_day, wear, group, 'sleep', daily_tot_steps, total_steps_sleep,
+                   unbouted_sleep, *bin_width_count_sleep, *bin_width_sum_sleep]
+        width_summary.loc[len(width_summary)] = new_row_sleep
 
         # steps within each bout bin
         # create bout_bin (steps within bouts - from the step file) - set the bout windws
