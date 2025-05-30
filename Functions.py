@@ -3,13 +3,13 @@ import numpy as np
 from datetime import datetime, time
 
 
-def read_demo_ondri_data(drive, path):
+def read_demo_ondri_data(path):
     ###########################################
     # read in the cleaned data file for the HANNDS methods paper
     # this woudl read in the elegible subejcts with demogrpahic data
     # demodata = read_orig_clean_demo()
     # Import data files - use this if file already created
-    demodata = pd.read_csv(drive + path + "OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
+    demodata = pd.read_csv(path + "OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
 
     # merge dual diagonis - other MCI
     demodata['COHORT'] = demodata['COHORT'].replace('MCI;CVD', 'CVD')
@@ -265,6 +265,45 @@ def step_density_sec(steps, merged_daily, time_sec):
 
         #print ('Total - '+ header_days[count] + ':  '+str(sum(min_array)))
         count = count+1
+    return data
+
+def stride_time_interval(steps, merged_daily):
+
+    # loop through days
+    #header_days = [f'day_{i + 1}' for i in range(len(merged_daily))]
+    data = pd.DataFrame()#columns=header_days)
+    count=0
+    for i, row in merged_daily.iterrows():
+
+        curr_day = row['date']
+        steps['date'] = pd.to_datetime(steps['step_time']).dt.date
+        all = steps[steps['date'] == curr_day]
+
+        #caluuclaet difference in time bewteen consectuve strides
+        stride_time = pd.to_datetime(all['step_time'])
+        diff = stride_time.diff().dt.total_seconds()
+        min_array = list(diff)
+
+        #need to pad with NaNs if not matchign lenth of other days
+        length = len(min_array)
+        current_len = len(data)
+
+        # Extend the DataFrame with NaN rows if needed
+        if length > current_len:
+            # Add extra rows
+            new_rows = length - current_len
+            data = pd.concat([data, pd.DataFrame([np.nan] * new_rows)], ignore_index=True)
+
+        # Pad the data with NaNs if it's shorter than current DataFrame
+        if length < current_len:
+            min_array = min_array + [np.nan] * (current_len - length)
+
+        # Add the column
+        data[f"Day {count} - {curr_day.strftime('%Y-%m-%d')}"] = min_array
+        count = count+1
+
+    data = data.drop(index=0).drop(columns=data.columns[0])
+
     return data
 
 def read_orig_fix_clean_demo():

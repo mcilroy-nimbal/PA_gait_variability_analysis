@@ -6,7 +6,7 @@ import pandas as pd
 import glob
 import os
 import matplotlib.pyplot as plt
-from Functions import wake_sleep, steps_by_day, step_density_sec,read_demo_ondri_data, read_demo_data
+from Functions import wake_sleep, steps_by_day, step_density_sec,read_demo_ondri_data, read_demo_data, stride_time_interval
 import numpy as np
 import seaborn as sns
 import datetime
@@ -43,7 +43,9 @@ filen = f'{'log_read_step_bouts_'}_{curr_date}.txt'
 log_file = open(log_out_path + filen, 'w')
 y = 0
 
-demodata = read_demo_data(study)
+demo_path = nimbal_drive+'\\Papers_NEW_April9\\Shared_Common_data\\'+study+'\\'
+demodata = read_demo_ondri_data(demo_path)
+
 
 ########################################################
 # loop through each eligible subject
@@ -82,8 +84,8 @@ log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
 #PART A - loop and do bin counts
 
 #set the bin widths fro step/strides counting
-bin_list_steps = [3, 5, 10, 20, 50, 100, 300]
-bin_width_time = [5, 10, 15, 30, 60, 180, 600]
+bin_list_steps = [5, 10, 25, 50, 100, 300]
+bin_width_time = [5, 10, 30, 60, 180, 600]
 
 #create header
 bin=[]
@@ -188,6 +190,15 @@ for j, subject in enumerate(master_subj_list):
     #time_sec=60
     #data = step_density_sec(steps, merged_daily, time_sec)
     #data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density.csv')
+
+    ##############################################################
+    #runs stride time for each subejct and day
+    data = stride_time_interval(steps, merged_daily)
+    data.to_csv(summary_path+'stride_time\\'+subject+'_'+visit+'_stride_time.csv')
+
+
+
+
 
 # write bins file summary
 steps_summary.to_csv(summary_path + study+'_bout_steps_daily_bins_with_unbouted.csv', index=False)
