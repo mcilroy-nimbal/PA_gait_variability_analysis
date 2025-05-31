@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from Functions import read_demo_ondri_data
-
+from scipy.stats import gaussian_kde
 import seaborn as sns
 import datetime
 
@@ -101,10 +101,15 @@ print (summary)
 
 target_subj = merged['SUBJECT'].unique()
 subjects = pd.Series(target_subj)
+
 ################################################################################
-# stride time plots
+# stride time plots and analysis
 plot_rows = []
+x_vals = np.linspace(0, 5, 250)
+plt.figure(figsize=(10, 6))
+
 for i in subjects:
+    full=[]
     print ('Subject: ' + str(i))
     stride_time = pd.read_csv(summary_path + 'stride_time\\' + str(i) + '_01_stride_time.csv')
     stride_time = stride_time.drop(columns=['Unnamed: 0'])
@@ -114,25 +119,36 @@ for i in subjects:
     for col_name, array in stride_time.items():
         print (col_name)
         array = array[~np.isnan(array)]
+        full.extend(array)
+
         #total = len(array)
         #array = array[array <= 3]
         #less3 = len(array)
         #print (total, less3)
-        # Compute histogram
-        hist, bin_edges = np.histogram(array, bins=100, range = (0, 5), density=True)
-        plot_rows.append(hist)
-        # Add spacer after each subject (row of NaNs)
+        # Compute histogram per day
+        #hist, bin_edges = np.histogram(array, bins=100, range = (0, 3), density=True)
+        #plot_rows.append(hist)
 
+    kde = gaussian_kde(full,bw_method=0.001)
+    density = kde(x_vals)
+    peak_index = np.argmax(density)
+    peak_x = x_vals[peak_index]
+    peak_y = density[peak_index]
+
+
+    plt.plot(x_vals, density)
+    #hist, bin_edges = np.histogram(full, bins=30, range = (0, 5), density=True)
+    #plot_rows.append(hist)
 # Stack to 2D array
-heatmap_data = np.vstack(plot_rows)  # shape: (total_rows, bins)
+#heatmap_data = np.vstack(plot_rows)  # shape: (total_rows, bins)
 
 # Plot heatmap
-plt.figure(figsize=(12, 20))
-plt.imshow(heatmap_data, aspect='auto', interpolation='none', cmap='plasma', origin='lower')
-plt.colorbar(label='Frequency Density')
-plt.xlabel('Histogram Bins')
-plt.ylabel('Days (stacked by subject)')
-plt.title('Heatmap of Frequency Distributions by Day and Subject')
+#plt.figure(figsize=(12, 20))
+#plt.imshow(heatmap_data, aspect='auto', interpolation='none', cmap='plasma', origin='lower')
+#plt.colorbar(label='Frequency Density')
+plt.xlabel('Value')
+plt.ylabel('Density')
+plt.title('Density plot per subject')
 plt.tight_layout()
 plt.show()
 
@@ -183,6 +199,21 @@ nstride_all_std = nstride_subj_means.std()
 nstride_pct_subj_means = step2.groupby('SUBJECT')[select3].mean()
 nstride_pct_all_means = nstride_pct_subj_means.mean()
 nstride_pct_all_std = nstride_pct_subj_means.std()
+
+
+
+
+
+##################################################################
+#scatter graphs
+
+
+# plt.scatter(x, unbout, color='red', label = 'unbouted')
+plt.scatter(x, short, color='orange', label='short <10')
+# plt.scatter(x, med, color='blue', label='med 10-50')
+plt.scatter(x, long, color='green', label='long >50')
+
+
 '''
 
 # Step 2: Create the plot
