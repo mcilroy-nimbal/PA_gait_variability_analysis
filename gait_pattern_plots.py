@@ -114,9 +114,10 @@ peak_x = []
 peak_y = []
 total = []
 pref_total = []
-rows = []
+
 for i in subjects:
     full=[]
+    subj_daily_pref = []
     print ('Subject: ' + str(i))
     stride_time = pd.read_csv(summary_path + 'stride_time\\' + str(i) + '_01_stride_time.csv')
     stride_time = stride_time.drop(columns=['Unnamed: 0'])
@@ -128,6 +129,15 @@ for i in subjects:
         array = array[~np.isnan(array)]
         full.extend(array)
 
+        '''
+        #caclculate pref for the day
+        daily_pref = np.array(array)
+        daily_pref = daily_pref[daily_pref < 3]
+        mean_daily_pref = daily_pref.mean()
+        subj_daily_pref.append(mean_daily_pref)
+    
+    subj_daily_mean = subj_daily_pref.mean()
+    subj_daily_std = subject_daily_pref.std()'''
 
     kde = gaussian_kde(full,bw_method=0.0001)
     density = kde(x_vals)
@@ -142,19 +152,24 @@ for i in subjects:
     axs[0].plot(x_vals, density)
     #axs[0].plot(x_vals[peak_index], density)
 
-    # create a panda data frame with peak_stride_time, total strides, pref_strides
-    row = {'SUBJECT': i, 'Peak_stride_time': peak_x, 'Peak_density': peak_y, 'Pref_strides': pref_total, 'Total_strides': total}
-    rows.append(row)
-
 
 axs[1].scatter(peak_x, peak_y)
 total = np.array(total)
 prct_pref = 100 * (np.array(pref_total) / total)
 axs[2].scatter(total, prct_pref)
-rows['Percent'] = prct_pref
-mean_stride_time = rows['Peak_stride_time'].describe()
-print
-mean_percent = rows['Percent'].describe()
+
+density_data = pd.DataFrame()
+
+density_data['SUBJECT'] = subjects
+density_data['Peak_stride_time'] = peak_x
+density_data['Peak_density'] = peak_y
+density_data['Percent_pref'] = prct_pref
+density_data['Total_strides'] = total
+
+mean_stride_time = density_data['Peak_stride_time'].describe()
+mean_percent = density_data['Percent_pref'].describe()
+
+
 
 
 '''
