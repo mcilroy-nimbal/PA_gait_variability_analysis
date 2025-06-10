@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, time
-
+from scipy.stats import pearsonr, spearmanr
 
 def read_demo_ondri_data(path):
     ###########################################
@@ -403,3 +403,22 @@ def read_demo_data (study):
         demodata['EMPLOYMENT STATUS'] = None
     return demodata
 
+def corr_matrix_all_columns(data, para):
+
+    # Select numeric columns only
+    df_numeric = data.select_dtypes(include=[np.number])
+    cols = df_numeric.columns
+
+    # Create combined matrix
+    combined_matrix = pd.DataFrame(index=cols, columns=cols)
+
+    # Calculate correlation and p-value
+    for col1 in cols:
+        for col2 in cols:
+            if para == True:
+                r, p = pearsonr(df_numeric[col1], df_numeric[col2])
+            else:
+                r, p = spearmanr(df_numeric[col1], df_numeric[col2])
+            combined_matrix.loc[col1, col2] = f"r={r:.2f}, p={p:.3f}"
+
+    return combined_matrix

@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from Functions import read_demo_ondri_data
+from Functions import read_demo_ondri_data,corr_matrix_all_columns
 from scipy.stats import gaussian_kde
 import seaborn as sns
 import datetime
@@ -102,12 +102,19 @@ print (summary)
 target_subj = merged['SUBJECT'].unique()
 subjects = pd.Series(target_subj)
 
+
+
 ################################################################################
 # stride time plots and analysis
 plot_rows = []
 x_vals = np.linspace(0, 5, 250)
-plt.figure(figsize=(10, 6))
+fig,axs = plt.subplots(1,3, figsize=(10, 6))
 
+peak_x = []
+peak_y = []
+total = []
+pref_total = []
+rows = []
 for i in subjects:
     full=[]
     print ('Subject: ' + str(i))
@@ -121,37 +128,56 @@ for i in subjects:
         array = array[~np.isnan(array)]
         full.extend(array)
 
-        #total = len(array)
-        #array = array[array <= 3]
-        #less3 = len(array)
-        #print (total, less3)
-        # Compute histogram per day
-        #hist, bin_edges = np.histogram(array, bins=100, range = (0, 3), density=True)
-        #plot_rows.append(hist)
 
-    kde = gaussian_kde(full,bw_method=0.001)
+    kde = gaussian_kde(full,bw_method=0.0001)
     density = kde(x_vals)
     peak_index = np.argmax(density)
-    peak_x = x_vals[peak_index]
-    peak_y = density[peak_index]
+    peak_x.append(x_vals[peak_index])
+    peak_y.append(density[peak_index])
+    total.append(len(full))
+    pref = np.array(full)
+    pref = pref[pref < 3]
+    pref_total.append(len(pref))
+
+    axs[0].plot(x_vals, density)
+    #axs[0].plot(x_vals[peak_index], density)
+
+    # create a panda data frame with peak_stride_time, total strides, pref_strides
+    row = {'SUBJECT': i, 'Peak_stride_time': peak_x, 'Peak_density': peak_y, 'Pref_strides': pref_total, 'Total_strides': total}
+    rows.append(row)
 
 
-    plt.plot(x_vals, density)
-    #hist, bin_edges = np.histogram(full, bins=30, range = (0, 5), density=True)
-    #plot_rows.append(hist)
-# Stack to 2D array
-#heatmap_data = np.vstack(plot_rows)  # shape: (total_rows, bins)
+axs[1].scatter(peak_x, peak_y)
+total = np.array(total)
+prct_pref = 100 * (np.array(pref_total) / total)
+axs[2].scatter(total, prct_pref)
 
+
+
+
+#run cluster on densitys
+
+
+'''
 # Plot heatmap
 #plt.figure(figsize=(12, 20))
 #plt.imshow(heatmap_data, aspect='auto', interpolation='none', cmap='plasma', origin='lower')
 #plt.colorbar(label='Frequency Density')
-plt.xlabel('Value')
-plt.ylabel('Density')
-plt.title('Density plot per subject')
+axs[0].set_xlabel('Stride time (sec)')
+axs[0].set_ylabel('Density')
+axs[0].set_title('Stride time density for subject')
+
+axs[1].set_xlabel('Stride time (sec)')
+axs[1].set_ylabel('Density')
+axs[1].set_title('Peak stride time density vs density')
+
+axs[2].set_xlabel('Total strides (7 days) ')
+axs[2].set_ylabel('% in preferred - 2')
+axs[2].set_title('Percent strides in preferred range')
+
 plt.tight_layout()
 plt.show()
-
+'''
 
 
 
@@ -164,7 +190,6 @@ step1 = steps_all[steps_all['SUBJECT'].isin(merged['SUBJECT'])]
 #first 7 days
 step2 = step1.groupby('SUBJECT').head(7).reset_index(drop=True)
 
-
 #slect the columns names to plot/analyze
 # these are the bout #s
 select1 = step2.columns[step2.columns.str.startswith('n_')].tolist()
@@ -173,6 +198,7 @@ select1 = step2.columns[step2.columns.str.startswith('n_')].tolist()
 select2 = step2.columns[step2.columns.str.startswith('strides_')].tolist()
 #this adds unbouted
 select2.insert(0, 'not_bouted')
+select2.insert(0, 'total')
 
 #calcualte the percentrage of stpes in bouts relatiev to total (daily)
 for col in select2:
@@ -186,9 +212,9 @@ select3 = step2.columns[step2.columns.str.endswith('_pct')].tolist()
 #MEANS GRAPH
 # subject means
 #bouts - calculate means for bout #s
-nbout_subj_means = step2.groupby('SUBJECT')[select1].mean()
-nbout_all_means = nbout_subj_means.mean()
-nbout_all_std = nbout_subj_means.std()
+#nbout_subj_means = step2.groupby('SUBJECT')[select1].mean()
+#nbout_all_means = nbout_subj_means.mean()
+#nbout_all_std = nbout_subj_means.std()
 
 #bouts setp #s absolute
 nstride_subj_means = step2.groupby('SUBJECT')[select2].mean()
@@ -200,18 +226,51 @@ nstride_pct_subj_means = step2.groupby('SUBJECT')[select3].mean()
 nstride_pct_all_means = nstride_pct_subj_means.mean()
 nstride_pct_all_std = nstride_pct_subj_means.std()
 
-
-
+#coraltion matrix across bouts strides
+#corr_matrix = corr_matrix_all_columns(nstride_subj_means, para=False)
+#corr_matrix.to_csv(summary_path+"corr_matrix_bout_strides.csv")
 
 
 ##################################################################
 #scatter graphs
 
+fig,axs = plt.subplots(1,3, figsize=(10, 6))
+lab_list = ['not_bouted', 'strides_>_600']
+for i in lab_list:
+    axs[0].scatter(nstride_subj_means['total'], nstride_subj_means[i], label=i)
 
-# plt.scatter(x, unbout, color='red', label = 'unbouted')
-plt.scatter(x, short, color='orange', label='short <10')
-# plt.scatter(x, med, color='blue', label='med 10-50')
-plt.scatter(x, long, color='green', label='long >50')
+lab_list = ['not_bouted_pct', 'strides_>_600_pct']
+for i in lab_list:
+    axs[1].scatter(nstride_subj_means['total'], nstride_pct_subj_means[i], label=i)
+
+axs[0].set_xlabel('Total strides')
+axs[0].set_ylabel('Strides')
+axs[0].set_title('Strides per bout vs total strides')
+axs[0].legend(loc='right')
+
+axs[1].set_xlabel('Total strides')
+axs[1].set_ylabel('% of total strides')
+axs[1].set_title('% bouted strides of total')
+axs[1].legend(loc='right')
+
+# Plot stacked bars manually
+bottom = [0] * len(nstride_subj_means)
+x = range(len(nstride_subj_means))
+# Sort rows by total row sum (ascending so largest on right)
+data_sorted = nstride_subj_means.copy()
+data_sorted['Total'] = nstride_subj_means.sum(axis=1)
+data_sorted = data_sorted.sort_values('Total')
+data_sorted = data_sorted.drop(columns='Total')
+
+temp = data_sorted.iloc[:,1:]
+for col in temp.columns:
+    axs[2].bar(x, temp[col], bottom=bottom, label=col)
+    bottom = [i + j for i, j in zip(bottom, temp[col])]
+
+
+plt.tight_layout()
+plt.show()
+print ('pause')
 
 
 '''

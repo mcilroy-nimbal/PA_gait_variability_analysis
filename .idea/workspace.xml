@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis" />
+    <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/Functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gait_pattern_plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/gait_pattern_plots.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -30,21 +34,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.AAIC2025_data.executor": "Debug",
-    "Python.Functions.executor": "Debug",
-    "Python.Gait_pattern_paper.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP1.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP2.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP3.executor": "Debug",
-    "Python.STEP1_create_bout_bin_density_files.executor": "Debug",
-    "Python.Step_PA_density_processing.executor": "Debug",
-    "Python.gait_pattern_plots.executor": "Debug",
-    "Python.main.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.AAIC2025_data.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Functions.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP1.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP2.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP3.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.STEP1_create_bout_bin_density_files.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Step_PA_density_processing.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.gait_pattern_plots.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.main.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -229,7 +233,23 @@
       <option name="project" value="LOCAL" />
       <updated>1748319431265</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1748577045889</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1748577045889</updated>
+    </task>
+    <task id="LOCAL-00023" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1748664822182</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1748664822182</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -296,24 +316,14 @@
           <option name="timeStamp" value="222" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Functions.py</url>
-          <line>66</line>
-          <option name="timeStamp" value="275" />
+          <url>file://$PROJECT_DIR$/gait_pattern_plots.py</url>
+          <line>260</line>
+          <option name="timeStamp" value="329" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Functions.py</url>
-          <line>29</line>
-          <option name="timeStamp" value="276" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Functions.py</url>
-          <line>35</line>
-          <option name="timeStamp" value="278" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Functions.py</url>
-          <line>38</line>
-          <option name="timeStamp" value="279" />
+          <url>file://$PROJECT_DIR$/gait_pattern_plots.py</url>
+          <line>224</line>
+          <option name="timeStamp" value="332" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
