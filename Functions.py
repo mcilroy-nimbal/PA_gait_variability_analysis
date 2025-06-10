@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, time
 from scipy.stats import pearsonr, spearmanr
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 def read_demo_ondri_data(path):
     ###########################################
@@ -422,3 +425,18 @@ def corr_matrix_all_columns(data, para):
             combined_matrix.loc[col1, col2] = f"r={r:.2f}, p={p:.3f}"
 
     return combined_matrix
+
+def clustering (data, ncluster):
+
+    #Normalize
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(data)
+
+    #Cluster with KMeans
+    kmeans = KMeans(n_clusters=ncluster, random_state=0)
+    labels = kmeans.fit_predict(scaled_data)
+    data['cluster'] = kmeans.fit_predict(scaled_data)
+
+    #Melt the DataFrame into long-form
+    data_out = data.melt(id_vars='cluster', var_name='feature', value_name='value')
+    return data_out

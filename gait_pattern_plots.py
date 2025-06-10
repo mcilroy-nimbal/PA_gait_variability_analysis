@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from Functions import read_demo_ondri_data,corr_matrix_all_columns
+from Functions import read_demo_ondri_data,corr_matrix_all_columns, clustering
 from scipy.stats import gaussian_kde
 import seaborn as sns
 import datetime
@@ -151,11 +151,10 @@ axs[1].scatter(peak_x, peak_y)
 total = np.array(total)
 prct_pref = 100 * (np.array(pref_total) / total)
 axs[2].scatter(total, prct_pref)
-
-
-
-
-#run cluster on densitys
+rows['Percent'] = prct_pref
+mean_stride_time = rows['Peak_stride_time'].describe()
+print
+mean_percent = rows['Percent'].describe()
 
 
 '''
