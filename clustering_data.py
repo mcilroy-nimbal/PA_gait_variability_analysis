@@ -34,8 +34,8 @@ nimbal_dr = 'o:'
 new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 demodata = read_demo_ondri_data(nimbal_dr, new_path)
 
-#study = 'OND09'
-study = 'SA-PR01'
+study = 'OND09'
+#study = 'SA-PR01'
 
 ###########################################
 # read 60sec density summary files

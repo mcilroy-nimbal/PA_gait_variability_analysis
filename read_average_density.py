@@ -1,114 +1,8 @@
-import pandas as pd
-import os
-import matplotlib.pyplot as plt
-import numpy as np
-from Functions import read_demo_ondri_data,corr_matrix_all_columns, clustering
-from scipy.stats import gaussian_kde
-import seaborn as sns
-import datetime
-
-###############################################################
-study = 'OND09'
-nimbal_dr = 'O:'
-
-###########################################
-#read in the cleaned data file for the HANNDS methods paper
-demo_path = nimbal_dr+'\\Papers_NEW_April9\\Shared_Common_data\\'+study+'\\'
-#reads this file - 'OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv'
-demodata = read_demo_ondri_data(demo_path)
-
-def remove_underscore(s):
-    parts = s.split('_')
-    fixed = parts[0] +'_'+ parts[1] + parts[2]
-    return fixed
-demodata['SUBJECT'] = demodata['SUBJECT'].apply(remove_underscore)
-
-###########################################
-# read in step bout data
-paper_path = '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
-summary_path = nimbal_dr + paper_path + 'Summary_data\\'
-
-summary_steps_file = study+'_bout_steps_daily_bins_with_unbouted.csv'
-steps_data = pd.read_csv(summary_path+summary_steps_file)
-steps_data = steps_data.rename(columns={'subj': 'SUBJECT'})
-
-summary_dur_file = study +'_bout_width_daily_bins_with_unbouted.csv'
-width_data = pd.read_csv(summary_path+summary_dur_file)
-width_data = width_data.rename(columns={'subj': 'SUBJECT'})
-
-##############################################
-# select subset of main data based on
-# Count the number of rows for each unique SubjectCode
-by_step=False
-
-if by_step:
-    steps_all = steps_data[steps_data['all/sleep']=='all']
-    graph_title1 = 'Bouts by stride count'
-else:
-    #using width in time
-    steps_all = width_data[width_data['all/sleep']=='all']
-    graph_title1 = 'Bouts by seconds'
-
-counts = steps_all['SUBJECT'].value_counts().reset_index()
-counts = counts.reset_index()
-
-#table of the counts
-merged = pd.merge(counts, demodata, on='SUBJECT')
-merged = merged[merged['COHORT'] == 'Community Dwelling']
-
-# Define age bins and labels
-bins = [0, 50, 60, 70, 80, 100]
-labels = ['<50', '50-60', '60-70', '70-80','>80']
-
-# Create new column for age groups
-merged['AgeGroup'] = pd.cut(merged['AGE'], bins=bins, labels=labels, right=False)
-
-merged = merged[(merged['AGE'] > 49) & (merged['count'] > 6)]
-print(len(merged))
-
-# Summary calculations
-sex_counts = merged['SEX'].value_counts(normalize=True).mul(100).round(1)
-avg_age = merged['AGE'].mean()
-std_age = merged['AGE'].std()
-marital_counts = merged['MRTL_STATUS'].value_counts(normalize=True).mul(100).round(1)
-
-# Get unique values in 'Category'
-a = merged['MRTL_STATUS'].unique()
-mrtl_list = a.tolist()
-
-work_counts = merged['EMPLOY_STATUS'].value_counts(normalize=True).mul(100).round(1)
-a = merged['EMPLOY_STATUS'].unique()
-employ_list = a.tolist()
-
-# Build summary table
-summary = pd.DataFrame({
-    'Metric': ['Avg age', 'Std_age', '% Male', '% Female'] + [f'Count in {label}' for label in mrtl_list]+ [f'Count in {label2}' for label2 in employ_list],
-    'Value': [
-        round(avg_age, 2),
-        round(std_age, 2),
-        sex_counts.get('Male', 0),
-        sex_counts.get('Female', 0),
-        *[marital_counts.get(label, 0) for label in mrtl_list],
-        *[work_counts.get(label, 0) for label in employ_list]
-    ]
-})
-
-# Create a blank row
-blank_row = pd.DataFrame({'Metric': [''], 'Value': ['']})
-summary = pd.concat([summary.iloc[:4], blank_row, summary.iloc[4:]]).reset_index(drop=True)
-summary = pd.concat([summary.iloc[:11], blank_row, summary.iloc[11:]]).reset_index(drop=True)
-print (summary)
-
-target_subj = merged['SUBJECT'].unique()
-subjects = pd.Series(target_subj)
-
-
-
 ################################################################################
 # stride time plots and analysis
 plot_rows = []
-x_vals = np.linspace(0, 5, 250)
-fig,axs = plt.subplots(1,3, figsize=(10, 6))
+'''x_vals = np.linspace(0, 5, 250)
+fig, axs = plt.subplots(1, 3, figsize=(10, 6))
 
 peak_x = []
 peak_y = []
@@ -116,30 +10,30 @@ total = []
 pref_total = []
 
 for i in subjects:
-    full=[]
+    full = []
     subj_daily_pref = []
-    print ('Subject: ' + str(i))
+    print('Subject: ' + str(i))
     stride_time = pd.read_csv(summary_path + 'stride_time\\' + str(i) + '_01_stride_time.csv')
     stride_time = stride_time.drop(columns=['Unnamed: 0'])
     if stride_time.shape[1] > 7:
         cols_to_drop = stride_time.columns[7:]  # everything after the 7th
         stride_time = stride_time.drop(columns=cols_to_drop)
     for col_name, array in stride_time.items():
-        print (col_name)
+        print(col_name)
         array = array[~np.isnan(array)]
         full.extend(array)
 
-        '''
+
         #caclculate pref for the day
         daily_pref = np.array(array)
         daily_pref = daily_pref[daily_pref < 3]
         mean_daily_pref = daily_pref.mean()
         subj_daily_pref.append(mean_daily_pref)
-    
-    subj_daily_mean = subj_daily_pref.mean()
-    subj_daily_std = subject_daily_pref.std()'''
 
-    kde = gaussian_kde(full,bw_method=0.0001)
+    subj_daily_mean = subj_daily_pref.mean()
+    subj_daily_std = subject_daily_pref.std()
+
+    kde = gaussian_kde(full, bw_method=0.0001)
     density = kde(x_vals)
     peak_index = np.argmax(density)
     peak_x.append(x_vals[peak_index])
@@ -151,7 +45,6 @@ for i in subjects:
 
     axs[0].plot(x_vals, density)
     #axs[0].plot(x_vals[peak_index], density)
-
 
 axs[1].scatter(peak_x, peak_y)
 total = np.array(total)
@@ -170,9 +63,6 @@ mean_stride_time = density_data['Peak_stride_time'].describe()
 mean_percent = density_data['Percent_pref'].describe()
 
 
-
-
-'''
 # Plot heatmap
 #plt.figure(figsize=(12, 20))
 #plt.imshow(heatmap_data, aspect='auto', interpolation='none', cmap='plasma', origin='lower')
@@ -191,8 +81,6 @@ axs[2].set_title('Percent strides in preferred range')
 
 plt.tight_layout()
 plt.show()
-'''
-
 
 
 ################################################################################
@@ -221,7 +109,6 @@ for col in select2:
 #this is the header for the percentage valaues
 select3 = step2.columns[step2.columns.str.endswith('_pct')].tolist()
 
-
 #####################################################
 #MEANS GRAPH
 # subject means
@@ -248,7 +135,7 @@ nstride_pct_all_std = nstride_pct_subj_means.std()
 ##################################################################
 #scatter graphs
 
-fig,axs = plt.subplots(1,3, figsize=(10, 6))
+fig, axs = plt.subplots(1, 3, figsize=(10, 6))
 lab_list = ['not_bouted', 'strides_>_600']
 for i in lab_list:
     axs[0].scatter(nstride_subj_means['total'], nstride_subj_means[i], label=i)
@@ -276,18 +163,16 @@ data_sorted['Total'] = nstride_subj_means.sum(axis=1)
 data_sorted = data_sorted.sort_values('Total')
 data_sorted = data_sorted.drop(columns='Total')
 
-temp = data_sorted.iloc[:,1:]
+temp = data_sorted.iloc[:, 1:]
 for col in temp.columns:
     axs[2].bar(x, temp[col], bottom=bottom, label=col)
     bottom = [i + j for i, j in zip(bottom, temp[col])]
 
-
 plt.tight_layout()
 plt.show()
-print ('pause')
+print('pause')
 
 
-'''
 
 # Step 2: Create the plot
 fig,axs = plt.subplots(3, figsize=(8, 9))
@@ -330,16 +215,10 @@ axs[0].set_ylabel('Mean COV (across days)')
 
 plt.tight_layout()
 plt.show()
-'''
 
 
+print('pause')
 
-
-
-
-
-print ('pause')
-'''
 #######################################################
 # mean values (across days - all values from bouts)
 steps = True
@@ -387,5 +266,5 @@ plt.ylabel('Coefficient of variation')
 plt.title('Average Coefficient of variation (across days) per bout')
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show()
-'''
+plt.show()'''
+

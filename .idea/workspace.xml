@@ -5,8 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <change afterPath="$PROJECT_DIR$/read_average_density.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/select_study_subjects_OND09.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/select_study_subjects_SAProj.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gait_pattern_plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/gait_pattern_plots.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/Functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/STEP1_create_bout_bin_density_files.py" beforeDir="false" afterPath="$PROJECT_DIR$/STEP1_create_bout_bin_density_files.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/clustering_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/clustering_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gait_pattern_plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/read_average_bouts.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,6 +22,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="Python Stub" />
         <option value="Python Script" />
       </list>
     </option>
@@ -45,6 +52,8 @@
     &quot;Python.Step_PA_density_processing.executor&quot;: &quot;Debug&quot;,
     &quot;Python.gait_pattern_plots.executor&quot;: &quot;Debug&quot;,
     &quot;Python.main.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.read_average_bouts.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.select_study_subjects.executor&quot;: &quot;Debug&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;
   }
 }</component>
@@ -264,7 +273,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749527156016</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1749577228280</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1749577228280</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -331,19 +348,54 @@
           <option name="timeStamp" value="222" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/gait_pattern_plots.py</url>
-          <line>276</line>
+          <url>file://$PROJECT_DIR$/select_study_subjects_OND09.py</url>
+          <line>290</line>
           <option name="timeStamp" value="329" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/gait_pattern_plots.py</url>
-          <line>240</line>
+          <url>file://$PROJECT_DIR$/select_study_subjects_OND09.py</url>
+          <line>254</line>
           <option name="timeStamp" value="332" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/gait_pattern_plots.py</url>
-          <line>191</line>
+          <url>file://$PROJECT_DIR$/select_study_subjects_OND09.py</url>
+          <line>205</line>
           <option name="timeStamp" value="333" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Functions.py</url>
+          <line>69</line>
+          <option name="timeStamp" value="338" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/STEP1_create_bout_bin_density_files.py</url>
+          <line>187</line>
+          <option name="timeStamp" value="339" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/STEP1_create_bout_bin_density_files.py</url>
+          <line>201</line>
+          <option name="timeStamp" value="340" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/STEP1_create_bout_bin_density_files.py</url>
+          <line>125</line>
+          <option name="timeStamp" value="341" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/STEP1_create_bout_bin_density_files.py</url>
+          <line>122</line>
+          <option name="timeStamp" value="342" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/STEP1_create_bout_bin_density_files.py</url>
+          <line>81</line>
+          <option name="timeStamp" value="345" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
+          <line>86</line>
+          <option name="timeStamp" value="348" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

@@ -74,7 +74,7 @@ def steps_by_day (log_file, steps_summary, steps, bin_list_steps, width_summary,
 
     #loop through days all steps
     for i, row in merged_daily.iterrows():
-        wear = row['wear']
+        wear = row['wear_duration']
         curr_day = row['date']
         daily_tot_steps = row['total_steps']
 
@@ -271,7 +271,7 @@ def step_density_sec(steps, merged_daily, time_sec):
     return data
 
 def stride_time_interval(steps, merged_daily):
-
+    #creastes a summary of stride tiem intervals
     # loop through days
     #header_days = [f'day_{i + 1}' for i in range(len(merged_daily))]
     data = pd.DataFrame()#columns=header_days)
@@ -390,20 +390,22 @@ def summary_density_bins(data):
     out_tot = [len(data), zero_tot, vlow_tot, low_tot, med_tot, high_tot, bout_3, bout_10]
     return out_tot
 
-def read_demo_data (study):
+def read_demo_data (drive, path, study):
     ###########################################
     # read in the cleaned data file for the HANNDS methods paper
     if study == 'OND09':
-        nimbal_dr = 'o:'
-        new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
-        demodata = read_demo_ondri_data(nimbal_dr, new_path)
+        new_path = drive + path
+        '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
+        demodata = read_demo_ondri_data(drive, path)
     elif study == 'SA-PR01':
-        new_path = 'W:\\SuperAging\\data\\summary\\RPPR 2025\\SA-PR01_collections.csv'
+        new_path = 'W:\\SuperAging\\data\\summary\\AAIC_2025\\SA-PR01_collections.csv'
         demodata = pd.read_csv(new_path)
         demodata['AGE'] = demodata['age']
         demodata['SUBJECT'] = demodata['subject_id']
         demodata['COHORT'] = demodata['group']
         demodata['EMPLOYMENT STATUS'] = None
+
+
     return demodata
 
 def corr_matrix_all_columns(data, para):
@@ -439,4 +441,89 @@ def clustering (data, ncluster):
 
     #Melt the DataFrame into long-form
     data_out = data.melt(id_vars='cluster', var_name='feature', value_name='value')
-    return data_out
+    return data_out, labels
+
+def create_table(data, group_col, cont_vars, categ_vars):
+    # ---- Continuous variables: mean ± std ----
+    if group_col == None:
+        cont_summary = (data[cont_vars].agg(['count', 'mean', 'std']).round(4))
+    else:
+        cont_summary = (data.groupby(group_col)[cont_vars].agg(['count', 'mean', 'std']).round(4))
+
+    # Flatten multi-level columns
+    cont_summary.columns = ['_'.join(col) for col in cont_summary.columns]
+
+    # ---- Categorical variables: % within group ----
+    def percent_by_group(data, group_col, cat_col):
+        if group_col == None:
+            pct = (data[cat_col].value_counts(normalize=True).mul(100).rename(f'{cat_col}_pct').reset_index())
+        else:
+            pct = (data.groupby(group_col)[cat_col].value_counts(normalize=True).mul(100).rename(f'{cat_col}_pct').reset_index())
+        return pct
+
+    # Generate % tables and merge
+    if group_col == None:
+        cat_tables = [percent_by_group(data, cat) for cat in categ_vars]
+    else:
+        cat_tables = [percent_by_group(data, group_col, cat) for cat in categ_vars]
+
+    cat_summary = pd.concat(cat_tables, axis=1)
+
+    # ---- Combine summaries ----
+    summary = pd.concat([cont_summary, cat_summary], axis=1)
+
+    return summary
+
+def get_demo_characteristics(study, sub_study, subjects, group_col):
+    # characteristics
+    new_path = 'W:\\SuperAging\\data\\summary\\' + sub_study + '\\conference\\'
+    file1 = study + '_collections.csv'
+    demodata = pd.read_csv(new_path + file1)
+    demodata = demodata[demodata['has_wearables_demographics'] == True]
+
+    # list of variables to tabulate
+    var_list = ['subject_id', 'group', 'sa_class', 'age_at_visit', 'sex', 'educ', 'mc_employment_status',
+                'maristat', 'livsitua', 'independ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
+    demodata = demodata[var_list]
+
+    ##################################################################
+    # select certain group members
+    demodata = demodata[demodata['group'].isin(['control', 'superager'])].reset_index()
+    demodata.rename(columns={'group': 'GROUP'}, inplace=True)
+    demodata.rename(columns={'subject_id': 'SUBJECT'}, inplace=True)
+
+    # rename
+    demodata['sex'] = demodata['sex'].replace({'1': 'Male', '2': 'Female', '3': 'Non-binary'})
+    demodata['mc_employment_status'] = demodata['mc_employment_status'].replace(
+        {1: 'Full-time', 2: 'Part-time', 3: 'Retired', 4: 'Disabled', 5: 'NA or never worked'})
+    demodata['maristat'] = demodata['maristat'].replace(
+        {'1': 'Married', '2': 'Widowed', '3': 'Divorced', '4': 'Separated',
+         '5': 'Never married', '6': 'Living as married/domestic partner', '9': 'Unknown'})
+    demodata['livsitua'] = demodata['livsitua'].replace(
+        {'1': 'Lives alone', '2': 'Lives (1) spouse or partner', '3': 'Lives (1) other',
+         '4': 'Lives with caregiver not spouse/partner, relative, or friend',
+         '5': 'Lives with a group private residence',
+         '6': 'Lives in group home', '9': 'Unknown'})
+    demodata['independ'] = demodata['independ'].replace(
+        {1: 'Able to live independently', 2: 'Assist-complex activities',
+         3: 'Assist-basic activities',
+         4: 'Assist-complete', 9: 'Unknown'})
+
+    # residenc
+    # 1, 1 Single - or multi-family private residence (apartment, condo, house)|2, 2 Retirement community or independent group living|3, 3 Assisted living, adult family home, or boarding home|4, 4 Skilled nursing facility, nursing home, hospital, or hospice|9, 9 Unknown
+    # demosresidenceruralurban
+    # ro1_nu_legacy_vars		dropdown	Residence:	1, Rural|2, Urban
+    # currently_exercise	participant_demographics_a1	 	yesno	Currently exercising?
+
+    sub_demo = demodata[demodata['SUBJECT'].isin(subjects)]
+    sub_demo = sub_demo.reset_index()
+
+    # Summary calculations
+    categ_vars = ['GROUP', 'sex', 'mc_employment_status', 'maristat', 'livsitua', 'independ']
+    cont_vars = ['age_at_visit', 'educ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
+    sub_demo[cont_vars] = sub_demo[cont_vars].apply(pd.to_numeric, errors='coerce')
+
+    summary_table = create_table(sub_demo, group_col, cont_vars, categ_vars)
+    summary_table = summary_table.transpose()
+
+    return summary_table
