@@ -443,38 +443,31 @@ def clustering (data, ncluster):
     data_out = data.melt(id_vars='cluster', var_name='feature', value_name='value')
     return data_out, labels
 
-def create_table(data, group_col, cont_vars, categ_vars):
+def create_table(data, cont_vars, categ_vars):
     # ---- Continuous variables: mean ± std ----
-    if group_col == None:
-        cont_summary = (data[cont_vars].agg(['count', 'mean', 'std']).round(4))
-    else:
-        cont_summary = (data.groupby(group_col)[cont_vars].agg(['count', 'mean', 'std']).round(4))
+    cont_summary = (data[cont_vars].agg(['count', 'mean', 'std']).round(4))
+    cont_summary = cont_summary.T.reset_index()
+    cont_summary.columns = ['variable', 'count', 'mean', 'std']
+    def categ_pert_table(df, categorical_cols):
+        all_tables = []
 
-    # Flatten multi-level columns
-    cont_summary.columns = ['_'.join(col) for col in cont_summary.columns]
-
-    # ---- Categorical variables: % within group ----
-    def percent_by_group(data, group_col, cat_col):
-        if group_col == None:
-            pct = (data[cat_col].value_counts(normalize=True).mul(100).rename(f'{cat_col}_pct').reset_index())
-        else:
-            pct = (data.groupby(group_col)[cat_col].value_counts(normalize=True).mul(100).rename(f'{cat_col}_pct').reset_index())
+        for col in categorical_cols:
+            value_counts = df[col].value_counts(dropna=False)
+            percentages = df[col].value_counts(normalize=True, dropna=False).mul(100).round(1)
+            summary_pct = pd.DataFrame({'variable': col,'category': value_counts.index,'count': value_counts.values,
+                                        'percent': percentages.values})
+            all_tables.append(summary_pct)
+        # Combine all summaries
+        pct = pd.concat(all_tables, ignore_index=True)
+        # Optional: rearrange columns
         return pct
 
-    # Generate % tables and merge
-    if group_col == None:
-        cat_tables = [percent_by_group(data, cat) for cat in categ_vars]
-    else:
-        cat_tables = [percent_by_group(data, group_col, cat) for cat in categ_vars]
+    # ---- Categorical variables: %
+    categ_summary = categ_pert_table(data, categ_vars)
 
-    cat_summary = pd.concat(cat_tables, axis=1)
+    return categ_summary, cont_summary
 
-    # ---- Combine summaries ----
-    summary = pd.concat([cont_summary, cat_summary], axis=1)
-
-    return summary
-
-def get_demo_characteristics(study, sub_study, subjects, group_col):
+def get_demo_characteristics(study, sub_study):
     # characteristics
     new_path = 'W:\\SuperAging\\data\\summary\\' + sub_study + '\\conference\\'
     file1 = study + '_collections.csv'
@@ -515,15 +508,5 @@ def get_demo_characteristics(study, sub_study, subjects, group_col):
     # ro1_nu_legacy_vars		dropdown	Residence:	1, Rural|2, Urban
     # currently_exercise	participant_demographics_a1	 	yesno	Currently exercising?
 
-    sub_demo = demodata[demodata['SUBJECT'].isin(subjects)]
-    sub_demo = sub_demo.reset_index()
 
-    # Summary calculations
-    categ_vars = ['GROUP', 'sex', 'mc_employment_status', 'maristat', 'livsitua', 'independ']
-    cont_vars = ['age_at_visit', 'educ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
-    sub_demo[cont_vars] = sub_demo[cont_vars].apply(pd.to_numeric, errors='coerce')
-
-    summary_table = create_table(sub_demo, group_col, cont_vars, categ_vars)
-    summary_table = summary_table.transpose()
-
-    return summary_table
+    return demodata

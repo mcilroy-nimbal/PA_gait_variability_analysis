@@ -1,5 +1,5 @@
 import pandas as pd
-from Functions import clustering, get_demo_characteristics
+from Functions import clustering, get_demo_characteristics, create_table
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -15,8 +15,18 @@ summary_path = nimbal_dr + paper_path + 'Summary_data\\'
 #read in subject list from file in summary drive
 subjects = pd.read_csv(summary_path+'subject_ids_'+sub_study+'.csv')
 
+##############################################################
+#get demogrpahci data
+print ('reading demo data....')
+demo_data =  get_demo_characteristics(study, sub_study)
+# Summary calculations
+categ_vars = ['GROUP', 'sex', 'mc_employment_status', 'maristat', 'livsitua', 'independ']
+cont_vars = ['age_at_visit', 'educ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
+demo_data[cont_vars] = demo_data[cont_vars].apply(pd.to_numeric, errors='coerce')
+
 ###########################################
 # read in step bout data
+print ('reading bout data....')
 summary_steps_file = study+'_bout_steps_daily_bins_with_unbouted.csv'
 steps_data = pd.read_csv(summary_path+summary_steps_file)
 steps_data = steps_data.rename(columns={'subj': 'SUBJECT'})
@@ -27,8 +37,8 @@ width_data = width_data.rename(columns={'subj': 'SUBJECT'})
 
 ##############################################
 # Run the analysis on bout steps or bout width
+print ('Summarizing bouts data by subject (collapsed across days)...')
 by_step = False
-
 if by_step:
     steps_all = steps_data[steps_data['all/sleep']=='all']
     graph_title1 = 'Bouts by stride count'
@@ -74,11 +84,12 @@ step1['long'] = long_bouts.sum(axis=1)
 
 cluster_cols = ['not_bouted', 'short', 'medium', 'long']
 subset = step1[['SUBJECT'] + cluster_cols]
-subset = subset.groupby(subset['SUBJECT']).sum()
+subset = subset.groupby(subset['SUBJECT']).median()
 
 #sum across subject days
+print ('Run and plot cluster analysis....')
 cluster_data = subset
-ncluster = 3
+ncluster = 4
 data_out, labels = clustering(cluster_data, ncluster=ncluster)
 x = np.arange(len(cluster_cols))
 plt.figure(figsize=(10, 6))
@@ -91,15 +102,22 @@ plt.show()
 
 subject_clusters = pd.DataFrame({'Subject': cluster_data.index,'Cluster': labels})
 
-cluster_tables = []
+categ_table = pd.DataFrame()
+cont_table = pd.DataFrame()
+
 for i in range(ncluster):
     cluster_id = subject_clusters[subject_clusters['Cluster'] == i]
-    subjects = cluster_id['Subject']
+    #subjects = cluster_id['Subject']
     print ('Cluster '+str(i) + ' - n: '+ str(len(subjects)))
-    summary_table = get_demo_characteristics(study='SA-PR01', sub_study='AAIC 2025', subjects=subjects, group_col=None)
-    cluster_tables.append(summary_table)
 
+    cluster_demo = demo_data[demo_data['SUBJECT'].isin(cluster_id['Subject'])]
+    categ, cont = create_table(cluster_demo, cont_vars, categ_vars)
+    categ_table = pd.concat([categ_table, categ], ignore_index=True)
+    cont_table = pd.concat([cont_table, cont], ignore_index=True)
+    print ('pause')
 
+categ_table.to_csv(summary_path+'cluster_demo_categ.csv', index=False)
+cont_table.to_csv(summary_path+'cluster_demo_cont.csv', index=False)
 print ('test')
 
 #####################################################
