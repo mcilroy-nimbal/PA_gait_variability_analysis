@@ -18,9 +18,9 @@ subjects = pd.read_csv(summary_path+'subject_ids_'+sub_study+'.csv')
 ##############################################################
 #get demogrpahci data
 print ('reading demo data....')
-demo_data =  get_demo_characteristics(study, sub_study)
+demo_data = get_demo_characteristics(study, sub_study)
 # Summary calculations
-categ_vars = ['GROUP', 'sex', 'mc_employment_status', 'maristat', 'livsitua', 'independ']
+categ_vars = ['GROUP', 'sex', 'mc_employment_status', 'maristat', 'livsitua', 'independ','currently_exercise', 'currently_exercise_specify']
 cont_vars = ['age_at_visit', 'educ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
 demo_data[cont_vars] = demo_data[cont_vars].apply(pd.to_numeric, errors='coerce')
 
@@ -42,12 +42,12 @@ by_step = False
 if by_step:
     steps_all = steps_data[steps_data['all/sleep']=='all']
     graph_title1 = 'Bouts by stride count'
-    file_out =  'Bouts_by_step_summary_by_subject_7days.csv'
+
 else:
     #using width in time
     steps_all = width_data[width_data['all/sleep']=='all']
     graph_title1 = 'Bouts by seconds'
-    file_out = 'Bouts_by_sec_summary_by_subject_7days.csv'
+
 
 counts = steps_all['SUBJECT'].value_counts().reset_index()
 counts = counts.reset_index()
@@ -71,10 +71,13 @@ select2.insert(0, 'not_bouted')
 select2.insert(0, 'total')
 
 #calcualte the percentrage of steps in bouts relatiev to total (daily)
+select3 = []
 for col in select2:
     step1[col + '_pct'] = step1[col] / step1['total'] * 100
+    select3.append(col+'_pct')
 
-#cols = ['vlow_corr','low_corr','med_corr','high_corr']
+
+#collapse data into low, med, high bin widht durations
 short_bouts = step1[['strides_<_5', 'strides_<_10', 'strides_<_30']]
 step1['short'] = short_bouts.sum(axis=1)
 med_bouts = step1[['strides_<_60', 'strides_<_180']]
@@ -82,6 +85,159 @@ step1['medium'] = med_bouts.sum(axis=1)
 long_bouts = step1[['strides_<_600', 'strides_>_600']]
 step1['long'] = long_bouts.sum(axis=1)
 
+
+#####################################################################
+#CLUSTER analysis
+#select subset for persposes of clustering
+cluster_cols = ['not_bouted', 'short', 'medium', 'long']
+subset = step1[['SUBJECT'] + cluster_cols]
+subset = subset.groupby(subset['SUBJECT']).median()
+
+#sum across subject days
+print ('Run and plot cluster analysis....')
+cluster_data = subset
+ncluster = 3
+data_out, labels = clustering(cluster_data, ncluster=ncluster)
+subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
+subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: '1- Low'})
+subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: '2- High/Low'})
+subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: '3- High'})
+
+plot_cluster = True
+if plot_cluster:
+    x = np.arange(len(cluster_cols))
+    plt.figure(figsize=(10, 6))
+    sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', palette='Set2')
+    plt.xlabel('Bout durations')
+    plt.ylabel('Median strides/day')
+    plt.xticks(ticks=x, labels=cluster_cols)
+    plt.title('Bout pattern clusters')
+    plt.show()
+
+
+
+create_table=False
+if create_table:
+    categ_table = pd.DataFrame()
+    cont_table = pd.DataFrame()
+    for i in range(ncluster):
+        cluster_id = subject_clusters[subject_clusters['GROUP'] == i]
+        #subjects = cluster_id['Subject']
+        print ('Cluster '+str(i) + ' - n: '+ str(len(subjects)))
+
+        cluster_demo = demo_data[demo_data['SUBJECT'].isin(cluster_id['Subject'])]
+        categ, cont = create_table(cluster_demo, cont_vars, categ_vars)
+        categ_table = pd.concat([categ_table, categ], ignore_index=True)
+        cont_table = pd.concat([cont_table, cont], ignore_index=True)
+        print ('pause')
+
+    categ_table.to_csv(summary_path+'cluster_demo_categ_updated.csv', index=False)
+    cont_table.to_csv(summary_path+'cluster_demo_cont_updated.csv', index=False)
+print ('test')
+
+
+
+#####################################################################
+#means graph of all bout widths - uses medians for each subject and then medianas and STD
+#MEANS GRAPH
+
+#bouts setp #s absolute
+subj_medians = step1.groupby('SUBJECT')[select2].median()
+subj_means = step1.groupby('SUBJECT')[select2].mean()
+subj_std = step1.groupby('SUBJECT')[select2].std()
+subj_CV = 100 * subj_std/subj_means
+
+by_group = True
+if by_group:
+    #group_data = demo_data
+    group_data = subject_clusters
+
+    #if grouping by SA/CONTROl
+    subj_medians = subj_medians.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+    subj_std = subj_std.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+    subj_means = subj_means.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+    subj_CV = subj_CV.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+
+    group_medians = subj_medians.groupby('GROUP').median()
+    group_std = subj_std.groupby('GROUP').median()
+    group_CV = subj_CV.groupby('GROUP').median()
+    group_CV_std = subj_CV.groupby('GROUP').std()
+
+
+    #plotting
+    # Get list of variables to plot
+    variables = group_medians.columns
+    groups = group_medians.index
+    n_groups = len(groups)
+    n_vars = len(variables)
+
+    x = np.arange(n_vars)  # x-axis: one spot per variable
+    width = 0.8 / n_groups  # total bar width shared among groups
+
+    fig, ax = plt.subplots(figsize=(12, 4))
+
+    # Plot bars for each group
+    for i, group in enumerate(groups):
+        # Heights and errors for this group
+        heights = group_medians.loc[group].values
+        #heights = group_CV.loc[group].values
+
+        errors = group_std.loc[group].values
+        #errors = group_CV_std.loc[group].values
+
+        # X locations: offset for each group
+        x_pos = x + (i - n_groups / 2) * width + width / 2
+
+        ax.bar(x_pos,heights,yerr=errors,capsize=5,width=width,label=f'{group}')
+
+    # Axis labels and ticks
+    ax.set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8],
+                  labels=['Total', 'Unbouted', '<5 s', '5-10 s', '10-30 s', '30-60 s', '60-180 s', '180-600 s', '>600 s'])
+
+    #ax.set_ylabel('Median Interday CofV (%)')
+    ax.set_ylabel('Median strides / day')
+
+    ax.set_xlabel('Bout duration')
+
+    #ax.set_title('Median Interday CofV vs bout lengths')
+    ax.set_title('Median strides / day vs bout lengths')
+    ax.legend(title='Group')
+    plt.tight_layout()
+    plt.show()
+
+
+else:
+    group_medians = subj_medians.median()
+    group_std = subj_std.median()
+
+
+    ##############################################################################################
+    #plot all bins
+    # Step 2: Create the plot
+    fig,axs = plt.subplots(2, figsize=(8, 9))
+
+    axs[0].bar(group_medians.index, group_medians.values, yerr=group_med_std.values, capsize=5, color='lightblue', edgecolor='black')
+    axs[0].set_title('Median unilateral steps / day')
+    axs[0].set_xlabel('Bout duration (secs)')
+    axs[0].set_ylabel('Unilateral steps / day')
+    axs[0].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
+
+    axs[1].bar(group_CV.index, group_CV.values, yerr=group_CV_std.values, capsize=5, color='lightblue', edgecolor='black')
+    axs[1].set_title('Within subject (between-day) variaiton - CV')
+    axs[1].set_xlabel('Bout duration (secs)')
+    axs[1].set_ylabel('CV')
+    axs[1].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
+
+
+    plt.tight_layout()
+    plt.show()
+
+
+print ('pause')
+
+#################################################################
+#CLUSTER analysis
+#select subset for persposes of clustering
 cluster_cols = ['not_bouted', 'short', 'medium', 'long']
 subset = step1[['SUBJECT'] + cluster_cols]
 subset = subset.groupby(subset['SUBJECT']).median()

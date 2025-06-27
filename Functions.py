@@ -476,7 +476,8 @@ def get_demo_characteristics(study, sub_study):
 
     # list of variables to tabulate
     var_list = ['subject_id', 'group', 'sa_class', 'age_at_visit', 'sex', 'educ', 'mc_employment_status',
-                'maristat', 'livsitua', 'independ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
+                'maristat', 'livsitua', 'independ', 'lsq_total', 'global_psqi', 'adlq_totalscore',
+                'currently_exercise', 'currently_exercise_specify']
     demodata = demodata[var_list]
 
     ##################################################################
@@ -501,12 +502,15 @@ def get_demo_characteristics(study, sub_study):
         {1: 'Able to live independently', 2: 'Assist-complex activities',
          3: 'Assist-basic activities',
          4: 'Assist-complete', 9: 'Unknown'})
-
-    # residenc
-    # 1, 1 Single - or multi-family private residence (apartment, condo, house)|2, 2 Retirement community or independent group living|3, 3 Assisted living, adult family home, or boarding home|4, 4 Skilled nursing facility, nursing home, hospital, or hospice|9, 9 Unknown
-    # demosresidenceruralurban
-    # ro1_nu_legacy_vars		dropdown	Residence:	1, Rural|2, Urban
-    # currently_exercise	participant_demographics_a1	 	yesno	Currently exercising?
+    demodata['currently_exercise_specify'] = demodata['currently_exercise_specify'].replace(
+        {1: 'Every day', 2: 'At least 3x / week', 3: '1 x week', 4: '< once a week', 5: '< 1 a month'})
+    demodata['currently_exercise'] = demodata['currently_exercise'].replace(
+        {1: 'Yes', 2: 'No'})
+    #demodata['residenc'] = demodata['residenc'].replace(
+    #    {1: 'Single - or multi-family private residence', 2: 'Retirement community or independent group living',
+    #     3: 'Assisted living, adult family home', 4: 'Skilled nursing facility', 9: 'Unknown'})
+    #demodata['demosresidenceruralurban'] = demodata['demosresidenceruralurban'].replace(
+    #    {1: 'Rural', 2: 'Urban'})
 
 
     return demodata
