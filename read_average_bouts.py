@@ -3,6 +3,7 @@ from Functions import clustering, get_demo_characteristics, create_table
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from scipy.stats import ttest_ind, chi2_contingency
 
 ###############################################################
 study = 'SA-PR01'
@@ -20,7 +21,7 @@ subjects = pd.read_csv(summary_path+'subject_ids_'+sub_study+'.csv')
 print ('reading demo data....')
 demo_data = get_demo_characteristics(study, sub_study)
 # Summary calculations
-categ_vars = ['GROUP', 'sex', 'mc_employment_status', 'maristat', 'livsitua', 'independ','currently_exercise', 'currently_exercise_specify']
+categ_vars = ['GROUP', 'sex', 'race', 'mc_employment_status', 'maristat', 'livsitua', 'independ','currently_exercise', 'currently_exercise_specify']
 cont_vars = ['age_at_visit', 'educ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
 demo_data[cont_vars] = demo_data[cont_vars].apply(pd.to_numeric, errors='coerce')
 
@@ -86,35 +87,143 @@ long_bouts = step1[['strides_<_600', 'strides_>_600']]
 step1['long'] = long_bouts.sum(axis=1)
 
 
+
 #####################################################################
 #CLUSTER analysis
 #select subset for persposes of clustering
 cluster_cols = ['not_bouted', 'short', 'medium', 'long']
-subset = step1[['SUBJECT'] + cluster_cols]
-subset = subset.groupby(subset['SUBJECT']).median()
+all_subset = step1[['SUBJECT'] + cluster_cols]
+
+#subset = subset.groupby(subset['SUBJECT']).mean()
+
+subset = all_subset.groupby(all_subset['SUBJECT']).agg(['sum','count'])
+subset.columns = ['_'.join(col) for col in subset.columns]
+
+subset['total'] = subset[['not_bouted_sum', 'short_sum', 'medium_sum', 'long_sum']].sum(axis=1)
+subset['median_daily'] = subset['total'] / subset['not_bouted_count']
+corr = subset['median_daily']
+subset['not_bouted'] = corr * subset['not_bouted_sum'] /subset['total']
+subset['short'] = corr * subset['short_sum'] /subset['total']
+subset['medium'] = corr * subset['medium_sum'] /subset['total']
+subset['long'] = corr * subset['long_sum'] /subset['total']
+
+subset_cluster = subset[['not_bouted', 'short','medium','long']]
+
+
+
+
 
 #sum across subject days
 print ('Run and plot cluster analysis....')
-cluster_data = subset
+cluster_data = subset_cluster
 ncluster = 3
 data_out, labels = clustering(cluster_data, ncluster=ncluster)
 subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
-subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: '1- Low'})
-subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: '2- High/Low'})
-subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: '3- High'})
-
+subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: 'Low'})
+subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: 'High'})
+subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: 'High/Low'})
+data_out['cluster'] = data_out['cluster'].replace({0: 'Low'})
+data_out['cluster'] = data_out['cluster'].replace({1: 'High'})
+data_out['cluster'] = data_out['cluster'].replace({2: 'High/Low'})
 plot_cluster = True
 if plot_cluster:
     x = np.arange(len(cluster_cols))
     plt.figure(figsize=(10, 6))
-    sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', palette='Set2')
-    plt.xlabel('Bout durations')
-    plt.ylabel('Median strides/day')
-    plt.xticks(ticks=x, labels=cluster_cols)
-    plt.title('Bout pattern clusters')
+    sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['Low','High/Low','High'], palette='Set2', linewidth=5)
+    plt.xlabel('Bout durations', fontsize=24)
+    plt.ylabel('Strides/day', fontsize=24)
+    plt.xticks(ticks=x, labels=cluster_cols, fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.title('Bout pattern clusters', fontsize=32)
+    plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
     plt.show()
 
+#features indivdiuasl in the clusters - table 2
 
+#add the cluster column to demo data
+subject_clusters = subject_clusters.rename(columns={'GROUP': 'CLUSTER'})
+demo_data = demo_data.merge(
+    subject_clusters[['SUBJECT', 'CLUSTER']],  # Only bring in needed column
+    on='SUBJECT',
+    how='left')  # Keep all rows in demo_data
+
+demo_data['maristat'] = demo_data['maristat'].apply(lambda x: 1 if x == 'Married' or x == 'Living as married/domestic partner' else 2)
+demo_data['race'] = demo_data['race'].apply(lambda x: 1 if x == '1' else 2)
+demo_data['sex'] = demo_data['sex'].apply(lambda x: 1 if x == 'Female' else 2)
+
+
+group_counts = demo_data.groupby('CLUSTER')['GROUP'].value_counts().unstack()
+print(group_counts)
+sex_counts = demo_data.groupby('CLUSTER')['sex'].value_counts().unstack()
+print(sex_counts)
+race_counts = demo_data.groupby('CLUSTER')['race'].value_counts().unstack()
+print(race_counts)
+marital_counts = demo_data.groupby('CLUSTER')['maristat'].value_counts().unstack()
+print(marital_counts)
+age_stats = demo_data.groupby('CLUSTER')['age_at_visit'].agg(['mean', 'std']).round(4)
+print(age_stats)
+edu_stats = demo_data.groupby('CLUSTER')['educ'].agg(['mean', 'std']).round(4)
+print(edu_stats)
+adl_stats = demo_data.groupby('CLUSTER')['adlq_totalscore'].agg(['mean', 'std']).round(4)
+print(adl_stats)
+
+subset = subset.merge(
+    subject_clusters[['SUBJECT', 'CLUSTER']],  # Only bring in needed column
+    on='SUBJECT',
+    how='left')  # Keep all rows in demo_data
+
+daily_stats = subset.groupby('CLUSTER')['median_daily'].agg(['mean', 'std']).round(4)
+print(daily_stats)
+
+
+#Table 1
+cont_vars = ['AGE', 'YEARS_EDU', 'ADL_SCORE']
+
+categ_vars_table1 = ['sex', 'race', 'maristat']
+cont_vars_table1 = ['age_at_visit', 'educ', 'lsq_total', 'adlq_totalscore']
+demo_data['maristat'] = demo_data['maristat'].apply(lambda x: 1 if x == 'Married' or x == 'Living as married/domestic partner' else 2)
+demo_data['race'] = demo_data['race'].apply(lambda x: 1 if x == '1' else 2)
+demo_data['sex'] = demo_data['sex'].apply(lambda x: 1 if x == 'Female' else 2)
+
+group1 = demo_data[demo_data['GROUP'] == 'control']
+group2 = demo_data[demo_data['GROUP'] == 'superager']
+
+results = []
+for var in cont_vars_table1:
+    stat, pval = ttest_ind(group1[var], group2[var], nan_policy='omit')
+    mean1 = group1[var].mean()
+    mean2 = group2[var].mean()
+    std1 = group1[var].std()
+    std2 = group2[var].std()
+    results.append({
+        'Variable': var,
+        'Mean_Group1': mean1,
+        'SD_Group1': std1,
+        'Mean_Group2': mean2,
+        'SD_Group2': std2,
+        'P-Value': pval
+    })
+
+cont_summary = pd.DataFrame(results)
+cat_results = []
+
+for var in categ_vars_table1:
+
+    contingency = pd.crosstab(demo_data[var], demo_data['GROUP'])
+    chi2, pval, _, _ = chi2_contingency(contingency)
+
+    prct1 = (group1[var] == 1).mean() * 100
+    prct2 = (group2[var] == 1).mean() * 100
+
+    cat_results.append({
+        'Variable': var,
+        'Group1_%': prct1,
+        'Group2_%': prct2,
+        'P-Value': pval
+    })
+
+cat_summary = pd.DataFrame(cat_results)
+final_summary = pd.concat([cont_summary, cat_summary], ignore_index=True)
 
 create_table=False
 if create_table:
@@ -130,6 +239,16 @@ if create_table:
         categ_table = pd.concat([categ_table, categ], ignore_index=True)
         cont_table = pd.concat([cont_table, cont], ignore_index=True)
         print ('pause')
+
+
+    #table 1
+    #variables - age, education, sex, race,
+
+
+
+
+
+
 
     categ_table.to_csv(summary_path+'cluster_demo_categ_updated.csv', index=False)
     cont_table.to_csv(summary_path+'cluster_demo_cont_updated.csv', index=False)

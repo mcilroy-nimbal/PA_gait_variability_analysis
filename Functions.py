@@ -435,7 +435,7 @@ def clustering (data, ncluster):
     scaled_data = scaler.fit_transform(data)
 
     #Cluster with KMeans
-    kmeans = KMeans(n_clusters=ncluster, random_state=0)
+    kmeans = KMeans(n_clusters=ncluster, random_state=42)
     labels = kmeans.fit_predict(scaled_data)
     data['cluster'] = kmeans.fit_predict(scaled_data)
 
@@ -475,7 +475,7 @@ def get_demo_characteristics(study, sub_study):
     demodata = demodata[demodata['has_wearables_demographics'] == True]
 
     # list of variables to tabulate
-    var_list = ['subject_id', 'group', 'sa_class', 'age_at_visit', 'sex', 'educ', 'mc_employment_status',
+    var_list = ['subject_id', 'group', 'sa_class', 'age_at_visit', 'sex', 'race', 'educ', 'mc_employment_status',
                 'maristat', 'livsitua', 'independ', 'lsq_total', 'global_psqi', 'adlq_totalscore',
                 'currently_exercise', 'currently_exercise_specify']
     demodata = demodata[var_list]
@@ -506,6 +506,9 @@ def get_demo_characteristics(study, sub_study):
         {1: 'Every day', 2: 'At least 3x / week', 3: '1 x week', 4: '< once a week', 5: '< 1 a month'})
     demodata['currently_exercise'] = demodata['currently_exercise'].replace(
         {1: 'Yes', 2: 'No'})
+    demodata['race'] = demodata['race'].replace(
+        {1: 'White', 2: 'Black', 3: 'American Indian or Alaska Native', 4: 'Native Hawaiian',
+         5: 'Asian', 50: 'Other', 99: 'Unknown'})
     #demodata['residenc'] = demodata['residenc'].replace(
     #    {1: 'Single - or multi-family private residence', 2: 'Retirement community or independent group living',
     #     3: 'Assisted living, adult family home', 4: 'Skilled nursing facility', 9: 'Unknown'})
