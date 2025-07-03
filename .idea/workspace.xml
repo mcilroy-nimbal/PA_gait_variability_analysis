@@ -31,25 +31,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.AAIC2025_data.executor": "Debug",
-    "Python.Functions.executor": "Debug",
-    "Python.Gait_pattern_paper.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP1.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP2.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP3.executor": "Debug",
-    "Python.STEP1_create_bout_bin_density_files.executor": "Debug",
-    "Python.Step_PA_density_processing.executor": "Debug",
-    "Python.create_bout_bin_and_density_files.executor": "Debug",
-    "Python.gait_pattern_plots.executor": "Debug",
-    "Python.main.executor": "Debug",
-    "Python.read_average_bouts.executor": "Debug",
-    "Python.select_study_subjects.executor": "Debug",
-    "Python.select_study_subjects_SAProj.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.AAIC2025_data.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Functions.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP1.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP2.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP3.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.STEP1_create_bout_bin_density_files.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Step_PA_density_processing.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.create_bout_bin_and_density_files.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.gait_pattern_plots.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.main.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.read_average_bouts.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.select_study_subjects.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.select_study_subjects_SAProj.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -282,7 +282,31 @@
       <option name="project" value="LOCAL" />
       <updated>1750886881510</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1750909636550</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1750909636550</updated>
+    </task>
+    <task id="LOCAL-00029" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1750992158218</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1750992158218</updated>
+    </task>
+    <task id="LOCAL-00030" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1751488049117</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1751488049117</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -345,7 +369,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
-          <line>102</line>
+          <line>395</line>
           <option name="timeStamp" value="348" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -357,6 +381,36 @@
           <url>file://$PROJECT_DIR$/Gait_pattern_paper_STEP2.py</url>
           <line>110</line>
           <option name="timeStamp" value="368" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
+          <line>394</line>
+          <option name="timeStamp" value="375" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
+          <line>393</line>
+          <option name="timeStamp" value="376" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
+          <line>354</line>
+          <option name="timeStamp" value="381" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
+          <line>335</line>
+          <option name="timeStamp" value="383" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
+          <line>227</line>
+          <option name="timeStamp" value="400" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/read_average_bouts.py</url>
+          <line>179</line>
+          <option name="timeStamp" value="420" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

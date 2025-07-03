@@ -12,6 +12,7 @@ sub_study = 'AAIC 2025'
 paper_path = '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
 summary_path = nimbal_dr + paper_path + 'Summary_data\\'
 
+
 ##############################################################
 #read in subject list from file in summary drive
 subjects = pd.read_csv(summary_path+'subject_ids_'+sub_study+'.csv')
@@ -25,12 +26,36 @@ categ_vars = ['GROUP', 'sex', 'race', 'mc_employment_status', 'maristat', 'livsi
 cont_vars = ['age_at_visit', 'educ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
 demo_data[cont_vars] = demo_data[cont_vars].apply(pd.to_numeric, errors='coerce')
 
+
+
+#################################################################
+#Figure 2 of poster
+daily_summary = pd.read_csv('W:\\SuperAging\\data\\summary\\AAIC 2025\\conference\\SA-PR01_daily_summary.csv')
+
+list = ['subject_id', 'ankle_wear_duration', 'wrist_wear_duration', 'total_steps','moderate','vigorous','sleep_duration_total']
+daily_summary = daily_summary[list]
+
+daily_summary = daily_summary.rename(columns={'subject_id': 'SUBJECT'})
+daily_summary = daily_summary.merge(demo_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left')
+
+daily1 = daily_summary[daily_summary['SUBJECT'].isin(subjects['SUBJECT'])]
+
+
+
+
+
+
+
+
+
+
+
 ###########################################
 # read in step bout data
 print ('reading bout data....')
 summary_steps_file = study+'_bout_steps_daily_bins_with_unbouted.csv'
 steps_data = pd.read_csv(summary_path+summary_steps_file)
-steps_data = steps_data.rename(columns={'subj': 'SUBJECT'})
+
 
 summary_dur_file = study +'_bout_width_daily_bins_with_unbouted.csv'
 width_data = pd.read_csv(summary_path+summary_dur_file)
@@ -78,6 +103,14 @@ for col in select2:
     select3.append(col+'_pct')
 
 
+
+
+
+
+'''
+#######################################################################
+#colaspe for cluster analysis
+
 #collapse data into low, med, high bin widht durations
 short_bouts = step1[['strides_<_5', 'strides_<_10', 'strides_<_30']]
 step1['short'] = short_bouts.sum(axis=1)
@@ -85,7 +118,6 @@ med_bouts = step1[['strides_<_60', 'strides_<_180']]
 step1['medium'] = med_bouts.sum(axis=1)
 long_bouts = step1[['strides_<_600', 'strides_>_600']]
 step1['long'] = long_bouts.sum(axis=1)
-
 
 
 #####################################################################
@@ -108,10 +140,6 @@ subset['medium'] = corr * subset['medium_sum'] /subset['total']
 subset['long'] = corr * subset['long_sum'] /subset['total']
 
 subset_cluster = subset[['not_bouted', 'short','medium','long']]
-
-
-
-
 
 #sum across subject days
 print ('Run and plot cluster analysis....')
@@ -138,8 +166,11 @@ if plot_cluster:
     plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
     plt.show()
 
-#features indivdiuasl in the clusters - table 2
 
+########################################################################
+#determien charcateristic of group members 
+
+#features indivdiuasl in the clusters - table 2
 #add the cluster column to demo data
 subject_clusters = subject_clusters.rename(columns={'GROUP': 'CLUSTER'})
 demo_data = demo_data.merge(
@@ -243,17 +274,10 @@ if create_table:
 
     #table 1
     #variables - age, education, sex, race,
-
-
-
-
-
-
-
     categ_table.to_csv(summary_path+'cluster_demo_categ_updated.csv', index=False)
     cont_table.to_csv(summary_path+'cluster_demo_cont_updated.csv', index=False)
 print ('test')
-
+'''
 
 
 #####################################################################
@@ -261,10 +285,81 @@ print ('test')
 #MEANS GRAPH
 
 #bouts setp #s absolute
-subj_medians = step1.groupby('SUBJECT')[select2].median()
-subj_means = step1.groupby('SUBJECT')[select2].mean()
-subj_std = step1.groupby('SUBJECT')[select2].std()
-subj_CV = 100 * subj_std/subj_means
+select = select2
+subj_sum = step1.groupby('SUBJECT')[select].sum()
+subj_median = step1.groupby('SUBJECT')[select].median()
+subj_mean = step1.groupby('SUBJECT')[select].mean()
+subj_std = step1.groupby('SUBJECT')[select].std()
+subj_CV = 100 * subj_std/subj_mean
+
+
+##########################################################################
+#plot data
+group_data = demo_data
+#group_data = subject_clusters
+#if grouping by SA/CONTROl
+subj_median = subj_median.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+subj_mean = subj_mean.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+subj_std = subj_std.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+subj_CV = subj_CV.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+
+#change this line for mean vs median
+group_mean = subj_mean.groupby('GROUP').mean()
+
+#chaneg this lien for man versus median
+group_std = subj_mean.groupby('GROUP').std()
+
+group_CV = subj_CV.groupby('GROUP').mean()
+group_CV_std = subj_CV.groupby('GROUP').std()
+
+#plotting
+# Get list of variables to plot
+group_mean = group_mean.drop(columns='total')
+group_std = group_std.drop(columns='total')
+group_CV = group_CV.drop(columns='total')
+group_CV_std = group_CV_std.drop(columns='total')
+
+variables = group_mean.columns
+groups = group_mean.index
+n_groups = len(groups)
+n_vars = len(variables)
+
+x = np.arange(n_vars)  # x-axis: one spot per variable
+width = 0.8 / n_groups  # total bar width shared among groups
+
+fig, ax = plt.subplots(figsize=(12, 4))
+
+# Plot bars for each group
+for i, group in enumerate(groups):
+    # Heights and errors for this group
+    heights = group_CV.loc[group].values
+    #heights = group_CV.loc[group].values
+
+    errors = group_CV_std.loc[group].values
+    yerr = [np.zeros_like(errors), errors]
+    #errors = group_CV_std.loc[group].values
+
+    # X locations: offset for each group
+    x_pos = x + (i - n_groups / 2) * width + width / 2
+
+    ax.bar(x_pos,heights,yerr=yerr,capsize=5,width=width,label=f'{group}')
+
+# Axis labels and ticks
+ax.set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7],
+              labels=['Unbouted', '<5 s', '5-10 s', '10-30 s', '30-60 s', '60-180 s', '180-600 s', '>600 s'],
+              fontsize=18)
+
+#ax.set_ylabel('Median Interday CofV (%)')
+ax.set_ylabel('Inter-day CofV', fontsize=24)
+
+ax.set_xlabel('Bout duration', fontsize=24)
+
+#ax.set_title('Median Interday CofV vs bout lengths')
+ax.set_title('Inter-day CofV vs bout lengths', fontsize=32)
+ax.legend(title='Group',title_fontsize=20, fontsize=18)
+plt.tight_layout()
+plt.show()
+
 
 by_group = True
 if by_group:
@@ -273,6 +368,7 @@ if by_group:
 
     #if grouping by SA/CONTROl
     subj_medians = subj_medians.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
+
     subj_std = subj_std.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
     subj_means = subj_means.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
     subj_CV = subj_CV.merge(group_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left').drop(columns='SUBJECT')
