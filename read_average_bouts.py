@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from scipy.stats import ttest_ind, chi2_contingency
+import matplotlib.gridspec as gridspec
+
 
 ###############################################################
 study = 'SA-PR01'
@@ -30,24 +32,74 @@ demo_data[cont_vars] = demo_data[cont_vars].apply(pd.to_numeric, errors='coerce'
 
 #################################################################
 #Figure 2 of poster
-daily_summary = pd.read_csv('W:\\SuperAging\\data\\summary\\AAIC 2025\\conference\\SA-PR01_daily_summary.csv')
+
+daily = pd.read_csv('W:\\SuperAging\\data\\summary\\AAIC 2025\\conference\\SA-PR01_daily_summary.csv')
 
 list = ['subject_id', 'ankle_wear_duration', 'wrist_wear_duration', 'total_steps','moderate','vigorous','sleep_duration_total']
-daily_summary = daily_summary[list]
+daily = daily[list]
+daily = daily.rename(columns={'subject_id': 'SUBJECT'})
 
-daily_summary = daily_summary.rename(columns={'subject_id': 'SUBJECT'})
-daily_summary = daily_summary.merge(demo_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left')
+#Drop days that are too short
+threshold = 72000
+daily['total_steps'] = daily['total_steps'].where(daily['ankle_wear_duration'] >= threshold)
+daily['moderate'] = daily['moderate'].where(daily['wrist_wear_duration'] >= threshold)
+daily['moderate'] = daily['moderate']/60
+daily['sleep_duration_total'] = daily['sleep_duration_total']/3600
+summary = daily.groupby('SUBJECT').agg(['median', 'std']).reset_index()
+summary = summary[summary['SUBJECT'].isin(subjects['SUBJECT'])]
 
-daily1 = daily_summary[daily_summary['SUBJECT'].isin(subjects['SUBJECT'])]
+summary.columns = ['_'.join(col) for col in summary.columns]
+summary = summary.rename(columns={'SUBJECT_': 'SUBJECT'})
+summary = summary.merge(demo_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left')
 
 
+#fig, ax = plt.subplots(figsize=(12, 4))
+xcol = 'sleep_duration_total_median'
+ycol = 'sleep_duration_total_std'
+huecol = 'GROUP'
+#sns.jointplot(data=summary,x=xcol,y=ycol, hue='GROUP', marginal_kws=dict(common_norm=False, fill=True))
+
+#ax.set_ylabel('Median Interday CofV (%)')
+#ax.set_ylabel('Median steps / day', fontsize=24)
+#ax.set_xlabel('Inter-day variation - steps (std)', fontsize=24)
+
+#ax.set_title('Median Interday CofV vs bout lengths')
+#ax.set_title('Inter-day CofV vs bout lengths', fontsize=32)
+#ax.legend(title='Group',title_fontsize=20, fontsize=18)
 
 
+fig = plt.figure(figsize=(7, 6))
+gs = gridspec.GridSpec(2, 2, width_ratios=[4, 1], height_ratios=[1, 4],
+                       wspace=0.05, hspace=0.05)
 
+# Axes for plots
+ax_main = fig.add_subplot(gs[1, 0])  # main scatterplot
+ax_xdist = fig.add_subplot(gs[0, 0], sharex=ax_main)  # top histogram
+ax_ydist = fig.add_subplot(gs[1, 1], sharey=ax_main)  # right histogram
 
+# Plot scatter and regression lines per group
+for group in summary[huecol].unique():
+    group_df = summary[summary[huecol] == group]
+    # Scatter
+    sns.scatterplot(data=group_df, x=xcol, y=ycol, ax=ax_main, label=group)
+    # Regression
+    sns.regplot(data=group_df, x=xcol, y=ycol, ax=ax_main, scatter=False)
 
+# Plot marginal distributions
+sns.histplot(data=summary, x=xcol, hue=huecol, ax=ax_xdist, element="step", common_norm=False, legend=False)
+sns.histplot(data=summary, y=ycol, hue=huecol, ax=ax_ydist, element="step", common_norm=False, legend=False)
 
+# Clean up aesthetics
+ax_xdist.axis("off")
+ax_ydist.axis("off")
+#ax_main.set_xtick(fontsize=18)
+#ax_main.set_ytick(fontsize=18)
+ax_main.set_xlabel('Median sleep duration (hours / day)')
+ax_main.set_ylabel('Inter-day sleep variability (std)')
+ax_main.legend(title=huecol)
 
+#plt.suptitle("Grouped Regression with Marginal Distributions", y=0.95)
+plt.show()
 
 
 ###########################################
