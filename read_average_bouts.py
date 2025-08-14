@@ -54,8 +54,13 @@ summary = summary.merge(demo_data[['SUBJECT', 'GROUP']], on='SUBJECT', how='left
 
 
 #fig, ax = plt.subplots(figsize=(12, 4))
-xcol = 'sleep_duration_total_median'
-ycol = 'sleep_duration_total_std'
+#xcol = 'sleep_duration_total_median'
+#ycol = 'sleep_duration_total_std'
+#xcol = 'moderate_median'
+#ycol = 'moderate_std'
+ycol = 'total_steps_std'
+xcol = 'total_steps_median'
+
 huecol = 'GROUP'
 #sns.jointplot(data=summary,x=xcol,y=ycol, hue='GROUP', marginal_kws=dict(common_norm=False, fill=True))
 
@@ -92,22 +97,22 @@ sns.histplot(data=summary, y=ycol, hue=huecol, ax=ax_ydist, element="step", comm
 # Clean up aesthetics
 ax_xdist.axis("off")
 ax_ydist.axis("off")
-#ax_main.set_xtick(fontsize=18)
-#ax_main.set_ytick(fontsize=18)
-ax_main.set_xlabel('Median sleep duration (hours / day)')
-ax_main.set_ylabel('Inter-day sleep variability (std)')
+#ax_main.set_xticks(fontsize=24)
+#ax_main.set_yticks(fontsize=24)
+#ax_main.set_xlabel('Median sleep duration (hours / day)', fontsize=20)
+#ax_main.set_ylabel('Inter-day sleep variability (std)', fontsize=20)
 ax_main.legend(title=huecol)
 
 #plt.suptitle("Grouped Regression with Marginal Distributions", y=0.95)
 plt.show()
-
-
+print ('pause')
+'''
+'''
 ###########################################
 # read in step bout data
 print ('reading bout data....')
 summary_steps_file = study+'_bout_steps_daily_bins_with_unbouted.csv'
 steps_data = pd.read_csv(summary_path+summary_steps_file)
-
 
 summary_dur_file = study +'_bout_width_daily_bins_with_unbouted.csv'
 width_data = pd.read_csv(summary_path+summary_dur_file)
@@ -156,10 +161,6 @@ for col in select2:
 
 
 
-
-
-
-'''
 #######################################################################
 #colaspe for cluster analysis
 
@@ -205,7 +206,8 @@ subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: 'High/Low'})
 data_out['cluster'] = data_out['cluster'].replace({0: 'Low'})
 data_out['cluster'] = data_out['cluster'].replace({1: 'High'})
 data_out['cluster'] = data_out['cluster'].replace({2: 'High/Low'})
-plot_cluster = True
+
+plot_cluster = False
 if plot_cluster:
     x = np.arange(len(cluster_cols))
     plt.figure(figsize=(10, 6))
@@ -233,7 +235,11 @@ demo_data = demo_data.merge(
 demo_data['maristat'] = demo_data['maristat'].apply(lambda x: 1 if x == 'Married' or x == 'Living as married/domestic partner' else 2)
 demo_data['race'] = demo_data['race'].apply(lambda x: 1 if x == '1' else 2)
 demo_data['sex'] = demo_data['sex'].apply(lambda x: 1 if x == 'Female' else 2)
+demo_data['livsitua'] = demo_data['livsitua'].apply(lambda x: 1 if x == 'Lives alone' else 2)
+demo_data['currently_exercise_specify'] = demo_data['currently_exercise_specify'].apply(lambda x: 1 if
+        x == 'Every day' or x == 'At least 3x / week' else 2)
 
+cont_vars = ['age_at_visit', 'educ', 'lsq_total', 'global_psqi', 'adlq_totalscore']
 
 group_counts = demo_data.groupby('CLUSTER')['GROUP'].value_counts().unstack()
 print(group_counts)
@@ -243,19 +249,29 @@ race_counts = demo_data.groupby('CLUSTER')['race'].value_counts().unstack()
 print(race_counts)
 marital_counts = demo_data.groupby('CLUSTER')['maristat'].value_counts().unstack()
 print(marital_counts)
+
+living = demo_data.groupby('CLUSTER')['livsitua'].value_counts().unstack()
+print(living)
+exercise = demo_data.groupby('CLUSTER')['currently_exercise_specify'].value_counts().unstack()
+print(exercise)
+
+
 age_stats = demo_data.groupby('CLUSTER')['age_at_visit'].agg(['mean', 'std']).round(4)
 print(age_stats)
 edu_stats = demo_data.groupby('CLUSTER')['educ'].agg(['mean', 'std']).round(4)
 print(edu_stats)
 adl_stats = demo_data.groupby('CLUSTER')['adlq_totalscore'].agg(['mean', 'std']).round(4)
 print(adl_stats)
+adl_stats = demo_data.groupby('CLUSTER')['lsq_total'].agg(['mean', 'std']).round(4)
+print(adl_stats)
+
 
 subset = subset.merge(
     subject_clusters[['SUBJECT', 'CLUSTER']],  # Only bring in needed column
     on='SUBJECT',
     how='left')  # Keep all rows in demo_data
-
-daily_stats = subset.groupby('CLUSTER')['median_daily'].agg(['mean', 'std']).round(4)
+subset['median_daily'] = subset['median_daily'] * 2
+daily_stats = subset.groupby('CLUSTER')['median_daily'].agg(['mean', 'std','max', 'min']).round(4)
 print(daily_stats)
 
 
@@ -401,7 +417,7 @@ ax.set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7],
               labels=['Unbouted', '<5 s', '5-10 s', '10-30 s', '30-60 s', '60-180 s', '180-600 s', '>600 s'],
               fontsize=18)
 
-#ax.set_ylabel('Median Interday CofV (%)')
+#ax.set_ylabel('Median Interday CofV (%)', fontsize=24)
 ax.set_ylabel('Inter-day CofV', fontsize=24)
 
 ax.set_xlabel('Bout duration', fontsize=24)
@@ -700,5 +716,5 @@ plt.ylabel('Coefficient of variation')
 plt.title('Average Coefficient of variation (across days) per bout')
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show()'''
+plt.show()
 

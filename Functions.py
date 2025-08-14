@@ -5,6 +5,139 @@ from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+import glob
+
+
+def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list):
+    # check - but use this one - \prd\nimbalwear\OND09
+    if study == 'OND09':
+        path1 = root + '\\NiMBaLWEAR\\OND09\\analytics\\'
+    else:
+        path1 = root + '\\nimbalwear\\SA-PR01-022\\data\\'
+    log_out_path = nimbal_drive + paper_path + 'Log_files\\'
+    summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+
+    nw_path = 'prep\\nonwear\\daily_cropped\\'
+    bout_path = 'analytics\\gait\\bouts\\'
+    step_path = 'analytics\\gait\\steps\\'
+    daily_path = 'analytics\\gait\\daily\\'
+    sptw_path = 'analytics\\sleep\\sptw\\'
+
+    # PART A - loop and do bin counts
+
+    # set the bin widths fro step/strides counting
+    bin_list_steps = [5, 10, 25, 50, 100, 300]
+    bin_width_time = [5, 10, 30, 60, 180, 600]
+
+    # create header
+    bin = []
+    for k in range(len(bin_list_steps)):
+        new = f'{'<'}_{bin_list_steps[k]}'
+        bin.append(new)
+    last = '>_' + str(bin_list_steps[len(bin_list_steps) - 1])
+    bin.append(last)
+    part1 = ['n_' + item for item in bin]
+    bin_list_steps_header = part1
+    part2 = ['strides_' + item for item in bin]
+    bin_list_steps_header.extend(part2)
+
+    bin = []
+    for k in range(len(bin_width_time)):
+        new = f'{'<'}_{bin_width_time[k]}'
+        bin.append(new)
+    last = '>_' + str(bin_width_time[len(bin_width_time) - 1])
+    bin.append(last)
+    part1 = ['n_' + item for item in bin]
+    bin_width_time_header = part1
+    part2 = ['strides_' + item for item in bin]
+    bin_width_time_header.extend(part2)
+
+    basic = ['subj', 'visit', 'date', 'wear', 'group', 'all/sleep', 'daily_total', 'total', 'not_bouted']
+    steps_header = basic + bin_list_steps_header
+    width_header = basic + bin_width_time_header
+
+    # create blank panda dataframe for summary data
+    steps_summary = pd.DataFrame(columns=steps_header)
+    width_summary = pd.DataFrame(columns=width_header)
+
+    # TODO fix the walkign at night/sleep calculation
+
+    for j, subject in enumerate(master_subj_list):
+        visit = '01'
+        print('Subject: ' + subject)
+
+        # get step data for subject
+        try:
+            steps = pd.read_csv(path1 + step_path + study + '_' + subject + '_' + visit + '_GAIT_STEPS.csv')
+        except:
+            continue
+        try:
+            bouts = pd.read_csv(path1 + bout_path + study + '_' + subject + '_' + visit + '_GAIT_BOUTS.csv')
+        except:
+            bouts = None
+        try:
+            daily = pd.read_csv(path1 + daily_path + study + '_' + subject + '_' + visit + '_GAIT_DAILY.csv')
+        except:
+            continue
+        try:
+            sleep_file = path1 + sptw_path + study + '_' + subject + '_' + visit + '_SPTW.csv'
+            sleep = pd.read_csv(sleep_file)
+            found_sleep = True
+        except:
+            found_sleep = False
+        try:
+            temp = path1 + nw_path + study + '_' + subject + '*_NONWEAR_DAILY.csv'
+            match = glob.glob(temp)
+            ankle_nw = [file for file in match if 'Ankle' in file]
+            file = ankle_nw[0]
+            nw_data = pd.read_csv(file)
+        except:
+            continue
+
+        # drop duplicate columns from daily before merge with NW
+        daily.drop(['study_code', 'subject_id', 'coll_id', 'date', ], axis=1, inplace=True)
+
+        # combine nonwear and daily steps by day_num
+        merged_daily = pd.merge(nw_data, daily, on='day_num')
+
+        # remove days that are only partial (nwear <70000?)
+        # minimimum of 20 hours of wear time
+        merged_daily = merged_daily[merged_daily['wear_duration'] > 72000]  # 86400 secs in 24 hours
+        merged_daily['date'] = pd.to_datetime(merged_daily['date'])
+        merged_daily['date'] = merged_daily['date'].dt.date
+
+        # reset sleep to day, wake, to bed
+        if found_sleep:
+            new_sleep = wake_sleep(sleep)
+        else:
+            new_sleep = None
+
+        ###############################################################
+        # creates bins
+        steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary,
+                                                    bouts, bin_width_time, merged_daily, found_sleep, new_sleep,
+                                                    subject, visit, group='all')
+
+        print('processing.....')
+        ##############################################################
+        # runs density function for each subject and day
+        time_sec = 60
+        data = step_density_sec(steps, merged_daily, time_sec)
+        data.to_csv(summary_path + 'density\\' + subject + '_' + visit + '_' + str(time_sec) + 'sec_density.csv')
+
+        ##############################################################
+        # runs stride time for each subejct and day
+        data = stride_time_interval(steps, merged_daily)
+        data.to_csv(summary_path + 'stride_time\\' + subject + '_' + visit + '_stride_time.csv')
+
+    # write bins file summary
+    steps_summary.to_csv(summary_path + study + '_bout_steps_daily_bins_with_unbouted.csv', index=False)
+    width_summary.to_csv(summary_path + study + '_bout_width_daily_bins_with_unbouted.csv', index=False)
+
+    print('done')
+
+    return
+
 
 def read_demo_ondri_data(path):
     ###########################################
@@ -69,7 +202,7 @@ def wake_sleep (sleep_data):
 
     return new_sleep
 
-def steps_by_day (log_file, steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
+def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
                   merged_daily, found_sleep, new_sleep, subject, visit, group='all'):
 
     #loop through days all steps
@@ -87,7 +220,6 @@ def steps_by_day (log_file, steps_summary, steps, bin_list_steps, width_summary,
                 bed = sleep1.loc[0,'bed']
             else:
                 found_sleep = False
-                log_file.write("\t\tNo sleep match for "+str(curr_day)+"\n")
 
         #print(' #: '+str(i)+" -"+ str(curr_day), end=" ")
         steps['date'] = pd.to_datetime(steps['step_time']).dt.date
@@ -390,21 +522,19 @@ def summary_density_bins(data):
     out_tot = [len(data), zero_tot, vlow_tot, low_tot, med_tot, high_tot, bout_3, bout_10]
     return out_tot
 
-def read_demo_data (drive, path, study):
+def read_demo_data (drive, study):
     ###########################################
     # read in the cleaned data file for the HANNDS methods paper
     if study == 'OND09':
-        new_path = drive + path
-        '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
-        demodata = read_demo_ondri_data(drive, path)
+        new_path = drive+'\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
+        demodata = read_demo_ondri_data(new_path)
     elif study == 'SA-PR01':
-        new_path = 'W:\\SuperAging\\data\\summary\\AAIC_2025\\SA-PR01_collections.csv'
+        new_path = drive +'\\SuperAging\\data\\summary\\AAIC_2025\\SA-PR01_collections.csv'
         demodata = pd.read_csv(new_path)
         demodata['AGE'] = demodata['age']
         demodata['SUBJECT'] = demodata['subject_id']
         demodata['COHORT'] = demodata['group']
         demodata['EMPLOYMENT STATUS'] = None
-
 
     return demodata
 

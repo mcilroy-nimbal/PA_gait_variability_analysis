@@ -1,7 +1,136 @@
+import numpy as np
+import pandas as pd
+from Functions import clustering, get_demo_characteristics, create_table
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+###############################################################
+study = 'SA-PR01'
+nimbal_dr = 'O:'
+sub_study = 'AAIC 2025'
+paper_path = '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
+summary_path = nimbal_dr + paper_path + 'Summary_data\\density\\'
+
+##############################################################
+#read in subject list from file in summary drive
+subjects = pd.read_csv(summary_path+'subject_ids_'+sub_study+'.csv')
+
+
+'''
+Superager	CA900-SA1008	12463
+Control	CA900-SA1028	15943
+Control	EU006_SA1014	14699
+Superager	NU013-SA0185	15150
+Superager	UM020-SA1010	14639
+Superager	UM020-SA1016	15503
+Control	UM020-SA1029	16864
+Control	UW037-SA1007	15473
+Superager	UW037-SA1014	17313
+Control	UW037-SA1043	22304
+Superager	UW037-SA1051	15513
+Superager	UW037-SA1057	15586
+'''
+#Superager_list_cluster_high =  ['CA900-SA1008','UM020-SA1010','UM020-SA1016','NU013-SA0185','UW037-SA1051','UW037-SA1057','UW037-SA1014']
+#Control_list_cluster_high =  ['EU006-SA1014','CA900-SA1028','UW037-SA1007','UM020-SA1029','UW037-SA1043']
+#subjects = Superager_list_cluster_high + Control_list_cluster_high
+
+
+'''
+##########################################################################
+#Heat map of density
+count = 0
+plt.rcParams.update({'font.size': 14})
+fig, ax = plt.subplots(figsize=(10,6))
+time = np.linspace(1, 1440, 1440)
+
+plot_rows = []
+for i in subjects:
+    full = []
+    subj_daily_pref = []
+    print('Subject: ' + str(i))
+    subj_density = pd.read_csv(summary_path + str(i) + '_01_60sec_density.csv')
+    del subj_density[subj_density.columns[0]]
+    subj_density = subj_density.loc[1:,:]
+    # plot by day and subject
+    for day, col in enumerate(subj_density.columns):
+        data1 = subj_density[col].values
+        data1 = data1.astype(int)
+        data2 = data1.reshape(1, -1)
+        ax.imshow(data2, aspect = 'auto', cmap='viridis', interpolation=None, extent=[time[0], time[-1], count, count+1])
+        #print(f'\rCount #: {count}', end='', flush=True)
+        count=count+1
+    count=count+1
+ax.set_ylim(0, count)
+ax.set_ylabel("Subjects - and days within subjects")
+ax.get_yaxis().set_visible(False)
+ax.set_xlabel("Time (mins/day)")
+#ax.set_title("Step Density time series - Subject: "+ subj+"  Cohort: "+cohort+"  Age: "+str(age))
+ax.set_title("Step Density time series - ALL  > 10,000 steps/day")
+plt.colorbar(ax.images[0], ax=ax, label='Density (strides/minute)')  # colorbar from the first image
+
+plt.tight_layout()
+plt.show()
+
+print ('pause')
+'''
+
+'''
+# bout density data
+    # plot density summary file
+    data_path = summary_path
+
+    count = 0
+    plt.rcParams.update({'font.size': 14})
+    fig, ax = plt.subplots(figsize=(10,6))
+    time = np.linspace(1, 1440, 1440)
+
+    for index, file in enumerate(files):
+        #print(f'\rSubj #: {index}' + ' of ' + str(len(files)), end='', flush=True)
+        parts = file.split('_')
+        subj = parts[0] + parts[1]
+
+        #cohort = demodata.loc[demodata['SUBJECT'] == subj, 'COHORT'].values[0]
+        #age = demodata.loc[demodata['SUBJECT'] == subj, 'AGE'].values[0]
+
+        #sub_set = bouts_all[bouts_all['subj'] == subj]
+        #n_days = len(sub_set)
+        #tot_steps = sub_set['total'].sum()
+        #tot_steps_day = tot_steps / n_days
+
+        print(f'\rSubj #: {subj} - {index} of ' + str(len(files)), end='', flush=True)
+        subj_density = pd.read_csv(data_path+file)
+        del subj_density[subj_density.columns[0]]
+        subj_density = subj_density.loc[1:,:]
+        # plot by day and subject
+        for day, col in enumerate(subj_density.columns):
+            data1 = subj_density[col].values
+            data1 = data1.astype(int)
+            data2 = data1.reshape(1, -1)
+            ax.imshow(data2, aspect = 'auto', cmap='viridis', interpolation=None, extent=[time[0], time[-1], count, count+1])
+            #print(f'\rCount #: {count}', end='', flush=True)
+            count=count+1
+        count=count+1
+    ax.set_ylim(0, count)
+    ax.set_ylabel("Subjects - and days within subjects")
+    ax.get_yaxis().set_visible(False)
+    ax.set_xlabel("Time (mins/day)")
+    #ax.set_title("Step Density time series - Subject: "+ subj+"  Cohort: "+cohort+"  Age: "+str(age))
+    ax.set_title("Step Density time series - ALL  > 10,000 steps/day")
+    plt.colorbar(ax.images[0], ax=ax, label='Density (strides/minute)')  # colorbar from the first image
+
+
+    plt.tight_layout()
+    plt.show()
+'''
+
+
+'''
+
 ################################################################################
 # stride time plots and analysis
 plot_rows = []
-'''x_vals = np.linspace(0, 5, 250)
+x_vals = np.linspace(0, 5, 250)
 fig, axs = plt.subplots(1, 3, figsize=(10, 6))
 
 peak_x = []
@@ -81,7 +210,7 @@ axs[2].set_title('Percent strides in preferred range')
 
 plt.tight_layout()
 plt.show()
-
+'''
 
 ################################################################################
 #MEANS graphs
@@ -266,5 +395,6 @@ plt.ylabel('Coefficient of variation')
 plt.title('Average Coefficient of variation (across days) per bout')
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show()'''
+plt.show()
+'''
 
