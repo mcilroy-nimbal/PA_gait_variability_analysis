@@ -21,10 +21,10 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
     summary_path = nimbal_drive + paper_path + 'Summary_data\\'
 
     nw_path = 'nonwear\\daily_cropped\\'
-    bout_path = 'analytics\\gait\\bouts\\'
-    step_path = 'analytics\\gait\\steps\\'
-    daily_path = 'analytics\\gait\\daily\\'
-    sptw_path = 'analytics\\sleep\\sptw\\'
+    bout_path = 'gait\\bouts\\'
+    step_path = 'gait\\steps\\'
+    daily_path = 'gait\\daily\\'
+    sptw_path = 'sleep\\sptw\\'
 
     # PART A - loop and do bin counts
 
@@ -71,25 +71,25 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
 
         # get step data for subject
         try:
-            steps = pd.read_csv(path1 + step_path + study + '_' + subject + '_' + visit + '_GAIT_STEPS.csv')
+            steps = pd.read_csv(path1 + step_path + subject + '_' + visit + '_GAIT_STEPS.csv')
         except:
             continue
         try:
-            bouts = pd.read_csv(path1 + bout_path + study + '_' + subject + '_' + visit + '_GAIT_BOUTS.csv')
+            bouts = pd.read_csv(path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv')
         except:
             bouts = None
         try:
-            daily = pd.read_csv(path1 + daily_path + study + '_' + subject + '_' + visit + '_GAIT_DAILY.csv')
+            daily = pd.read_csv(path1 + daily_path + subject + '_' + visit + '_GAIT_DAILY.csv')
         except:
             continue
         try:
-            sleep_file = path1 + sptw_path + study + '_' + subject + '_' + visit + '_SPTW.csv'
+            sleep_file = path1 + sptw_path + subject + '_' + visit + '_SPTW.csv'
             sleep = pd.read_csv(sleep_file)
             found_sleep = True
         except:
             found_sleep = False
         try:
-            temp = path1 + nw_path + study + '_' + subject + '*_NONWEAR_DAILY.csv'
+            temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
             match = glob.glob(temp)
             ankle_nw = [file for file in match if 'Ankle' in file]
             file = ankle_nw[0]
@@ -105,7 +105,7 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
 
         # remove days that are only partial (nwear <70000?)
         # minimimum of 20 hours of wear time
-        merged_daily = merged_daily[merged_daily['wear_duration'] > 72000]  # 86400 secs in 24 hours
+        merged_daily = merged_daily[merged_daily['wear'] > 72000]  # 86400 secs in 24 hours
         merged_daily['date'] = pd.to_datetime(merged_daily['date'])
         merged_daily['date'] = merged_daily['date'].dt.date
 
@@ -160,7 +160,7 @@ def select_subjects(nimbal_drive, study):
         elif study == 'SA-PR01':
             subject = 'SA-PR01_' + subject
         master_subj_list.append(subject)
-        print(f'\rFind subjs - Progress: {i}' + ' of ' + str(len(demodata)), end='', flush=True)
+        #print(f'\rFind subjs - Progress: {i}' + ' of ' + str(len(demodata)), end='', flush=True)
 
         # find non-wear to see if enough data
         # first find the Ankle, Wrist and other nonwear
@@ -216,10 +216,22 @@ def wake_sleep (sleep_data):
 
     rows=[]
     unique_days = sleep_data['relative_date'].unique()
+
+    #######
+    # work through each row to assemble sleep and wake for ech consecutive days
+    # sleep - look for relative day that is next (matches uenxt unbiqu day)
+
+    # starts on sleep on day 1
+    # move through a list
+    for index, row in sleep_data.iterrows():
+        if index = 1 then:
+
+
+
     #unique_days = unique_days[:-1]
     for day in unique_days:
         day1 = pd.to_datetime(day).date()
-        temp = sleep_data[sleep_data['bed_day'] == day1]
+        temp = sleep_data[sleep_data['relative_date'] == day1]
         temp = temp.reset_index(drop=True)
 
         if len(temp) == 0:

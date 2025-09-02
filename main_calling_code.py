@@ -12,15 +12,16 @@ import openpyxl
 import warnings
 warnings.filterwarnings("ignore")
 
-
+#set up file paths
 study = 'OND09'
 root = 'W:'
 nimbal_drive ='O:'
 paper_path = '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
 
-#which subjects
+#which subjects?
 master_subj_list = select_subjects(nimbal_drive, study)
-print('Total # subjects: ' + str(len(master_subj_list)) + '\n\n')
+print('\nTotal # subjects: \t' + str(len(master_subj_list)) + '\n')
+print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
 
-#create sumamry data files
+#create summary data files
 create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list)
