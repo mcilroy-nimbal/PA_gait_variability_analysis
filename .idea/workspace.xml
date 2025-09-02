@@ -5,12 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <change afterPath="$PROJECT_DIR$/Bouts_density_paper_analysis_figures.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/Functions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/create_bout_bin_and_density_files.py" beforeDir="false" afterPath="$PROJECT_DIR$/create_bout_bin_and_density_files.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/read_average_bouts.py" beforeDir="false" afterPath="$PROJECT_DIR$/read_average_bouts.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/read_average_density.py" beforeDir="false" afterPath="$PROJECT_DIR$/read_average_density.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -342,7 +338,15 @@
       <option name="project" value="LOCAL" />
       <updated>1751563506802</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1755199041810</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1755199041810</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -439,11 +443,6 @@
           <option name="timeStamp" value="443" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/create_bout_bin_and_density_files.py</url>
-          <line>85</line>
-          <option name="timeStamp" value="446" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Functions.py</url>
           <line>214</line>
           <option name="timeStamp" value="447" />
@@ -455,23 +454,23 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/create_bout_bin_and_density_files.py</url>
-          <line>126</line>
-          <option name="timeStamp" value="449" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/create_bout_bin_and_density_files.py</url>
-          <line>187</line>
+          <line>190</line>
           <option name="timeStamp" value="450" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/create_bout_bin_and_density_files.py</url>
-          <line>137</line>
+          <line>140</line>
           <option name="timeStamp" value="451" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/create_bout_bin_and_density_files.py</url>
-          <line>135</line>
+          <line>138</line>
           <option name="timeStamp" value="452" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/create_bout_bin_and_density_files.py</url>
+          <line>129</line>
+          <option name="timeStamp" value="454" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

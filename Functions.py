@@ -11,13 +11,16 @@ import glob
 def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list):
     # check - but use this one - \prd\nimbalwear\OND09
     if study == 'OND09':
-        path1 = root + '\\NiMBaLWEAR\\OND09\\analytics\\'
-    else:
+        path1 = root + '\\nimbalwear\\OND09\\analytics\\'
+    elif study == 'SA-PRO1':
         path1 = root + '\\nimbalwear\\SA-PR01-022\\data\\'
+    else:
+        breakpoint()
+
     log_out_path = nimbal_drive + paper_path + 'Log_files\\'
     summary_path = nimbal_drive + paper_path + 'Summary_data\\'
 
-    nw_path = 'prep\\nonwear\\daily_cropped\\'
+    nw_path = 'nonwear\\daily_cropped\\'
     bout_path = 'analytics\\gait\\bouts\\'
     step_path = 'analytics\\gait\\steps\\'
     daily_path = 'analytics\\gait\\daily\\'
@@ -138,6 +141,48 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
 
     return
 
+
+def select_subjects(nimbal_drive, study):
+    # which subjects to analyze
+    demodata = read_demo_data(nimbal_drive, study)
+    master_subj_list = demodata['SUBJECT']
+    demodata['master_subj_list'] = demodata['SUBJECT'].apply(lambda x: '_'.join(x.split('_')[-2:]))
+
+    ########################################################
+    # loop through each eligible subject
+    # File the time series in a paper specific forlder?
+    master_subj_list = []
+    for i, subject in enumerate(demodata['SUBJECT']):
+        if study == 'OND09':
+            parts = subject.split('_', 2)  # Split into at most 3 parts
+            if len(parts) == 3:
+                subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
+        elif study == 'SA-PR01':
+            subject = 'SA-PR01_' + subject
+        master_subj_list.append(subject)
+        print(f'\rFind subjs - Progress: {i}' + ' of ' + str(len(demodata)), end='', flush=True)
+
+        # find non-wear to see if enough data
+        # first find the Ankle, Wrist and other nonwear
+        # temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
+        # match = glob.glob(temp)
+        # ankle_list = [file for file in match if 'Ankle' in file]
+        # wrist_list = [file for file in match if 'Wrist' in file]
+        # chest_list = [file for file in match if 'Chest' in file]
+        # if len(ankle_list) < 1:
+        #    log_file.write('file: ' + subject + ' no ankle nonwear file' +'\n')
+        #    continue
+        # elif len(ankle_list) > 2:
+        #    #select the first ? if there are more than 1
+        #    log_file.write('file: ' + subject + ' 2 ankle non-wear - took 1st' + '\n')
+
+    # select subject list#
+    # if study == 'SA-PR01':
+    #    sub_study = 'AAIC 2025'
+    #    subjects = pd.read_csv(summary_path+'subject_ids_'+sub_study+'.csv')
+    #    master_subj_list = subjects['SUBJECT']
+
+    return master_subj_list
 
 def read_demo_ondri_data(path):
     ###########################################

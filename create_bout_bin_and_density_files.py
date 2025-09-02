@@ -14,6 +14,7 @@ import openpyxl
 import warnings
 warnings.filterwarnings("ignore")
 
+version = '09_2_2025'
 study = 'OND09'
 #study = 'SA-PR01'
 
@@ -22,7 +23,7 @@ root = 'W:'
 
 #check - but use this one - \prd\nimbalwear\OND09
 if study == 'OND09':
-    path1 = root+'\\NiMBaLWEAR\\OND09\\analytics\\'
+    path1 = root+'\\nimbalwear\\OND09\\'
 else:
     path1 = root + '\\nimbalwear\\SA-PR01-022\\data\\'
 nimbal_drive = 'O:'
@@ -39,7 +40,7 @@ sptw_path = 'analytics\\sleep\\sptw\\'
 
 # files to log details of processing
 curr_date = datetime.datetime.now().strftime('%Y_%m_%d')
-filen = f'{'log_read_step_bouts_'}_{curr_date}.txt'
+#filen = f'{'log_read_step_bouts_'}_{curr_date}.txt'
 log_file = open(log_out_path + filen, 'w')
 y = 0
 
@@ -52,7 +53,7 @@ demodata['master_subj_list'] = demodata['SUBJECT'].apply(lambda x: '_'.join(x.sp
 ########################################################
 # loop through each eligible subject
 # File the time series in a paper specific forlder?
-#master_subj_list = []
+master_subj_list = []
 for i, subject in enumerate(demodata['SUBJECT']):
     if study =='OND09':
         parts = subject.split('_', 2)  # Split into at most 3 parts
@@ -60,7 +61,7 @@ for i, subject in enumerate(demodata['SUBJECT']):
             subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
     elif study =='SA-PR01':
         subject = 'SA-PR01_'+subject
-
+    master_subj_list.append(subject)
     print(f'\rFind subjs - Progress: {i}' + ' of ' + str(len(demodata)), end='', flush=True)
 
     #find non-wear to see if enough data
@@ -76,7 +77,7 @@ for i, subject in enumerate(demodata['SUBJECT']):
     #elif len(ankle_list) > 2:
     #    #select the first ? if there are more than 1
     #    log_file.write('file: ' + subject + ' 2 ankle non-wear - took 1st' + '\n')
-#    master_subj_list.append(subject)
+
 
 
 #select subject list#
@@ -85,7 +86,7 @@ for i, subject in enumerate(demodata['SUBJECT']):
 #    subjects = pd.read_csv(summary_path+'subject_ids_'+sub_study+'.csv')
 #    master_subj_list = subjects['SUBJECT']
 
-log_file.write('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
+print('Total # subjects: '+str(len(master_subj_list)) + '\n\n')
 
 #PART A - loop and do bin counts
 
@@ -126,45 +127,48 @@ width_summary = pd.DataFrame(columns=width_header)
 
 #TODO fix the walkign at night/sleep calculation
 
-log_file.write('Part A - step counts in bins \n')
+print('Part A - step counts in bins \n')
 
 for j, subject in enumerate(master_subj_list):
     visit = '01'
-    print('Subject: ' + subject)
-    log_file.write('Subject: ' + subject + '\n')
+    print('Subject: ' + subject + ' \n')
 
     #get step data for subject
     try:
-        steps = pd.read_csv(path1 + step_path + study+'_' + subject + '_' + visit + '_GAIT_STEPS.csv')
+        fn = path1 + step_path + subject + '_' + visit + '_GAIT_STEPS.csv'
+        steps = pd.read_csv(fn)
     except:
-        log_file.write('\tGAIT_STEPS file not found \n')
+        print('\tGAIT_STEPS file not found\t'+fn)
         continue
     try:
-        bouts = pd.read_csv(path1 + bout_path + study+'_' + subject + '_' + visit + '_GAIT_BOUTS.csv')
+        fn = path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv'
+        bouts = pd.read_csv(fn)
     except:
-        log_file.write('\tGAIT_BOUTS not found\n')
+        print ('\tGAIT_BOUTS not found\t'+fn)
         bouts = None
     try:
-        daily = pd.read_csv(path1 + daily_path + study+'_'+subject + '_'+ visit + '_GAIT_DAILY.csv')
+        fn = path1 + daily_path + subject + '_'+ visit + '_GAIT_DAILY.csv'
+        daily = pd.read_csv(fn)
     except:
-        log_file.write('\tGAIT_DAILY file not found \n')
+        print ('\tGAIT_DAILY file not found\t'+fn)
         continue
+    print('\tAll gait data has been read')
 
     try:
-        sleep_file = path1 + sptw_path + study+'_'+subject + '_' + visit + '_SPTW.csv'
+        sleep_file = path1 + sptw_path + subject + '_' + visit + '_SPTW.csv'
         sleep = pd.read_csv(sleep_file)
         found_sleep = True
     except:
-        log_file.write('\tSPTW_file not found \n')
+        print ('\tSPTW_file not found\t'+sleep_file)
         found_sleep = False
     try:
-        temp = path1 + nw_path + study+'_'+subject + '*_NONWEAR_DAILY.csv'
+        temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
         match = glob.glob(temp)
         ankle_nw = [file for file in match if 'Ankle' in file]
         file = ankle_nw[0]
         nw_data = pd.read_csv(file)
     except:
-        log_file.write('\tNONWEAR DAILY file not found \n')
+        print('\tNONWEAR DAILY file not found\t'+temp)
         continue
 
     # drop duplicate columns from daily before merge with NW
@@ -172,14 +176,14 @@ for j, subject in enumerate(master_subj_list):
 
     # combine nonwear and daily steps by day_num
     merged_daily = pd.merge(nw_data, daily, on='day_num')
-    log_file.write('\tNumber of days' + str(len(merged_daily)) + '\n')
+    #log_file.write('\tNumber of days' + str(len(merged_daily)) + '\n')
 
     # remove days that are only partial
     # minimimum of 20 hours of wear time
     merged_daily = merged_daily[merged_daily['wear_duration'] > 72000]  # 86400 secs in 24 hours
     merged_daily['date'] = pd.to_datetime(merged_daily['date'])
     merged_daily['date'] = merged_daily['date'].dt.date
-    log_file.write('\tNumber of days with > 72000 secs wear'+str(len(merged_daily))+'\n')
+    #log_file.write('\tNumber of days with > 72000 secs wear'+str(len(merged_daily))+'\n')
 
     # reset sleep to day, wake, to bed
     if found_sleep:
@@ -187,7 +191,7 @@ for j, subject in enumerate(master_subj_list):
     else:
         new_sleep = None
 
-    log_file.write('\tNumber of days with > 72000 secs wear' + str(len(merged_daily)) + '\n')
+    #log_file.write('\tNumber of days with > 72000 secs wear' + str(len(merged_daily)) + '\n')
 
     ###############################################################
     #creates bins
@@ -198,16 +202,16 @@ for j, subject in enumerate(master_subj_list):
     #runs density function for each subject and day
     time_sec = 15
     data = step_density_sec(steps, merged_daily, time_sec)
-    data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density.csv')
+    data.to_csv(summary_path+'density\\'+subject+'_'+visit+'_'+str(time_sec)+'sec_density_'+version+'.csv')
 
     ##############################################################
     #runs stride time for each subejct and day
     data = stride_time_interval(steps, merged_daily)
-    data.to_csv(summary_path+'stride_time\\'+subject+'_'+visit+'_stride_time.csv')
+    data.to_csv(summary_path+'stride_time\\'+subject+'_'+visit+'_stride_time_'+version+'.csv')
 
 # write bins file summary
-steps_summary.to_csv(summary_path + study+'_bout_steps_daily_bins_with_unbouted.csv', index=False)
-width_summary.to_csv(summary_path + study+'_bout_width_daily_bins_with_unbouted.csv', index=False)
+steps_summary.to_csv(summary_path + study+'_bout_steps_daily_bins_with_unbouted_'+version+'.csv', index=False)
+width_summary.to_csv(summary_path + study+'_bout_width_daily_bins_with_unbouted_'+version+'.csv', index=False)
 
 log_file.close()
 print('done')
