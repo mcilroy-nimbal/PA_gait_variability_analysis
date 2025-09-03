@@ -216,13 +216,17 @@ def wake_sleep (sleep_data):
 
     rows=[]
     unique_days = sleep_data['relative_date'].unique()
-
     #unique_days = unique_days[:-1]
-    for day in unique_days:
-        day1 = pd.to_datetime(day).date()
-        temp = sleep_data[sleep_data['relative_date'] == day1]
-        temp = temp.reset_index(drop=True)
 
+    for day_time in unique_days:
+        day = pd.to_datetime(day_time).date()
+        wake, bed = find_time_sleep(day, sleep_data)
+        print ('day: \t'+str(day)+ '\twake \t'+str(wake)+' \tbed \t'+str(bed))
+        rows.append({'day': day, 'wake': wake, 'bed': bed})
+
+        '''temp = sleep_data[sleep_data['relative_date'] == day1]
+        temp = temp.reset_index(drop=True)
+        
         if len(temp) == 0:
             bed = datetime.combine(day1, time(23, 59))
         elif len(temp) == 1:
@@ -243,10 +247,43 @@ def wake_sleep (sleep_data):
             close = temp1.loc[temp1['time_diff'].idxmin()]
             wake = close['end_time']
 
-        rows.append({'day': day1, 'wake': wake, 'bed': bed})
+        rows.append({'day': day1, 'wake': wake, 'bed': bed})'''
+
     new_sleep = pd.DataFrame(rows)
 
     return new_sleep
+
+
+def find_time_sleep(day, sleep_data):
+    temp = sleep_data[sleep_data['bed_day'] == day]
+    temp = temp.reset_index(drop=True)
+    if len(temp) == 0:
+        bed = datetime.combine(day, time(23, 59))
+    elif len(temp) == 1:
+        bed = temp.loc[0,'start_time']
+    elif len(temp) > 1:
+        #select the one that is latest but does not have and short < 1 hour duration)
+        temp['sptw_dur'] = temp['end_time'] - temp['start_time']
+        # Filter rows with sleep duration >= 1 hour
+        filtered_df = temp[temp['sptw_dur'] >= pd.Timedelta(hours=1)]
+        # Find the row with the latest wake time
+        x = filtered_df.loc[filtered_df['start_time'].idxmax()]
+        bed = x['start_time']
+    temp2 = sleep_data[sleep_data['wake_day'] == day]
+    temp2 = temp2.reset_index(drop=True)
+    if len(temp2) == 0:
+        wake = datetime.combine(day, time(00, 00))
+    elif len(temp2) == 1:
+        wake = temp2.loc[0,'end_time']
+    elif len(temp2) > 1:
+        # select the one that is latest but does not have and short < 1 hour duration)
+        temp2['sptw_dur'] = temp2['end_time'] - temp2['start_time']
+        # Filter rows with sleep duration >= 1 hour
+        filtered_df = temp2[temp2['sptw_dur'] >= pd.Timedelta(hours=1)]
+        # Find the row with the latest wake time
+        x = filtered_df.loc[filtered_df['end_time'].idxmax()]
+        wake = x['end_time']
+    return wake, bed
 
 def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
                   merged_daily, found_sleep, new_sleep, subject, visit, group='all'):
