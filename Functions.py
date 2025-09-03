@@ -217,25 +217,6 @@ def wake_sleep (sleep_data):
     rows=[]
     unique_days = sleep_data['relative_date'].unique()
 
-    #######
-    # work through each row to assemble sleep and wake for ech consecutive days
-    # sleep - look for relative day that is next (matches uenxt unbiqu day)
-
-    # starts on sleep on day 1
-    # move through a list
-    for index, row in sleep_data.iterrows():
-        #wake
-        if index == 1:
-            wake = -1
-        else:
-
-        #sleep
-
-
-
-
-
-
     #unique_days = unique_days[:-1]
     for day in unique_days:
         day1 = pd.to_datetime(day).date()
