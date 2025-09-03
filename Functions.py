@@ -224,7 +224,15 @@ def wake_sleep (sleep_data):
     # starts on sleep on day 1
     # move through a list
     for index, row in sleep_data.iterrows():
-        if index = 1 then:
+        #wake
+        if index == 1:
+            wake = -1
+        else:
+
+        #sleep
+
+
+
 
 
 
