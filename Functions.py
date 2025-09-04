@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 import glob
 
 
-def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list):
+def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list, version):
     # check - but use this one - \prd\nimbalwear\OND09
     if study == 'OND09':
         path1 = root + '\\nimbalwear\\OND09\\analytics\\'
@@ -126,16 +126,16 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
         # runs density function for each subject and day
         time_sec = 60
         data = step_density_sec(steps, merged_daily, time_sec)
-        data.to_csv(summary_path + 'density\\' + subject + '_' + visit + '_' + str(time_sec) + 'sec_density.csv')
+        data.to_csv(summary_path + 'density\\' + subject + '_' + visit + '_' + version + '_'+ str(time_sec) + 'sec_density.csv')
 
         ##############################################################
         # runs stride time for each subejct and day
         data = stride_time_interval(steps, merged_daily)
-        data.to_csv(summary_path + 'stride_time\\' + subject + '_' + visit + '_stride_time.csv')
+        data.to_csv(summary_path + 'stride_time\\' + subject + '_' + version + '_' + visit + '_stride_time.csv')
 
     # write bins file summary
-    steps_summary.to_csv(summary_path + study + '_bout_steps_daily_bins_with_unbouted.csv', index=False)
-    width_summary.to_csv(summary_path + study + '_bout_width_daily_bins_with_unbouted.csv', index=False)
+    steps_summary.to_csv(summary_path + study + '_' + version + '_bout_steps_daily_bins_with_unbouted.csv', index=False)
+    width_summary.to_csv(summary_path + study + '_' + version + '_bout_width_daily_bins_with_unbouted.csv', index=False)
 
     print('done')
 
@@ -223,32 +223,6 @@ def wake_sleep (sleep_data):
         wake, bed = find_time_sleep(day, sleep_data)
         print ('day: \t'+str(day)+ '\twake \t'+str(wake)+' \tbed \t'+str(bed))
         rows.append({'day': day, 'wake': wake, 'bed': bed})
-
-        '''temp = sleep_data[sleep_data['relative_date'] == day1]
-        temp = temp.reset_index(drop=True)
-        
-        if len(temp) == 0:
-            bed = datetime.combine(day1, time(23, 59))
-        elif len(temp) == 1:
-            bed = temp.loc[0,'start_time']
-        else:
-            last = temp.loc[temp['start_time'].idxmax()]
-            bed = last['start_time']
-
-        temp1 = sleep_data[sleep_data['wake_day'] == day1]
-        temp1 = temp1.reset_index(drop=True)
-        if len(temp1) == 0:
-            wake = None
-        elif len(temp1) == 1:
-            wake = temp1.loc[0, 'end_time']
-        else:
-            target = pd.to_timedelta('09:00:00')
-            temp1['time_diff'] = temp1['end_time'].dt.time.apply(lambda t: abs(pd.to_timedelta(str(t)) - target))
-            close = temp1.loc[temp1['time_diff'].idxmin()]
-            wake = close['end_time']
-
-        rows.append({'day': day1, 'wake': wake, 'bed': bed})'''
-
     new_sleep = pd.DataFrame(rows)
 
     return new_sleep
@@ -266,8 +240,11 @@ def find_time_sleep(day, sleep_data):
         temp['sptw_dur'] = temp['end_time'] - temp['start_time']
         # Filter rows with sleep duration >= 1 hour
         filtered_df = temp[temp['sptw_dur'] >= pd.Timedelta(hours=1)]
-        # Find the row with the latest wake time
-        x = filtered_df.loc[filtered_df['start_time'].idxmax()]
+        if len(filtered_df) == 0:
+            x = temp.loc[temp['start_time'].idxmax()]
+        else:
+            # Find the row with the latest wake time
+            x = filtered_df.loc[filtered_df['start_time'].idxmax()]
         bed = x['start_time']
     temp2 = sleep_data[sleep_data['wake_day'] == day]
     temp2 = temp2.reset_index(drop=True)
@@ -280,9 +257,14 @@ def find_time_sleep(day, sleep_data):
         temp2['sptw_dur'] = temp2['end_time'] - temp2['start_time']
         # Filter rows with sleep duration >= 1 hour
         filtered_df = temp2[temp2['sptw_dur'] >= pd.Timedelta(hours=1)]
-        # Find the row with the latest wake time
-        x = filtered_df.loc[filtered_df['end_time'].idxmax()]
+        if len(filtered_df) == 0:
+            x = temp2.loc[temp2['end_time'].idxmax()]
+        else:
+            # Find the row with the latest wake time
+            x = filtered_df.loc[filtered_df['end_time'].idxmax()]
         wake = x['end_time']
+    if bed < wake:
+        bed = datetime.combine(day, time(23, 59))
     return wake, bed
 
 def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
@@ -290,7 +272,7 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
 
     #loop through days all steps
     for i, row in merged_daily.iterrows():
-        wear = row['wear_duration']
+        wear = row['wear']
         curr_day = row['date']
         daily_tot_steps = row['total_steps']
 
