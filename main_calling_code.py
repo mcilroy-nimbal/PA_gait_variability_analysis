@@ -20,10 +20,19 @@ paper_path = '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
 version='sleep_fixed'
 
 #which subjects?
-master_subj_list = select_subjects(nimbal_drive, study)
-#master_subj_list = ['OND09_SBH0006']
+#master_subj_list = select_subjects(nimbal_drive, study)
+master_subj_list = ['OND09_SBH0038']
 print('\nTotal # subjects: \t' + str(len(master_subj_list)) + '\n')
 print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
 
 #create summary data files
-create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list, version)
+create = True
+if create:
+    create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list, version)
+
+
+#plotting graphs for paper
+bouts = pd.read_csv(summary_path + study + '_bout_width_daily_bins_with_unbouted.csv')
+
+
+#analysis for paper

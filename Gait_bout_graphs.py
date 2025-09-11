@@ -13,6 +13,11 @@ import seaborn as sns
 import datetime
 import openpyxl
 
+def plot_bins_histogram (bouts, ):
+
+
+#plot bins
+
 #set up paths
 root = 'W:'
 nimbal_drive = 'O:'
@@ -28,7 +33,7 @@ bouts = pd.read_csv(summary_path + study + '_bout_width_daily_bins_with_unbouted
 steps_all = bouts[bouts['all/sleep']=='all']
 
 steps_all['short'] = steps_all['strides_<_5'] + steps_all['strides_<_10']
-steps_all['medium'] = steps_all['strides_<_30'] + steps_all['strides_<_60']+strides
+steps_all['medium'] = steps_all['strides_<_30'] + steps_all['strides_<_60'] + strides
 steps_all['long'] = steps_all['strides_<_180'] + steps_all['strides_<_600'] + steps_all['strides_>_600']
 
 
