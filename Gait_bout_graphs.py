@@ -13,107 +13,92 @@ import seaborn as sns
 import datetime
 import openpyxl
 
-def plot_bins_histogram (bouts, ):
+def plot_bins_histogram (nimbal_drive, study, window, path, subject_list):
 
+    duration = pd.read_csv(nimbal_drive+path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
+    steps = pd.read_csv(nimbal_drive+path+'Summary_data\\' + study + '_' + window + '_bout_steps_daily_bins_with_unbouted.csv')
 
-#plot bins
+    steps = steps[steps['subj'].isin(subject_list)]
 
-#set up paths
-root = 'W:'
-nimbal_drive = 'O:'
-paper_path =  '\\Papers_NEW_April9\\In_progress\\Karen_Step_Accumulation_1\\'
-log_out_path = nimbal_drive + paper_path + 'Log_files\\'
-summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+    steps['short'] = steps['strides_<_5'] + steps['strides_<_10']
+    steps['medium'] = steps['strides_<_30'] + steps['strides_<_60']
+    steps['long'] = steps['strides_<_180'] + steps['strides_<_600'] + steps['strides_>_600']
 
-study = 'SA-PR01'
-sub_study = 'AAIC 2025'
-demodata = pd.read_csv(summary_path + 'subject_demodata_'+sub_study+'.csv')
+    #these are the strides per bout class
+    select1 = steps.columns[steps.columns.str.startswith('strides_')].tolist()
+    #this adds unbouted
+    select1.insert(0, 'not_bouted')
+    select1.insert(0, 'total')
 
-bouts = pd.read_csv(summary_path + study + '_bout_width_daily_bins_with_unbouted.csv')
-steps_all = bouts[bouts['all/sleep']=='all']
+    #calcualte the percentrage of steps in bouts relative to total (daily)
+    for col in select1:
+        steps[col + '_pct'] = steps[col] / steps['total'] * 100
 
-steps_all['short'] = steps_all['strides_<_5'] + steps_all['strides_<_10']
-steps_all['medium'] = steps_all['strides_<_30'] + steps_all['strides_<_60'] + strides
-steps_all['long'] = steps_all['strides_<_180'] + steps_all['strides_<_600'] + steps_all['strides_>_600']
+    #these are the strides per bout class
+    select2 = steps.columns[steps.columns.str.contains('_pct')].tolist()
 
+    #mean bouts setp #s absolute
+    nstride_subj_median = steps.groupby('subj')[select1].median()
+    nstride_all_median = nstride_subj_median.median()
 
-#these are the strides per bout class
-select1 = steps_all.columns[steps_all.columns.str.startswith('strides_')].tolist()
-#this adds unbouted
-select1.insert(0, 'not_bouted')
-select1.insert(0, 'total')
+    nstride_subj_means = steps.groupby('subj')[select1].mean()
+    nstride_all_std = nstride_subj_means.std()
 
-#calcualte the percentrage of steps in bouts relative to total (daily)
-for col in select1:
-    steps_all[col + '_pct'] = steps_all[col] / steps_all['total'] * 100
+    #bouts setp #s percentage
+    nstride_pct_subj_median = steps.groupby('subj')[select2].median()
+    nstride_pct_all_median = nstride_pct_subj_median.median()
 
-#these are the strides per bout class
-select2 = steps_all.columns[steps_all.columns.str.contains('_pct')].tolist()
+    nstride_pct_subj_mean = steps.groupby('subj')[select2].mean()
+    nstride_pct_all_std = nstride_pct_subj_mean.std()
 
-#mean bouts setp #s absolute
-nstride_subj_median = steps_all.groupby('subj')[select1].median()
-nstride_all_median = nstride_subj_median.median()
+    ##############################################################################################
+    #plot all bins
+    # Step 2: Create the plot
+    fig, axs = plt.subplots(2, figsize=(8, 9))
 
-nstride_subj_means = steps_all.groupby('subj')[select1].mean()
-nstride_all_std = nstride_subj_means.std()
+    axs[0].bar(nstride_all_median.index, nstride_all_median.values, yerr=nstride_all_std.values, capsize=5, color='lightblue', edgecolor='black')
+    axs[0].set_title('Median unilateral steps / day')
+    axs[0].set_xlabel('Bout duration (secs)')
+    axs[0].set_ylabel('Unilateral steps / day')
+    axs[0].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
 
-#bouts setp #s percentage
-nstride_pct_subj_median = steps_all.groupby('subj')[select2].median()
-nstride_pct_all_median = nstride_pct_subj_median.median()
+    axs[1].bar(nstride_pct_all_median.index, nstride_pct_all_median.values, yerr=nstride_pct_all_std.values, capsize=5, color='violet', edgecolor='black')
+    axs[1].set_title('Median unilateral steps / day - % of total')
+    axs[1].set_xlabel('Bout duration (secs)')
+    axs[1].set_ylabel('Unilateral steps / day')
+    axs[1].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
+    plt.tight_layout()
+    plt.show()
 
-nstride_pct_subj_mean = steps_all.groupby('subj')[select2].mean()
-nstride_pct_all_std = nstride_pct_subj_mean.std()
-
-
-
-##############################################################################################
-#plot all bins
-# Step 2: Create the plot
-fig,axs = plt.subplots(2, figsize=(8, 9))
-
-axs[0].bar(nstride_all_median.index, nstride_all_median.values, yerr=nstride_all_std.values, capsize=5, color='lightblue', edgecolor='black')
-axs[0].set_title('Median unilateral steps / day')
-axs[0].set_xlabel('Bout duration (secs)')
-axs[0].set_ylabel('Unilateral steps / day')
-axs[0].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
-
-axs[1].bar(nstride_pct_all_median.index, nstride_pct_all_median.values, yerr=nstride_pct_all_std.values, capsize=5, color='violet', edgecolor='black')
-axs[1].set_title('Median unilateral steps / day - % of total')
-axs[1].set_xlabel('Bout duration (secs)')
-axs[1].set_ylabel('Unilateral steps / day')
-axs[1].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
-plt.tight_layout()
-plt.show()
-
-print ('pause')
+    print ('pause')
 
 
 
-###################################################################################
-#collapse bins?
-#but groups
-select3 =['not_bouted','short','medium','long']
-categ_subj_median = steps_all.groupby('subj')[select3].median()
-categ_all_median = categ_subj_median.median()
-categ_subj_means = steps_all.groupby('subj')[select3].mean()
-categ_all_std = categ_subj_means.std()
+    ###################################################################################
+    #collapse bins?
+    #but groups
+    select3 =['not_bouted','short','medium','long']
+    categ_subj_median = steps.groupby('subj')[select3].median()
+    categ_all_median = categ_subj_median.median()
+    categ_subj_means = steps.groupby('subj')[select3].mean()
+    categ_all_std = categ_subj_means.std()
 
 
-##############################################################################################
-#plot all bins
-# Step 2: Create the plot
-fig2,axs = plt.subplots(2, figsize=(8, 9))
+    ##############################################################################################
+    #plot all bins
+    # Step 2: Create the plot
+    fig2,axs = plt.subplots(2, figsize=(8, 9))
 
-axs[0].bar(categ_all_median.index, categ_all_median.values, yerr=categ_all_std.values, capsize=5, color='lightblue', edgecolor='black')
-axs[0].set_title('Median unilateral steps / day')
-axs[0].set_xlabel('Bout duration (secs)')
-axs[0].set_ylabel('Unilateral steps / day')
-axs[0].set_xticks(ticks=[0, 1, 2, 3], labels=['Unbouted', '<30', '30-80', '> 180'])
+    axs[0].bar(categ_all_median.index, categ_all_median.values, yerr=categ_all_std.values, capsize=5, color='lightblue', edgecolor='black')
+    axs[0].set_title('Median unilateral steps / day')
+    axs[0].set_xlabel('Bout duration (secs)')
+    axs[0].set_ylabel('Unilateral steps / day')
+    axs[0].set_xticks(ticks=[0, 1, 2, 3], labels=['Unbouted', '<30', '30-80', '> 180'])
 
-plt.tight_layout()
-plt.show()
+    plt.tight_layout()
+    plt.show()
 
-print ('pause')
+    print ('pause')
 
 
 

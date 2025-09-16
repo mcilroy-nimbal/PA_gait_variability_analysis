@@ -7,8 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import glob
 
-
-def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_list, version):
+def create_bin_density_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list):
     # check - but use this one - \prd\nimbalwear\OND09
     if study == 'OND09':
         path1 = root + '\\nimbalwear\\OND09\\analytics\\'
@@ -17,7 +16,7 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
     else:
         breakpoint()
 
-    log_out_path = nimbal_drive + paper_path + 'Log_files\\'
+    #log_out_path = nimbal_drive + paper_path + 'Log_files\\'
     summary_path = nimbal_drive + paper_path + 'Summary_data\\'
 
     nw_path = 'nonwear\\daily_cropped\\'
@@ -55,7 +54,7 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
     part2 = ['strides_' + item for item in bin]
     bin_width_time_header.extend(part2)
 
-    basic = ['subj', 'visit', 'date', 'wear', 'group', 'all/sleep', 'daily_total', 'total', 'not_bouted']
+    basic = ['subj', 'visit', 'date', 'wear', 'group', 'window', 'total_steps', 'window_total_strides', 'window_not_bouted_strides']
     steps_header = basic + bin_list_steps_header
     width_header = basic + bin_width_time_header
 
@@ -109,19 +108,12 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
         merged_daily['date'] = pd.to_datetime(merged_daily['date'])
         merged_daily['date'] = merged_daily['date'].dt.date
 
-        # reset sleep to day, wake, to bed
-        if found_sleep:
-            new_sleep = wake_sleep(sleep)
-        else:
-            new_sleep = None
-
         ###############################################################
         # creates bins
-        steps_summary, width_summary = steps_by_day(steps_summary, steps, bin_list_steps, width_summary,
-                                                    bouts, bin_width_time, merged_daily, found_sleep, new_sleep,
-                                                    subject, visit, group='all')
+        steps_summary, width_summary = steps_by_day(time_window, steps_summary, steps, bin_list_steps, width_summary,
+                                                    bouts, bin_width_time, merged_daily, sleep, found_sleep, subject, visit, group='all')
 
-        print('processing.....')
+        '''print('processing.....')
         ##############################################################
         # runs density function for each subject and day
         time_sec = 60
@@ -131,11 +123,11 @@ def create_bin_density_files(study, root, nimbal_drive, paper_path, master_subj_
         ##############################################################
         # runs stride time for each subejct and day
         data = stride_time_interval(steps, merged_daily)
-        data.to_csv(summary_path + 'stride_time\\' + subject + '_' + version + '_' + visit + '_stride_time.csv')
+        data.to_csv(summary_path + 'stride_time\\' + subject + '_' + version + '_' + visit + '_stride_time.csv')'''
 
     # write bins file summary
-    steps_summary.to_csv(summary_path + study + '_' + version + '_bout_steps_daily_bins_with_unbouted.csv', index=False)
-    width_summary.to_csv(summary_path + study + '_' + version + '_bout_width_daily_bins_with_unbouted.csv', index=False)
+    steps_summary.to_csv(summary_path + study + '_' + time_window + '_bout_steps_daily_bins_with_unbouted.csv', index=False)
+    width_summary.to_csv(summary_path + study + '_' + time_window + '_bout_width_daily_bins_with_unbouted.csv', index=False)
 
     print('done')
 
@@ -192,6 +184,12 @@ def read_demo_ondri_data(path):
     # Import data files - use this if file already created
     demodata = pd.read_csv(path + "OND09_ALL_01_CLIN_DEMOG_2025_CLEAN_HANDDS_METHODS_N245.csv")
 
+    for i, subject in enumerate(demodata['SUBJECT']):
+        parts = subject.split('_', 2)  # Split into at most 3 parts
+        if len(parts) == 3:
+            subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
+        demodata.loc[i, 'SUBJECT'] = subject
+
     # merge dual diagonis - other MCI
     demodata['COHORT'] = demodata['COHORT'].replace('MCI;CVD', 'CVD')
     demodata['COHORT'] = demodata['COHORT'].replace('MCI;PD', 'PD')
@@ -237,9 +235,6 @@ def find_time_sleep(day, sleep_data):
 
     #option 2 -
 
-
-
-
     if len(temp) == 0:
         bed = datetime.combine(day, time(23, 59))
     elif len(temp) == 1:
@@ -276,8 +271,17 @@ def find_time_sleep(day, sleep_data):
         bed = datetime.combine(day, time(23, 59))
     return wake, bed
 
-def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
-                  merged_daily, found_sleep, new_sleep, subject, visit, group='all'):
+def steps_by_day (time_window, steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
+                  merged_daily, sleep, found_sleep, subject, visit, group='all'):
+
+    if time_window == 'wake':
+        # reset sleep to day, wake, to bed
+        if found_sleep:
+            new_sleep = wake_sleep(sleep)
+        else:
+            new_sleep = None
+    else:
+        found_sleep = True
 
     #loop through days all steps
     for i, row in merged_daily.iterrows():
@@ -287,75 +291,70 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
 
         # STEPS *********************
         steps['date'] = pd.to_datetime(steps['step_time']).dt.date
-        steps_24 = steps[steps['date'] == curr_day]
-        steps_24 = steps_24.reset_index(drop=True)
-        steps_24['step_time'] = pd.to_datetime(steps_24['step_time'])
+        steps_all = steps[steps['date'] == curr_day]
+        steps_all = steps_all.reset_index(drop=True)
+        steps_all['step_time'] = pd.to_datetime(steps_all['step_time'])
 
         # BOUTS **********************
         bouts['date'] = pd.to_datetime(bouts['start_time']).dt.date
         bouts['start_time'] = pd.to_datetime(bouts['start_time'])
         bouts['end_time'] = pd.to_datetime(bouts['end_time'])
-        bouts_24 = bouts[bouts['date'] == curr_day]
+        bouts_all = bouts[bouts['date'] == curr_day]
 
-        #################################################
-        # 24 hour steps
-        total_steps_24 = len(steps_24)
-        temp = steps_24[steps_24['gait_bout_num'] == 0]
-        total_steps_24_unbouted = len(temp)
+        if time_window == '24hr':
+            #################################################
+            # 24 hour steps
+            total_steps = len(steps_all)
+            temp = steps_all[steps_all['gait_bout_num'] == 0]
+            total_steps_unbouted = len(temp)
+            bouts_wind = bouts_all
+            steps_wind = steps_all
 
-        #unbouted steps
-        temp = steps_24[steps_24['gait_bout_num'] == 0]
-        total_steps_24_unbouted = len(temp)
+        elif time_window == 'wake':
 
-        ################################################
-        # 10 AM to 10 PM steps
-        tenAM = datetime.combine(curr_day.date(), time(10, 0))
-        tenPM = datetime.combine(curr_day.date(), time(22, 0))
-        steps_1010 = steps_24[(steps_24['step_time'] > tenAM ) | (steps_24['step_time'] <= tenPM)]
-        total_steps_1010 = len(temp)
-        temp = steps_1010[steps_1010['gait_bout_num'] == 0]
-        total_steps_1010_unbouted = len(temp)
-        bouts_1010 = bouts_24[((bouts_24['start_time'] >= tenAM) & (bouts_24['end_time'] <= tenPM))]
+            ##############################################
+            # sleep row
+            if found_sleep:
+                sleep1 = new_sleep[new_sleep['day'] == curr_day]
+                if not sleep1.empty:
+                    sleep1 = sleep1.reset_index(drop=True)
+                    wake = sleep1.loc[0, 'wake']
+                    bed = sleep1.loc[0, 'bed']
+                else:
+                    found_sleep = False
 
+            # overnight/sleep time window steps and bouts
+            if found_sleep:
+                if bed < wake:
+                    steps_wind = steps_all[(steps_all['step_time'] <= bed) | (steps_all['step_time'] >= wake)]
+                    bouts_wind = bouts_all[((bouts_all['start_time'] <= wake) & (bouts_all['end_time'] <= wake)) |
+                                           ((bouts_all['end_time'] >= bed) & (bouts_all['end_time'] >= bed))]
+                else:
+                    steps_wind = steps_all[(steps_all['step_time'] <= wake) | (steps_all['step_time'] >= bed)]
+                    bouts_wind = bouts_all[((bouts_all['start_time'] <= wake) & (bouts_all['end_time'] <= wake)) |
+                                           ((bouts_all['end_time'] >= bed) & (bouts_all['end_time'] >= bed))]
 
-        ##############################################
-        # Sleep steps
-        #sleep row
-        if found_sleep:
-            sleep1 = new_sleep[new_sleep['day'] == curr_day]
-            if not sleep1.empty:
-                sleep1 = sleep1.reset_index(drop=True)
-                wake = sleep1.loc[0,'wake']
-                bed = sleep1.loc[0,'bed']
+                total_steps = len(steps_wind)
+                temp = steps_wind[steps_wind['gait_bout_num'] == 0]
+                total_steps_unbouted = len(temp)
             else:
-                found_sleep = False
+                total_steps = -1
+                total_steps_unbouted = -1
 
-        #overnight/sleep time window steps and bouts
-        if found_sleep:
-            if bed < wake:
-                steps_sleep = steps_24[(steps_24['step_time'] <= bed) | (steps_24['step_time'] >= wake)]
-                bouts_sleep = bouts_24[((bouts_24['start_time'] <= wake) & (bouts_24['end_time'] <= wake)) |
-                                           ((bouts_24['end_time'] >= bed) & (bouts_24['end_time'] >= bed))]
-            else:
-                steps_sleep = steps_24[(steps_24['step_time'] <= wake) | (steps_24['step_time'] >= bed)]
-                bouts_sleep = bouts_24[((bouts_24['start_time'] <= wake) & (bouts_24['end_time'] <= wake)) |
-                                          ((bouts_24['end_time'] >= bed) & (bouts_24['end_time'] >= bed))]
-
-            total_steps_sleep = len(steps_sleep)
-            temp = steps_sleep[steps_sleep['gait_bout_num'] == 0]
-            total_steps_sleep_unbouted = len(temp)
-        else:
-            total_steps_sleep = -1
-            total_steps_sleep_unbouted = -1
-
+        elif time_window == '1010':
+            ################################################
+            # 10 AM to 10 PM steps
+            tenAM = datetime.combine(curr_day, time(10, 0))
+            tenPM = datetime.combine(curr_day, time(22, 0))
+            steps_wind = steps_all[(steps_all['step_time'] > tenAM ) & (steps_all['step_time'] <= tenPM)]
+            total_steps = len(steps_wind)
+            temp = steps_wind[steps_wind['gait_bout_num'] == 0]
+            total_steps_unbouted = len(temp)
+            bouts_wind = bouts_all[((bouts_all['start_time'] >= tenAM) & (bouts_all['end_time'] <= tenPM))]
 
         # bin by steps
-        bin_count_24 = []
-        bin_sum_24 = []
-        bin_count_sleep = []
-        bin_sum_sleep = []
-        bin_count_1010 = []
-        bin_sum_1010 = []
+        bin_count = []
+        bin_sum = []
 
         temp_list = bin_list_steps + [9999]
         for i, step in enumerate(temp_list):
@@ -370,46 +369,22 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
             else:
                 st = bin_list_steps[i-1]
 
-            #24Hr
-            temp = bouts_24[(bouts_24['step_count'] > st) & (bouts_24['step_count'] <= ed)]
-            bin_count_24.append(len(temp))
-            bin_sum_24.append(temp['step_count'].sum())
-
-            #10Am-10PM
-            temp = bouts_1010[(bouts_1010['step_count'] > st) & (bouts_1010['step_count'] <= ed)]
-            bin_count_1010.append(len(temp))
-            bin_sum_1010.append(temp['step_count'].sum())
-
-            #sleep
-            if found_sleep:
-                #night time
-                temp = bouts_sleep[(bouts_sleep['step_count'] > st) & (bouts_sleep['step_count'] <= ed)]
-                bin_count_sleep.append(len(temp))
-                bin_sum_sleep.append(temp['step_count'].sum())
+            if found_sleep == False:
+                bin_count.append(-1)
+                bin_sum.append(-1)
             else:
-                bin_count_sleep.append(-1)
-                bin_sum_sleep.append(-1)
-
+                temp = bouts_wind[(bouts_wind['step_count'] > st) & (bouts_wind['step_count'] <= ed)]
+                bin_count.append(len(temp))
+                bin_sum.append(temp['step_count'].sum())
 
         #adding rows for each subject to file
         lead_info = [subject, visit, curr_day, wear, group]
-        row_24 = ['24hr', total_steps_24, total_steps_24_unbouted, *bin_count_24, *bin_sum_24]
-        steps_summary.loc[len(steps_summary)] = lead_info + row_24
-
-        row_sleep = ['sleep', total_steps_sleep, total_steps_sleep_unbouted, *bin_count_sleep, *bin_sum_sleep]
-        steps_summary.loc[len(steps_summary)] = lead_info + row_sleep
-
-        row_1010 = ['1010', total_steps_1010, total_steps_1010_unbouted, *bin_count_1010, *bin_sum_1010]
-        steps_summary.loc[len(steps_summary)] = lead_info + row_1010
-
+        row = [time_window, daily_tot_steps, total_steps, total_steps_unbouted, *bin_count, *bin_sum]
+        steps_summary.loc[len(steps_summary)] = lead_info + row
 
         #bin by duration
-        bin_width_count_24 = []
-        bin_width_sum_24 = []
-        bin_width_count_sleep = []
-        bin_width_sum_sleep = []
-        bin_width_count_1010 = []
-        bin_width_sum_1010 = []
+        bin_width_count = []
+        bin_width_sum = []
 
         temp_list = bin_width_time + [9999]
         for i, step in enumerate(temp_list):
@@ -424,63 +399,19 @@ def steps_by_day (steps_summary, steps, bin_list_steps, width_summary, bouts, bi
             else:
                 st = bin_width_time[i-1]
 
-            # 24Hr
-            temp = bouts_24[(bouts_24['step_count'] > st) & (bouts_24['step_count'] <= ed)]
-            bin_count_24.append(len(temp))
-            bin_sum_24.append(temp['step_count'].sum())
-
-            # 10Am-10PM
-            temp = bouts_1010[(bouts_1010['step_count'] > st) & (bouts_1010['step_count'] <= ed)]
-            bin_count_1010.append(len(temp))
-            bin_sum_1010.append(temp['step_count'].sum())
-
-            # sleep
-            if found_sleep:
-                # night time
-                temp = bouts_sleep[(bouts_sleep['step_count'] > st) & (bouts_sleep['step_count'] <= ed)]
-                bin_count_sleep.append(len(temp))
-                bin_sum_sleep.append(temp['step_count'].sum())
+            if found_sleep == False:
+                bin_count.append(-1)
+                bin_sum.append(-1)
             else:
-                bin_count_sleep.append(-1)
-                bin_sum_sleep.append(-1)
-
-
-            #24 hr
-            bouts_24['bout_dur'] =(bouts_24['end_time'] - bouts_24['start_time']).dt.total_seconds()
-            temp = bouts_24[(bouts_24['bout_dur'] > st) & (bouts_24['bout_dur'] <= ed)]
-            bin_width_count_24.append(len(temp))
-            bin_width_sum_24.append(temp['step_count'].sum())
-
-            #1010
-            # 10Am-10PM
-            bouts_1010['bout_dur'] = (bouts_1010['end_time'] - bouts_1010['start_time']).dt.total_seconds()
-            temp = bouts_1010[(bouts_1010['bout_dur'] > st) & (bouts_1010['bout_dur'] <= ed)]
-            bin_count_1010.append(len(temp))
-            bin_sum_1010.append(temp['step_count'].sum())
-
-            #sleep
-            if found_sleep:
-                #night time
-                bouts_sleep['bout_dur'] = (bouts_sleep['end_time'] - bouts_sleep['start_time']).dt.total_seconds()
-                temp = bouts_sleep[(bouts_sleep['bout_dur'] > st) & (bouts_sleep['bout_dur'] <= ed)]
-                bin_width_count_sleep.append(len(temp))
-                bin_width_sum_sleep.append(temp['step_count'].sum())
-            else:
-                bin_width_count_sleep.append(-1)
-                bin_width_sum_sleep.append(-1)
+                bouts_wind['bout_dur'] =(bouts_wind['end_time'] - bouts_wind['start_time']).dt.total_seconds()
+                temp = bouts_wind[(bouts_wind['bout_dur'] > st) & (bouts_wind['bout_dur'] <= ed)]
+                bin_width_count.append(len(temp))
+                bin_width_sum.append(temp['step_count'].sum())
 
         # adding rows for each subejct to file
         lead_info = [subject, visit, curr_day, wear, group]
-        row_24 = ['24hr', total_steps_24, total_steps_24_unbouted, *bin_width_count_24, *bin_width_sum_24]
-        width_summary.loc[len(steps_summary)] = lead_info + row_24
-
-        row_sleep = ['sleep', total_steps_sleep, total_steps_sleep_unbouted, *bin_width_count_sleep, *bin_width_sum_sleep]
-        width_summary.loc[len(steps_summary)] = lead_info + row_sleep
-
-        row_1010 = ['1010', total_steps_1010, total_steps_1010_unbouted, *bin_width_count_1010, *bin_width_sum_1010]
-        width_summary.loc[len(steps_summary)] = lead_info + row_1010
-
-
+        row = [time_window, daily_tot_steps, total_steps, total_steps_unbouted, *bin_width_count, *bin_width_sum]
+        width_summary.loc[len(steps_summary)] = lead_info + row
 
     return steps_summary, width_summary
 
@@ -668,6 +599,16 @@ def read_demo_data (drive, study):
     if study == 'OND09':
         new_path = drive+'\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
         demodata = read_demo_ondri_data(new_path)
+        for i, subject in enumerate(demodata['SUBJECT']):
+            if study == 'OND09':
+                parts = subject.split('_', 2)  # Split into at most 3 parts
+                if len(parts) == 3:
+                    subject = parts[0] + '_' + parts[1] + parts[2]  # Recombine without the second underscore
+            elif study == 'SA-PR01':
+                subject = 'SA-PR01_' + subject
+
+            demodata.loc[i, 'SUBJECT'] = subject
+
     elif study == 'SA-PR01':
         new_path = drive +'\\SuperAging\\data\\summary\\AAIC_2025\\SA-PR01_collections.csv'
         demodata = pd.read_csv(new_path)
