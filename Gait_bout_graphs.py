@@ -13,60 +13,81 @@ import seaborn as sns
 import datetime
 import openpyxl
 
-def plot_bins_histogram (nimbal_drive, study, window, path, subject_list):
 
-    duration = pd.read_csv(nimbal_drive+path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
-    steps = pd.read_csv(nimbal_drive+path+'Summary_data\\' + study + '_' + window + '_bout_steps_daily_bins_with_unbouted.csv')
-
+def calc_basic_stride_bouts_stats(nimbal_drive, study, window, path, subject_list):
+    #stride totals - by bouts
+    #averages across days for each subject
+    steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_steps_daily_bins_with_unbouted.csv')
+    #select only specific subjects
     steps = steps[steps['subj'].isin(subject_list)]
+    #creat subset of bouts
+    steps['strides_short'] = steps['strides_<_5'] + steps['strides_<_10']
+    steps['strides_medium'] = steps['strides_<_30'] + steps['strides_<_60']
+    steps['strides_long'] = steps['strides_<_180'] + steps['strides_<_600'] + steps['strides_>_600']
 
-    steps['short'] = steps['strides_<_5'] + steps['strides_<_10']
-    steps['medium'] = steps['strides_<_30'] + steps['strides_<_60']
-    steps['long'] = steps['strides_<_180'] + steps['strides_<_600'] + steps['strides_>_600']
+    # these are the strides per bout class
+    stride_bouts = steps.columns[steps.columns.str.startswith('strides_')].tolist()
+    # this adds unbouted
+    stride_bouts.insert(0, 'not_bouted')
+    stride_bouts.insert(0, 'total')
 
-    #these are the strides per bout class
-    select1 = steps.columns[steps.columns.str.startswith('strides_')].tolist()
-    #this adds unbouted
-    select1.insert(0, 'not_bouted')
-    select1.insert(0, 'total')
-
-    #calcualte the percentrage of steps in bouts relative to total (daily)
-    for col in select1:
+    # calculate the percentage of steps in bouts relative to total (daily)
+    for col in stride_bouts:
         steps[col + '_pct'] = steps[col] / steps['total'] * 100
+    # these are the prct strides per bout class
+    pct_bouts = steps.columns[steps.columns.str.contains('_pct')].tolist()
 
-    #these are the strides per bout class
-    select2 = steps.columns[steps.columns.str.contains('_pct')].tolist()
-
-    #mean bouts setp #s absolute
-    nstride_subj_median = steps.groupby('subj')[select1].median()
+    # mean bouts setp #s absolute
+    nstride_subj_median = steps.groupby('subj')[stride_bouts].median()
     nstride_all_median = nstride_subj_median.median()
 
-    nstride_subj_means = steps.groupby('subj')[select1].mean()
+    nstride_subj_means = steps.groupby('subj')[stride_bouts].mean()
     nstride_all_std = nstride_subj_means.std()
 
-    #bouts setp #s percentage
-    nstride_pct_subj_median = steps.groupby('subj')[select2].median()
+    # bouts setp #s percentage
+    nstride_pct_subj_median = steps.groupby('subj')[pct_bouts].median()
     nstride_pct_all_median = nstride_pct_subj_median.median()
 
-    nstride_pct_subj_mean = steps.groupby('subj')[select2].mean()
+    nstride_pct_subj_mean = steps.groupby('subj')[pct_bouts].mean()
     nstride_pct_all_std = nstride_pct_subj_mean.std()
 
+    return nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std
+
+
+
+    duration = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
+
+
+
+def plot_stride_bouts_histogram (nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std, labels):
+
     ##############################################################################################
-    #plot all bins
-    # Step 2: Create the plot
+    #plot all bins that match the labels
+    labels = ['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
+    label_basic = ['Total', 'Unbouted']
+    label_stride = ['stride_' + item for item in labels]
+    label_pct =['pct_' + item for item in labels]
+
     fig, axs = plt.subplots(2, figsize=(8, 9))
 
-    axs[0].bar(nstride_all_median.index, nstride_all_median.values, yerr=nstride_all_std.values, capsize=5, color='lightblue', edgecolor='black')
+    #median std strides
+    median = nstride_all_median[nstride_all_median[label_basic + label_stride]]
+    std = nstride_all_std[nstride_all_std[label_basic + label_stride]]
+    ticks = list(range(len(label_basic + label_stride)))
+    axs[0].bar(median.index, median.values, yerr=std.values, capsize=5, color='lightblue', edgecolor='black')
     axs[0].set_title('Median unilateral steps / day')
     axs[0].set_xlabel('Bout duration (secs)')
     axs[0].set_ylabel('Unilateral steps / day')
-    axs[0].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
+    axs[0].set_xticks(ticks=ticks, labels=label_basic + labels)
 
-    axs[1].bar(nstride_pct_all_median.index, nstride_pct_all_median.values, yerr=nstride_pct_all_std.values, capsize=5, color='violet', edgecolor='black')
+    median = nstride_pct_all_median[nstride_pct_all_median[label_basic + label_stride]]
+    std = nstride_pct_all_std[nstride_pct_all_std[label_basic + label_stride]]
+    ticks = list(range(len(label_basic + label_stride)))
+    axs[1].bar(median.index, median.values, yerr=std.values, capsize=5, color='violet', edgecolor='black')
     axs[1].set_title('Median unilateral steps / day - % of total')
     axs[1].set_xlabel('Bout duration (secs)')
     axs[1].set_ylabel('Unilateral steps / day')
-    axs[1].set_xticks(ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8], labels=['Total', 'Unbouted', '<5', '5-10', '10-30', '30-60','60-180', '180-600', '>600'])
+    axs[1].set_xticks(ticks=ticks, labels=label_basic + labels)
     plt.tight_layout()
     plt.show()
 
@@ -107,7 +128,7 @@ def plot_bins_histogram (nimbal_drive, study, window, path, subject_list):
 
 
 '''
-
+duration = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
 graph_title1 = 'Bouts by seconds'
 file_out = 'Bouts_by_sec_summary_by_subject_7days.csv'
 
