@@ -7,7 +7,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import glob
 
-def create_bin_density_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list):
+def create_bin_density_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list,
+                             bin_list_steps, bin_width_time):
+
     # check - but use this one - \prd\nimbalwear\OND09
     if study == 'OND09':
         path1 = root + '\\nimbalwear\\OND09\\analytics\\'
@@ -26,10 +28,6 @@ def create_bin_density_files(time_window, study, root, nimbal_drive, paper_path,
     sptw_path = 'sleep\\sptw\\'
 
     # PART A - loop and do bin counts
-
-    # set the bin widths fro step/strides counting
-    bin_list_steps = [5, 10, 25, 50, 100, 300]
-    bin_width_time = [5, 10, 30, 60, 180, 600]
 
     # create header
     bin = []
