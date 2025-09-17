@@ -14,6 +14,20 @@ import datetime
 import openpyxl
 
 
+'''
+Figure 1 - median daily steps - all subjects  - 3 windows - compaion table (excel)
+
+Justify duration of bouts as a focus -
+
+Figure 2 - bouts histograms (bouts) - for all 3 windows (a,b,c)  
+ 
+
+ 
+ 
+'''
+
+
+
 def calc_basic_stride_bouts_stats(nimbal_drive, study, window, path, subject_list):
     #stride totals - by bouts
     #averages across days for each subject

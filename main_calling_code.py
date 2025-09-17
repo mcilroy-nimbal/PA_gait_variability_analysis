@@ -47,8 +47,7 @@ if plot_bouts:
     subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
     window = '24hr'
 
-
-    #calcualte medians and std for each bout and clustrd bouts
+    #calcualte medians and std for each bout and clustred bouts
     nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std \
         = calc_basic_stride_bouts_stats(nimbal_drive, study, window, paper_path, subj_list)
 
