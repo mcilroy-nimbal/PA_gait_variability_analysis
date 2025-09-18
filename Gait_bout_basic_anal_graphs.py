@@ -28,10 +28,14 @@ Figure 2 - bouts histograms (bouts) - for all 3 windows (a,b,c)
 
 
 
-def calc_basic_stride_bouts_stats(nimbal_drive, study, window, path, subject_list):
+def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path, subject_list, group_name):
     #stride totals - by bouts
     #averages across days for each subject
-    steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_steps_daily_bins_with_unbouted.csv')
+    if step_vs_dur:
+        steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_steps_daily_bins.csv')
+    else:
+        steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins.csv')
+
     #select only specific subjects
     steps = steps[steps['subj'].isin(subject_list)]
 
@@ -43,11 +47,6 @@ def calc_basic_stride_bouts_stats(nimbal_drive, study, window, path, subject_lis
     stride_bouts.insert(0, 'window_not_bouted_strides')
     stride_bouts.insert(0, 'window_total_strides')
 
-    #creat subset of bouts
-    #steps['strides_short'] = steps['strides_<_5'] + steps['strides_<_10']
-    #steps['strides_medium'] = steps['strides_<_25'] + steps['strides_<_50']
-    #steps['strides_long'] = steps['strides_<_100'] + steps['strides_<_300'] + steps['strides_>_300']
-
     # calculate the percentage of steps in bouts relative to total (daily)
     for col in stride_bouts:
         steps[col + '_pct'] = steps[col] / steps['window_total_strides'] * 100
@@ -55,24 +54,32 @@ def calc_basic_stride_bouts_stats(nimbal_drive, study, window, path, subject_lis
     pct_bouts = steps.columns[steps.columns.str.contains('_pct')].tolist()
 
     # mean bouts setp #s absolute
-    nstride_subj_median = steps.groupby('subj')[stride_bouts].median()
-    nstride_all_median = nstride_subj_median.median()
+    nstride_subj_stats = steps.groupby('subj')[stride_bouts].agg(['mean', 'median', 'std', 'count'])
+    # Extract median and std columns using .xs()
+    medians = nstride_subj_stats.xs('median', axis=1, level=1)
+    # Calculate mean and std
+    nstride_group_stats = pd.DataFrame({'Median': medians.median(),'Std': medians.std(),'N' : medians.count() })
 
-    nstride_subj_means = steps.groupby('subj')[stride_bouts].mean()
-    nstride_all_std = nstride_subj_means.std()
+    # mean bouts setp #s absolute
+    nstride_pct_subj_stats = steps.groupby('subj')[stride_bouts].agg(['mean', 'median', 'std', 'count'])
+    # Extract median and std columns using .xs()
+    medians = nstride_pct_subj_stats.xs('median', axis=1, level=1)
+    # Calculate mean and std
+    nstride_pct_group_stats = pd.DataFrame({'Median': medians.median(), 'Std': medians.std(), 'N' : medians.count()})
 
-    # bouts setp #s percentage
-    nstride_pct_subj_median = steps.groupby('subj')[pct_bouts].median()
-    nstride_pct_all_median = nstride_pct_subj_median.median()
+    full_path = nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_' + group_name + '_'
+    if step_vs_dur:
+        full_path = full_path + 'bout_steps_'
+    else:
+        full_path = full_path + 'bout_duration_'
+    nstride_subj_stats.to_csv(full_path + '_subj_stats.csv', float_format='%.2f')
+    nstride_group_stats.to_csv(full_path + '_group_stats.csv',float_format='%.2f' )
+    nstride_pct_subj_stats.to_csv(full_path + '_pct_subj_stats.csv', float_format='%.2f')
+    nstride_pct_group_stats.to_csv(full_path + '_pct_group_stats.csv', float_format='%.2f' )
 
-    nstride_pct_subj_mean = steps.groupby('subj')[pct_bouts].mean()
-    nstride_pct_all_std = nstride_pct_subj_mean.std()
-
-    return nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std
+    return
 
 
-
-    #duration = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
 
 
 
