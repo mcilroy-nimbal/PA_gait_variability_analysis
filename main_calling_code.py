@@ -62,7 +62,8 @@ if calc_basic_stats:
 plot = True
 figure1 = False #swarm totals
 figure2 = False #KDE distibiton - bouts/unbouted
-figure3 = True #bout disitbution
+figure3 = False #bout disitbution
+figure4 = True
 
 if plot:
     path = nimbal_drive + demo_path
@@ -147,7 +148,7 @@ if plot:
     if figure3:
 
         #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-        plot_labels = ['Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+        plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
         median_24hr_nototal =group_24hr.iloc[1:].reset_index(drop=True)
         median_1010_nototal = group_1010.iloc[1:].reset_index(drop=True)
 
@@ -156,19 +157,50 @@ if plot:
         ticks = list(range(len(plot_labels)))
         axs[0].bar(median_24hr_nototal.index, median_24hr_nototal['Median'].values, yerr=median_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
         axs[0].set_title('Median unilateral steps / day  - 24 HR')
-        axs[0].set_xlabel('Bout length (# unilateral steps)')
+        axs[0].set_xlabel('Bout length (sec)')
         axs[0].set_ylabel('Unilateral steps / day')
         axs[0].set_xticks(ticks=ticks, labels=plot_labels)
-
+        axs[0].set_ylim(bottom=0)
 
         ticks = list(range(len(plot_labels)))
         axs[1].bar(median_1010_nototal.index, median_1010_nototal['Median'].values, yerr=median_1010_nototal['Std'], capsize=5, color='violet', edgecolor='black')
-        axs[1].set_title('Median unilateral steps / day - 10Am-10PM')
-        axs[1].set_xlabel('Bout length (# unilateral steps)')
+        axs[1].set_title('Median unilateral steps / day - 10AM-10PM')
+        axs[1].set_xlabel('Bout length (sec)')
         axs[1].set_ylabel('Unilateral steps / day')
         axs[1].set_xticks(ticks=ticks, labels=plot_labels)
+        axs[1].set_ylim(bottom=0)
         plt.tight_layout()
         plt.show()
+
+    if figure4:
+
+        #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+        plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
+        median_24hr_nototal =group_pct_24hr.iloc[1:].reset_index(drop=True)
+        median_1010_nototal = group_pct_1010.iloc[1:].reset_index(drop=True)
+
+        fig, axs = plt.subplots(2, figsize=(8, 9))
+        # median std strides
+        ticks = list(range(len(plot_labels)))
+        axs[0].bar(median_24hr_nototal.index, median_24hr_nototal['Median'].values, yerr=median_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
+        axs[0].set_title('Median unilateral steps / day  - 24 HR')
+        axs[0].set_xlabel('Bout length (sec)')
+        axs[0].set_ylabel('% of total unilateral steps / day')
+        axs[0].set_xticks(ticks=ticks, labels=plot_labels)
+        axs[0].set_ylim(bottom=0)
+
+        ticks = list(range(len(plot_labels)))
+        axs[1].bar(median_1010_nototal.index, median_1010_nototal['Median'].values, yerr=median_1010_nototal['Std'], capsize=5, color='violet', edgecolor='black')
+        axs[1].set_title('Median unilateral steps / day - 10AM-10PM')
+        axs[1].set_xlabel('Bout length (sec)')
+        axs[1].set_ylabel('% of total unilateral steps / day')
+        axs[1].set_xticks(ticks=ticks, labels=plot_labels)
+        axs[1].set_ylim(bottom=0)
+        plt.tight_layout()
+        plt.show()
+
+
+
 
     print('pause')
     '''

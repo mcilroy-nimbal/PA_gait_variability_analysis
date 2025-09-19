@@ -396,7 +396,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758165520402</updated>
     </task>
-    <option name="localTasksCounter" value="40" />
+    <task id="LOCAL-00040" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1758248415485</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1758248415485</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -519,17 +527,17 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main_calling_code.py</url>
-          <line>176</line>
+          <line>208</line>
           <option name="timeStamp" value="483" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main_calling_code.py</url>
-          <line>174</line>
+          <line>206</line>
           <option name="timeStamp" value="489" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main_calling_code.py</url>
-          <line>172</line>
+          <line>204</line>
           <option name="timeStamp" value="512" />
         </line-breakpoint>
       </breakpoints>
