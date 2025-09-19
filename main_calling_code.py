@@ -60,51 +60,121 @@ if calc_basic_stats:
     #SML_median, SML_std, SML_pct_median, SML_pct_std = bouts_SML(nimbal_drive, study, window, paper_path, subj_list)
 
 plot = True
+figure1 = False #swarm totals
+figure2 = False #KDE distibiton - bouts/unbouted
+figure3 = True #bout disitbution
+
 if plot:
     path = nimbal_drive + demo_path
     group_name = 'Control'
     study = 'OND09'
 
     path_24hr = nimbal_drive + paper_path + 'Summary_data\\' + study + '_24hr_' + group_name + '_bout_duration_'
-    subj_24hr = pd.read_csv(path_24hr +'_subj_stats.csv' )
-    subj_pct_24hr = pd.read_csv(path_24hr + '_pct_subj_stats.csv')
+    subj_24hr = pd.read_csv(path_24hr +'_subj_stats.csv', header=[0, 1])
+    group_24hr = pd.read_csv(path_24hr +'_group_stats.csv')
+    subj_pct_24hr = pd.read_csv(path_24hr + '_pct_subj_stats.csv', header=[0, 1])
+    group_pct_24hr = pd.read_csv(path_24hr + '_pct_group_stats.csv')
 
     path_1010 = nimbal_drive + paper_path + 'Summary_data\\' + study + '_1010_' + group_name + '_bout_duration_'
-    subj_1010 = pd.read_csv(path_1010 +'_subj_stats.csv' )
-    subj_pct_1010 = pd.read_csv(path_1010 + '_pct_subj_stats.csv')
+    subj_1010 = pd.read_csv(path_1010 +'_subj_stats.csv', header=[0, 1] )
+    group_1010 = pd.read_csv(path_1010 + '_group_stats.csv')
+    subj_pct_1010 = pd.read_csv(path_1010 + '_pct_subj_stats.csv', header=[0, 1])
+    group_pct_1010 = pd.read_csv(path_1010 + '_pct_group_stats.csv')
+
+    plot_24hr_all = subj_24hr[('window_total_strides','median')]
+    plot_1010_all = subj_1010[('window_total_strides', 'median')]
+    plot_24hr_unbouted = subj_24hr[('window_not_bouted_strides', 'median')]
+    plot_1010_unbouted = subj_1010[('window_not_bouted_strides', 'median')]
+    plot_24hr_bouted = plot_24hr_all - plot_24hr_unbouted
+    plot_1010_bouted = plot_24hr_all - plot_1010_unbouted
+
+    if figure1:
+        # Sample DataFrame with two numeric columns
+        df = pd.DataFrame({'24 HR': plot_24hr_all,'10AM-10PM': plot_1010_all})
+        # Melt the DataFrame to long format for seaborn
+        melted_df = df.melt(var_name='Window', value_name='Total steps')
+
+        # Create the swarm plot
+        plt.figure(figsize=(8, 6))
+        #sns.swarmplot(x='Window', y='Total steps', data=melted_df, size=6)
+        #sns.catplot(data= melted_df, x='Window', y='Total steps', kind='swarm',palette={'24 HR': 'skyblue', '10AM-10PM': 'salmon'})
+
+        # Create violin plot
+        sns.violinplot(x='Window', y='Total steps', data=melted_df, inner=None, palette={'24 HR': 'skyblue', '10AM-10PM': 'salmon'})
+        # Overlay swarm plot
+        sns.swarmplot(x='Window', y='Total steps', data=melted_df, color='black', size=4)
+
+        plt.ylim(bottom=0)
+        plt.title('Steps / day comparing time window')
+        plt.xlabel('Window')
+        plt.ylabel('Median unilateral steps / day')
+        plt.tight_layout()
+        plt.show()
+
+    if figure2:
+        fig, axes = plt.subplots(1, 3, figsize=(18, 5), sharex=True)
+
+        # Plot 1
+        sns.kdeplot(x=plot_24hr_all, fill=True, label='24 HR', color='skyblue', alpha=0.6, ax=axes[0])
+        sns.kdeplot(x=plot_1010_all, fill=True, label='10AM–10PM', color='salmon', alpha=0.6, ax=axes[0])
+        axes[0].set_title('Total unilateral steps')
+        axes[0].set_xlabel('Step Count')
+        axes[0].set_yticks([])
+        axes[0].legend()
+
+        # Plot 2
+        sns.kdeplot(x=plot_24hr_unbouted, fill=True, label='24 HR', color='skyblue', alpha=0.6, ax=axes[1])
+        sns.kdeplot(x=plot_1010_unbouted, fill=True, label='10AM–10PM', color='salmon', alpha=0.6, ax=axes[1])
+        axes[1].set_title('Unbouted unilateral steps')
+        axes[1].set_xlabel('Step Count')
+        axes[1].set_yticks([])
+        axes[1].legend()
+
+        # Plot 3
+        sns.kdeplot(x=plot_24hr_bouted, fill=True, label='24 HR', color='skyblue', alpha=0.6, ax=axes[2])
+        sns.kdeplot(x=plot_1010_bouted, fill=True, label='10AM–10PM', color='salmon', alpha=0.6, ax=axes[2])
+        axes[2].set_title('Bouted unilateral steps')
+        axes[2].set_xlabel('Step Count')
+        axes[2].set_yticks([])
+        axes[2].legend()
+
+        # Final layout
+        fig.suptitle('Step Count Distributions Across Time Windows', fontsize=16)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.88)
+        plt.show()
+
+    if figure3:
+
+        #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+        plot_labels = ['Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+        median_24hr_nototal =group_24hr.iloc[1:].reset_index(drop=True)
+        median_1010_nototal = group_1010.iloc[1:].reset_index(drop=True)
+
+        fig, axs = plt.subplots(2, figsize=(8, 9))
+        # median std strides
+        ticks = list(range(len(plot_labels)))
+        axs[0].bar(median_24hr_nototal.index, median_24hr_nototal['Median'].values, yerr=median_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
+        axs[0].set_title('Median unilateral steps / day  - 24 HR')
+        axs[0].set_xlabel('Bout length (# unilateral steps)')
+        axs[0].set_ylabel('Unilateral steps / day')
+        axs[0].set_xticks(ticks=ticks, labels=plot_labels)
 
 
+        ticks = list(range(len(plot_labels)))
+        axs[1].bar(median_1010_nototal.index, median_1010_nototal['Median'].values, yerr=median_1010_nototal['Std'], capsize=5, color='violet', edgecolor='black')
+        axs[1].set_title('Median unilateral steps / day - 10Am-10PM')
+        axs[1].set_xlabel('Bout length (# unilateral steps)')
+        axs[1].set_ylabel('Unilateral steps / day')
+        axs[1].set_xticks(ticks=ticks, labels=plot_labels)
+        plt.tight_layout()
+        plt.show()
 
-
-    # Create a new DataFrame for plotting
-    plot_df = pd.DataFrame({'Value': pd.concat([subj_24hr['window_total_strides.1'], subj_1010['window_total_strides.1']], ignore_index=True),
-        'Feature': ['24 hr'] * len(subj_24hr) + ['10AM-10PM'] * len(subj_1010)})
-
-    plt.figure(figsize=(8, 6))
-    sns.violinplot(x='Feature', y='Value', data=plot_df, inner=None, palette='Set2')
-    sns.stripplot(x='Feature', y='Value', data=plot_df, jitter=True, color='black', size=4)
-    plt.ylim(0, 20000)  # Set min and max range
-    #plt.yticks(range(0, 7000, 1000))  # Set ticks every 5 units
-
-    plt.title('Distribution of 24hr versus 10-10')
-    plt.xlabel('Feature')
-    plt.ylabel('Value')
-    plt.tight_layout()
-    plt.show()
-
-
-    #Figure 1 - spread of total strides for each window (24hr, 1010 and eventually wake)
-
-
-
-    plot_stride_bouts_histogram(nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std,
-                                totalTF=False)
+    print('pause')
+    '''
+    #plot_stride_bouts_histogram(nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std,
+    #                            totalTF=False)
     print ('pause')
-
     #bouts_SML(nimbal_drive, study, window, paper_path, subj_list)
-    print ('pause')
+    '''
 
-#plotting
-
-
-#analysis for paper
