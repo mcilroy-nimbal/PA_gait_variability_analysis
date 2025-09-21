@@ -36,6 +36,15 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
     else:
         steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins.csv')
 
+    if window == 'wake':
+        #remove any less than 10 hours - for cocnern of code right now
+        # Extract the number from the string and convert to integer
+        steps['hours'] = steps['window'].str.extract(r'_(\d+)hr')
+        steps = steps[steps['hours'].notna()]  # Keep only rows with a number
+        steps['hours'] = steps['hours'].astype(int)
+        steps = steps[steps['hours'] > 10]
+        steps.drop(columns=['hours'], inplace=True)
+
     #select only specific subjects
     steps = steps[steps['subj'].isin(subject_list)]
 
@@ -61,7 +70,7 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
     nstride_group_stats = pd.DataFrame({'Median': medians.median(),'Std': medians.std(),'N' : medians.count() })
 
     # mean bouts setp #s absolute
-    nstride_pct_subj_stats = steps.groupby('subj')[stride_bouts].agg(['mean', 'median', 'std', 'count'])
+    nstride_pct_subj_stats = steps.groupby('subj')[pct_bouts].agg(['mean', 'median', 'std', 'count'])
     # Extract median and std columns using .xs()
     medians = nstride_pct_subj_stats.xs('median', axis=1, level=1)
     # Calculate mean and std

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -210,64 +210,65 @@ def wake_sleep (sleep_data):
     sleep_data['bed_day'] = sleep_data['start_time'].dt.date
     sleep_data['wake_day'] = sleep_data['end_time'].dt.date
 
+    new_sleep = pd.DataFrame()
     rows=[]
     unique_days = sleep_data['relative_date'].unique()
     #unique_days = unique_days[:-1]
 
     for day_time in unique_days:
         day = pd.to_datetime(day_time).date()
-        wake, bed = find_time_sleep(day, sleep_data)
-        print ('day: \t'+str(day)+ '\twake \t'+str(wake)+' \tbed \t'+str(bed))
-        rows.append({'day': day, 'wake': wake, 'bed': bed})
-    new_sleep = pd.DataFrame(rows)
+        wake = find_time_sleep(day, sleep_data)
+        #print ('day: \t'+str(day)+ '\twake \t'+str(wake)+' \tbed \t'+str(bed))
+        new_sleep = pd.concat([new_sleep, wake], ignore_index=True)
 
     return new_sleep
 
 
 def find_time_sleep(day, sleep_data):
-    temp = sleep_data[sleep_data['bed_day'] == day]
+
+    wake_rows = []
+    temp = sleep_data[(sleep_data['bed_day'] == day) | (sleep_data['wake_day'] == day)]
     temp = temp.reset_index(drop=True)
 
-    #option 1 - bed day = wake day and only one row - bed was after midnight
-
-
-    #option 2 -
-
-    if len(temp) == 0:
-        bed = datetime.combine(day, time(23, 59))
+    if temp.empty:
+        wake_rows.append([day, pd.to_datetime(datetime.combine(day, time(00, 00, 1))),
+                          pd.to_datetime(datetime.combine(day, time(23, 59, 59)))])
+    #one row where the only on with same day woudl be sleep after midnnight
     elif len(temp) == 1:
-        bed = temp.loc[0,'start_time']
-    elif len(temp) > 1:
-        #select the one that is latest but does not have and short < 1 hour duration)
-        temp['sptw_dur'] = temp['end_time'] - temp['start_time']
-        # Filter rows with sleep duration >= 1 hour
-        filtered_df = temp[temp['sptw_dur'] >= pd.Timedelta(hours=1)]
-        if len(filtered_df) == 0:
-            x = temp.loc[temp['start_time'].idxmax()]
+        if temp.loc[0,'bed_day'] == temp.loc[0,'wake_day']:
+            if temp.loc[0,'start_time'] < temp.loc[0,'end_time']:
+                wake_rows.append([day, pd.to_datetime(datetime.combine(day, time(0, 0, 1))), temp.loc[0, 'start_time']])
+                wake_rows.append([day, temp.loc[0,'end_time'], pd.to_datetime(datetime.combine(day, time(23, 59, 59)))])
+        elif temp.loc[0,'wake_day'] == day:
+            wake_rows.append([day, temp.loc[0,'end_time'], pd.to_datetime(datetime.combine(day, time(23, 59, 59)))])
         else:
-            # Find the row with the latest wake time
-            x = filtered_df.loc[filtered_df['start_time'].idxmax()]
-        bed = x['start_time']
-    temp2 = sleep_data[sleep_data['wake_day'] == day]
-    temp2 = temp2.reset_index(drop=True)
-    if len(temp2) == 0:
-        wake = datetime.combine(day, time(00, 00))
-    elif len(temp2) == 1:
-        wake = temp2.loc[0,'end_time']
-    elif len(temp2) > 1:
-        # select the one that is latest but does not have and short < 1 hour duration)
-        temp2['sptw_dur'] = temp2['end_time'] - temp2['start_time']
-        # Filter rows with sleep duration >= 1 hour
-        filtered_df = temp2[temp2['sptw_dur'] >= pd.Timedelta(hours=1)]
-        if len(filtered_df) == 0:
-            x = temp2.loc[temp2['end_time'].idxmax()]
+            wake_rows.append([day, pd.to_datetime(datetime.combine(day, time(00, 00, 1))), temp.loc[0, 'start_time']])
+    # now for multiple entrys
+    elif len(temp)==2:
+        wake_rows.append([day, temp.loc[0,'end_time'], temp.loc[1,'start_time']])
+
+    else:
+        nrows = len(temp)
+        end = pd.to_datetime(datetime.combine(day, time(23, 59, 59)))
+        start = pd.to_datetime(datetime.combine(day, time(00, 00, 1)))
+        if temp.loc[nrows-1,'wake_day'] != day:
+            end = temp.loc[nrows-1,'start_time']
+        if abs(temp.loc[nrows-1,'start_time'] - temp.loc[nrows-2,'end_time']) < timedelta(hours=1.5):
+            end = temp.loc[nrows-2,'start_time']
         else:
-            # Find the row with the latest wake time
-            x = filtered_df.loc[filtered_df['end_time'].idxmax()]
-        wake = x['end_time']
-    if bed < wake:
-        bed = datetime.combine(day, time(23, 59))
-    return wake, bed
+            end = temp.loc[nrows-1, 'start_time']
+
+
+        if abs(temp.loc[0,'end_time'] - temp.loc[1, 'start_time']) > timedelta(hours = 5):
+            start = temp.loc[0,'end_time']
+        else:
+            start = temp.loc[1, 'end_time']
+
+        wake_rows.append([day, start, end])
+
+    wake = pd.DataFrame(wake_rows, columns=['day', 'wake', 'bed'])
+
+    return wake
 
 def steps_by_day (time_window, steps_summary, steps, bin_list_steps, width_summary, bouts, bin_width_time,
                   merged_daily, sleep, found_sleep, subject, visit, group='all'):
@@ -307,37 +308,49 @@ def steps_by_day (time_window, steps_summary, steps, bin_list_steps, width_summa
             total_steps_unbouted = len(temp)
             bouts_wind = bouts_all
             steps_wind = steps_all
-
+            label = '24hr'
         elif time_window == 'wake':
 
             ##############################################
             # sleep row
+            label = 'wake_'
             if found_sleep:
                 sleep1 = new_sleep[new_sleep['day'] == curr_day]
+                wake = [None] * len(sleep1)
+                bed = [None] * len(sleep1)
+                dur = [None] * len(sleep1)
                 if not sleep1.empty:
                     sleep1 = sleep1.reset_index(drop=True)
-                    wake = sleep1.loc[0, 'wake']
-                    bed = sleep1.loc[0, 'bed']
+                    for i, sleep_row in sleep1.iterrows():
+                        wake[i] = sleep_row.loc['wake']
+                        bed[i] = sleep_row.loc['bed']
+                        diff = bed[i] - wake[i]
+                        dur[i] = int(diff.total_seconds() / 3600)
+                    hours = str((sum(dur)))+'hr'
+                    print ('hours:'  + hours)
                 else:
                     found_sleep = False
 
             # overnight/sleep time window steps and bouts
             if found_sleep:
-                if bed < wake:
-                    steps_wind = steps_all[(steps_all['step_time'] <= bed) | (steps_all['step_time'] >= wake)]
-                    bouts_wind = bouts_all[((bouts_all['start_time'] <= wake) & (bouts_all['end_time'] <= wake)) |
-                                           ((bouts_all['end_time'] >= bed) & (bouts_all['end_time'] >= bed))]
-                else:
-                    steps_wind = steps_all[(steps_all['step_time'] <= wake) | (steps_all['step_time'] >= bed)]
-                    bouts_wind = bouts_all[((bouts_all['start_time'] <= wake) & (bouts_all['end_time'] <= wake)) |
-                                           ((bouts_all['end_time'] >= bed) & (bouts_all['end_time'] >= bed))]
-
-                total_steps = len(steps_wind)
-                temp = steps_wind[steps_wind['gait_bout_num'] == 0]
-                total_steps_unbouted = len(temp)
+                collected_steps = []
+                collected_bouts = []
+                for index in range(len(wake)):
+                    sub_steps = steps_all[(steps_all['step_time'] >= wake[index]) & (steps_all['step_time'] <= bed[index])]
+                    sub_bouts = bouts_all[((bouts_all['start_time'] >= wake[index]) & (bouts_all['end_time'] <= bed[index]))]
+                    collected_steps.append(sub_steps)
+                    collected_bouts.append(sub_bouts)
+                # Combine all filtered DataFrames into one
+                steps_wind = pd.concat(collected_steps, ignore_index=True)
+                bouts_wind = pd.concat(collected_bouts, ignore_index=True)
+                label = 'wake_'+ hours
             else:
-                total_steps = -1
-                total_steps_unbouted = -1
+                steps_wind = steps_all
+                bouts_wind = bouts_all
+                label = 'wake_24hr'
+            total_steps = len(steps_wind)
+            temp = steps_wind[steps_wind['gait_bout_num'] == 0]
+            total_steps_unbouted = len(temp)
 
         elif time_window == '1010':
             ################################################
@@ -349,6 +362,7 @@ def steps_by_day (time_window, steps_summary, steps, bin_list_steps, width_summa
             temp = steps_wind[steps_wind['gait_bout_num'] == 0]
             total_steps_unbouted = len(temp)
             bouts_wind = bouts_all[((bouts_all['start_time'] >= tenAM) & (bouts_all['end_time'] <= tenPM))]
+            label = '1010'
 
         # bin by steps
         bin_count = []
@@ -367,17 +381,13 @@ def steps_by_day (time_window, steps_summary, steps, bin_list_steps, width_summa
             else:
                 st = bin_list_steps[i-1]
 
-            if found_sleep == False:
-                bin_count.append(-1)
-                bin_sum.append(-1)
-            else:
-                temp = bouts_wind[(bouts_wind['step_count'] > st) & (bouts_wind['step_count'] <= ed)]
-                bin_count.append(len(temp))
-                bin_sum.append(temp['step_count'].sum())
+            temp = bouts_wind[(bouts_wind['step_count'] > st) & (bouts_wind['step_count'] <= ed)]
+            bin_count.append(len(temp))
+            bin_sum.append(temp['step_count'].sum())
 
         #adding rows for each subject to file
         lead_info = [subject, visit, curr_day, wear, group]
-        row = [time_window, daily_tot_steps, total_steps, total_steps_unbouted, *bin_count, *bin_sum]
+        row = [label, daily_tot_steps, total_steps, total_steps_unbouted, *bin_count, *bin_sum]
         steps_summary.loc[len(steps_summary)] = lead_info + row
 
         #bin by duration
@@ -397,18 +407,14 @@ def steps_by_day (time_window, steps_summary, steps, bin_list_steps, width_summa
             else:
                 st = bin_width_time[i-1]
 
-            if found_sleep == False:
-                bin_count.append(-1)
-                bin_sum.append(-1)
-            else:
-                bouts_wind['bout_dur'] =(bouts_wind['end_time'] - bouts_wind['start_time']).dt.total_seconds()
-                temp = bouts_wind[(bouts_wind['bout_dur'] > st) & (bouts_wind['bout_dur'] <= ed)]
-                bin_width_count.append(len(temp))
-                bin_width_sum.append(temp['step_count'].sum())
+            bouts_wind['bout_dur'] =(bouts_wind['end_time'] - bouts_wind['start_time']).dt.total_seconds()
+            temp = bouts_wind[(bouts_wind['bout_dur'] > st) & (bouts_wind['bout_dur'] <= ed)]
+            bin_width_count.append(len(temp))
+            bin_width_sum.append(temp['step_count'].sum())
 
         # adding rows for each subejct to file
         lead_info = [subject, visit, curr_day, wear, group]
-        row = [time_window, daily_tot_steps, total_steps, total_steps_unbouted, *bin_width_count, *bin_width_sum]
+        row = [label, daily_tot_steps, total_steps, total_steps_unbouted, *bin_width_count, *bin_width_sum]
         width_summary.loc[len(steps_summary)] = lead_info + row
 
     return steps_summary, width_summary
