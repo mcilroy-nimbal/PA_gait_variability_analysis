@@ -5,8 +5,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from Functions import (wake_sleep, steps_by_day, step_density_sec,
                        read_demo_ondri_data, read_demo_data, stride_time_interval,
-                       create_bin_density_files, select_subjects)
-from Gait_bout_basic_anal_graphs import (plot_stride_bouts_histogram, calc_basic_stride_bouts_stats, bouts_SML)
+                       create_bin_files, create_density_files, select_subjects)
+from Gait_bout_basic_anal_graphs import (calc_basic_stride_bouts_stats, bouts_SML)
 import numpy as np
 import seaborn as sns
 import datetime
@@ -29,26 +29,37 @@ master_subj_list = select_subjects(nimbal_drive, study)
 #master_subj_list = ['OND09_SBH0006']
 print('\nTotal # subjects: \t' + str(len(master_subj_list)) + '\n')
 print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
+group_name = 'Control'
+
+create_bins = False
+create_density = False
+calc_basic_stats = False
+plot = True
+figure1 = True #swarm totals
+figure1b = True
+figure2 = True  #KDE distibiton - bouts/unbouted
+figure3 = True  #bout disitbution
+figure4 = True
+figure5 = True
+figure6 = True
 
 #create summary data files
-create = False
-if create:
-    time_window ='wake'#'1010' #'24hr' #'1010'  'wake'
 
-    create_bin_density_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list,
+if create_bins:
+    time_window ='24hr' #'1010'  'wake'
+    create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list,
                              bin_list_steps, bin_width_time)
 
-print ('pause')
+if create_density:
+    create_density_files(study, root, nimbal_drive, group_name, paper_path, master_subj_list)
 
-calc_basic_stats = True
 if calc_basic_stats:
     #select specific subjects from the study group
     #select ONDRI controls
     path = nimbal_drive + demo_path
     demodata = read_demo_ondri_data(path)
     subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
-    group_name = 'Control'
-    window = 'wake'
+    window = '24hr'
 
     step_vs_dur = False
     #calcualte medians and std for each bout and clustred bouts
@@ -57,15 +68,8 @@ if calc_basic_stats:
     step_vs_dur = True #run duraiton file
     calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, paper_path, subj_list, group_name)
 
-
     #SML_median, SML_std, SML_pct_median, SML_pct_std = bouts_SML(nimbal_drive, study, window, paper_path, subj_list)
 
-plot = True
-figure1 = False #swarm totals
-figure1b = False
-figure2 = False  #KDE distibiton - bouts/unbouted
-figure3 = False  #bout disitbution
-figure4 = True
 
 if plot:
     path = nimbal_drive + demo_path
@@ -77,6 +81,10 @@ if plot:
     group_24hr = pd.read_csv(path_24hr +'_group_stats.csv')
     subj_pct_24hr = pd.read_csv(path_24hr + '_pct_subj_stats.csv', header=[0, 1])
     group_pct_24hr = pd.read_csv(path_24hr + '_pct_group_stats.csv')
+
+    # group wide CVS for histogram
+    group_24hr_cvs = pd.read_csv(path_24hr +'_group_stats_cvs.csv')
+    group_pct_24hr_cvs = pd.read_csv(path_24hr + '_pct_group_stats_cvs.csv')
 
     path_1010 = nimbal_drive + paper_path + 'Summary_data\\' + study + '_1010_' + group_name + '_bout_duration_'
     subj_1010 = pd.read_csv(path_1010 +'_subj_stats.csv', header=[0, 1] )
@@ -90,13 +98,13 @@ if plot:
     subj_pct_wake = pd.read_csv(path_wake + '_pct_subj_stats.csv', header=[0, 1])
     group_pct_wake = pd.read_csv(path_wake + '_pct_group_stats.csv')
 
-    plot_24hr_all = subj_24hr[('window_total_strides','median')]
-    plot_1010_all = subj_1010[('window_total_strides', 'median')]
-    plot_wake_all = subj_wake[('window_total_strides', 'median')]
+    plot_24hr_all = subj_24hr[('window_total_strides','mean')]
+    plot_1010_all = subj_1010[('window_total_strides', 'mean')]
+    plot_wake_all = subj_wake[('window_total_strides', 'mean')]
 
-    plot_24hr_unbouted = subj_24hr[('window_not_bouted_strides', 'median')]
-    plot_1010_unbouted = subj_1010[('window_not_bouted_strides', 'median')]
-    plot_wake_unbouted = subj_wake[('window_not_bouted_strides', 'median')]
+    plot_24hr_unbouted = subj_24hr[('window_not_bouted_strides', 'mean')]
+    plot_1010_unbouted = subj_1010[('window_not_bouted_strides', 'mean')]
+    plot_wake_unbouted = subj_wake[('window_not_bouted_strides', 'mean')]
 
     plot_24hr_bouted = plot_24hr_all - plot_24hr_unbouted
     plot_1010_bouted = plot_1010_all - plot_1010_unbouted
@@ -107,6 +115,8 @@ if plot:
     long_24hr_bouted = subj_24hr[[('strides_<_600', 'median'), ('strides_>_600', 'median')]]
 
     night_time_totals = plot_24hr_all - plot_wake_all
+
+
 
     if figure1:
         # Sample DataFrame with two numeric columns
@@ -219,21 +229,109 @@ if plot:
         med = med_24hr_bouted.sum(axis=1)
         long = long_24hr_bouted.sum(axis=1)
 
-        fig, axs = plt.subplots(2,2, figsize=(8, 9), sharex=True, sharey=True)
+        fig, axs = plt.subplots(2,2, figsize=(8, 8), sharex=True, sharey=True)
 
         sns.scatterplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted', ax=axs[0,0])
         sns.scatterplot(x=plot_24hr_all, y=short, color='magenta', label='Short <30 sec', ax=axs[0,1])
         sns.scatterplot(x=plot_24hr_all, y=med, color='blue', label='Medium 30-180 sec', ax=axs[1,0])
         sns.scatterplot(x=plot_24hr_all, y=long, color='green', label='Long  > 180 sec',ax=axs[1,1])
 
-        plt.title('Total steps versus bouted and unbouted steps')
-        plt.xlabel('Total steps (median) / day')
-        plt.ylabel('Median number steps / day')
+        plt.suptitle('Total steps versus bouted and unbouted steps')
+
+        axs[0,0].set_ylabel('Median daily steps')
+        axs[1,0].set_ylabel('Median daily steps')
+        axs[1, 0].set_xlabel('Total steps (median) / day')
+        axs[1, 1].set_xlabel('Total steps (median) / day')
         plt.tight_layout()
         plt.show()
 
+    if figure5:
 
+        #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+        plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
 
+        median_24hr_nototal = group_24hr_cvs.iloc[1:].reset_index(drop=True)
+        median_24hr_pct_nototal = group_pct_24hr_cvs.iloc[1:].reset_index(drop=True)
+
+        fig, axs = plt.subplots(2, figsize=(8, 9))
+        # median std strides
+        ticks = list(range(len(plot_labels)))
+        axs[0].bar(median_24hr_nototal.index, median_24hr_nototal['Median'].values, yerr=median_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
+        axs[0].set_title('Median between day variation by bout length')
+        axs[0].set_xlabel('Bout length (sec)')
+        axs[0].set_ylabel('Coefficient of variation')
+        axs[0].set_xticks(ticks=ticks, labels=plot_labels)
+        axs[0].set_ylim(bottom=0)
+
+        # median std strides
+        ticks = list(range(len(plot_labels)))
+        axs[1].bar(median_24hr_pct_nototal.index, median_24hr_pct_nototal['Median'].values, yerr=median_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
+        axs[1].set_title('Median Between day variations in percentage by bout length')
+        axs[1].set_xlabel('Bout length (sec)')
+        axs[1].set_ylabel('Coefficient ov variation')
+        axs[1].set_xticks(ticks=ticks, labels=plot_labels)
+        axs[1].set_ylim(bottom=0)
+
+        plt.tight_layout()
+        plt.show()
+
+    if figure6:
+        #path = nimbal_drive + demo_path
+        #demodata = read_demo_ondri_data(path)
+        #subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
+
+        #reorder based on meda step totals
+        subj_total = subj_24hr.iloc[:,0:2] #selects subj and total median column
+        subj_total = subj_total.iloc[1:].reset_index(drop=True)
+        sorted = subj_total.sort_values(by=subj_total.columns[1]).reset_index(drop=True)
+        subj_list = sorted.iloc[:,0]
+        visit = '01'
+
+        # plot the bout density file
+        path_density = nimbal_drive + paper_path + 'Summary_data\\density\\'+study+'\\'
+        intensity_blocks = []
+        for subj in subj_list:
+            file = subj+'_'+visit+'_60sec_density.csv'
+            density_subj = pd.read_csv(path_density + file)
+            density_subj = density_subj.iloc[2:].reset_index(drop=True)
+            density_subj = density_subj.iloc[:,1:]
+            rotated = density_subj.T
+            intensity_blocks.append(rotated)
+        intensity_matrix = pd.concat(intensity_blocks, axis=0, ignore_index=True)
+        intensity_matrix = intensity_matrix.apply(pd.to_numeric, errors='coerce')
+        intensity_matrix = intensity_matrix.fillna(0)
+        intensity_array = intensity_matrix.to_numpy(dtype=float)
+
+        plt.figure(figsize=(10, 6))
+        plt.imshow(intensity_matrix, aspect='auto', cmap='viridis')  # or 'hot', 'plasma', 'magma'
+        plt.colorbar(label='Intensity')
+        plt.xlabel('Time (minutes) (midnight-midnight)')
+        plt.ylabel('Subjects and days stacked')
+        plt.title('Daily step density (all subjects/days)')
+        plt.tight_layout()
+        plt.show()
+        print ('pause')
+        '''
+        data_path = summary_path + 'freq_step_per_min.csv'
+        hist_all = pd.read_csv(data_path)
+        # delete column 0 - lft over index?
+        hist_all = hist_all.drop(hist_all.columns[0], axis=1)
+        # salects subset
+        hist = hist_all[hist_all['subj'].isin(subset['SUBJECT'])]
+        # hist_ = hist_all
+
+        # only plot bin columns - inore subjct and day
+        cols_plot = hist.columns[3:]
+
+        for idx, row in hist.iterrows():
+            vals = row[cols_plot].values
+            x = cols_plot
+            plt.plot(x, vals)
+
+        plt.show()
+        print()
+
+    '''
     print('pause')
     '''
     #plot_stride_bouts_histogram(nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std,

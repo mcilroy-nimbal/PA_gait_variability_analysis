@@ -6,8 +6,9 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import glob
+from pathlib import Path
 
-def create_bin_density_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list,
+def create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list,
                              bin_list_steps, bin_width_time):
 
     # check - but use this one - \prd\nimbalwear\OND09
@@ -111,23 +112,83 @@ def create_bin_density_files(time_window, study, root, nimbal_drive, paper_path,
         steps_summary, width_summary = steps_by_day(time_window, steps_summary, steps, bin_list_steps, width_summary,
                                                     bouts, bin_width_time, merged_daily, sleep, found_sleep, subject, visit, group='all')
 
-        '''print('processing.....')
-        ##############################################################
-        # runs density function for each subject and day
-        time_sec = 60
-        data = step_density_sec(steps, merged_daily, time_sec)
-        data.to_csv(summary_path + 'density\\' + subject + '_' + visit + '_' + version + '_'+ str(time_sec) + 'sec_density.csv')
-
-        ##############################################################
-        # runs stride time for each subejct and day
-        data = stride_time_interval(steps, merged_daily)
-        data.to_csv(summary_path + 'stride_time\\' + subject + '_' + version + '_' + visit + '_stride_time.csv')'''
-
     # write bins file summary
     steps_summary.to_csv(summary_path + study + '_' + time_window + '_bout_steps_daily_bins_with_unbouted.csv', index=False)
     width_summary.to_csv(summary_path + study + '_' + time_window + '_bout_width_daily_bins_with_unbouted.csv', index=False)
 
     print('done')
+
+    return
+
+def create_density_files(study, root, nimbal_drive, group_name, paper_path, master_subj_list):
+
+    # check - but use this one - \prd\nimbalwear\OND09
+    if study == 'OND09':
+        path1 = root + '\\nimbalwear\\OND09\\analytics\\'
+    elif study == 'SA-PRO1':
+        path1 = root + '\\nimbalwear\\SA-PR01-022\\data\\'
+    else:
+        breakpoint()
+
+    summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+
+    folder_path = Path(summary_path + 'density\\') / study
+    folder_path.mkdir(parents=True, exist_ok=True)
+    folder_path = Path(summary_path + 'stride_time\\') / study
+    folder_path.mkdir(parents=True, exist_ok=True)
+
+
+    nw_path = 'nonwear\\daily_cropped\\'
+    bout_path = 'gait\\bouts\\'
+    step_path = 'gait\\steps\\'
+    daily_path = 'gait\\daily\\'
+
+    for j, subject in enumerate(master_subj_list):
+        visit = '01'
+        print('Subject: ' + subject)
+
+        # get step data for subject
+        try:
+            steps = pd.read_csv(path1 + step_path + subject + '_' + visit + '_GAIT_STEPS.csv')
+        except:
+            continue
+        try:
+            daily = pd.read_csv(path1 + daily_path + subject + '_' + visit + '_GAIT_DAILY.csv')
+        except:
+            continue
+        try:
+            temp = path1 + nw_path + subject + '*_NONWEAR_DAILY.csv'
+            match = glob.glob(temp)
+            ankle_nw = [file for file in match if 'Ankle' in file]
+            file = ankle_nw[0]
+            nw_data = pd.read_csv(file)
+        except:
+            continue
+
+        # drop duplicate columns from daily before merge with NW
+        daily.drop(['study_code', 'subject_id', 'coll_id', 'date', ], axis=1, inplace=True)
+
+        # combine nonwear and daily steps by day_num
+        merged_daily = pd.merge(nw_data, daily, on='day_num')
+
+        # remove days that are only partial (nwear <70000?)
+        # minimimum of 20 hours of wear time
+        merged_daily = merged_daily[merged_daily['wear'] > 72000]  # 86400 secs in 24 hours
+        merged_daily['date'] = pd.to_datetime(merged_daily['date'])
+        merged_daily['date'] = merged_daily['date'].dt.date
+
+        print('processing.....')
+
+        ##############################################################
+        # runs density function for each subject and day
+        time_sec = 60
+        data = step_density_sec(steps, merged_daily, time_sec)
+        data.to_csv(summary_path + 'density\\' + study + '\\' + subject + '_' + visit + '_' + str(time_sec) + 'sec_density.csv')
+
+        ##############################################################
+        # runs stride time for each subejct and day
+        data = stride_time_interval(steps, merged_daily)
+        data.to_csv(summary_path + 'stride_time\\' + study + '\\' + subject + '_' + visit + '_stride_time.csv')
 
     return
 

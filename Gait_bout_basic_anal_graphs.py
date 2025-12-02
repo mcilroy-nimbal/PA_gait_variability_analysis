@@ -14,19 +14,8 @@ import datetime
 import openpyxl
 
 
-'''
-Figure 1 - median daily steps - all subjects  - 3 windows - compaion table (excel)
-
-Justify duration of bouts as a focus -
-
-Figure 2 - bouts histograms (bouts) - for all 3 windows (a,b,c)  
- 
-
- 
- 
-'''
-
-
+def coeff_var(x):
+    return np.std(x, ddof=1) / np.mean(x) if np.mean(x) != 0 else np.nan
 
 def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path, subject_list, group_name):
     #stride totals - by bouts
@@ -63,18 +52,38 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
     pct_bouts = steps.columns[steps.columns.str.contains('_pct')].tolist()
 
     # mean bouts setp #s absolute
-    nstride_subj_stats = steps.groupby('subj')[stride_bouts].agg(['mean', 'median', 'std', 'count'])
+    #nstride_subj_stats = steps.groupby('subj')[stride_bouts].agg(['mean', 'median', 'std', 'count'])
+
+    # Apply aggregation including CV
+    nstride_subj_stats = steps.groupby('subj')[stride_bouts].agg(['mean', 'median', 'std', 'count', coeff_var])
+    #rename the CV column for clarity
+    nstride_subj_stats = nstride_subj_stats.rename(columns={'coeff_var': 'cv'})
+
     # Extract median and std columns using .xs()
     medians = nstride_subj_stats.xs('median', axis=1, level=1)
+    cvs = nstride_subj_stats.xs('cv', axis=1, level=1)
+
     # Calculate mean and std
-    nstride_group_stats = pd.DataFrame({'Median': medians.median(),'Std': medians.std(),'N' : medians.count() })
+    #nstride_group_stats = pd.DataFrame({'Median': medians.median(),'Std': medians.std(),'N' : medians.count() })
+    nstride_group_stats = pd.DataFrame({'Median': medians.median(),'Std': medians.std(), 'N': medians.count()})
+    nstride_group_stats_cvs = pd.DataFrame({'Median': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
 
     # mean bouts setp #s absolute
-    nstride_pct_subj_stats = steps.groupby('subj')[pct_bouts].agg(['mean', 'median', 'std', 'count'])
+    #nstride_pct_subj_stats = steps.groupby('subj')[pct_bouts].agg(['mean', 'median', 'std', 'count'])
+    # Apply aggregation including CV
+    nstride_pct_subj_stats = steps.groupby('subj')[pct_bouts].agg(['mean', 'median', 'std', 'count', coeff_var])
+    # rename the CV column for clarity
+    nstride_pct_subj_stats = nstride_pct_subj_stats.rename(columns={'coeff_var': 'cv'})
+
     # Extract median and std columns using .xs()
     medians = nstride_pct_subj_stats.xs('median', axis=1, level=1)
+    cvs = nstride_pct_subj_stats.xs('cv', axis=1, level=1)
+
     # Calculate mean and std
-    nstride_pct_group_stats = pd.DataFrame({'Median': medians.median(), 'Std': medians.std(), 'N' : medians.count()})
+    #nstride_pct_group_stats = pd.DataFrame({'Median': medians.median(), 'Std': medians.std(), 'N' : medians.count()})
+    nstride_pct_group_stats = pd.DataFrame({'Median': medians.median(), 'Std': medians.std(), 'N': medians.count()})
+    nstride_pct_group_stats_cvs = pd.DataFrame({'Median': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
+
 
     full_path = nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_' + group_name + '_'
     if step_vs_dur:
@@ -82,54 +91,15 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
     else:
         full_path = full_path + 'bout_duration_'
     nstride_subj_stats.to_csv(full_path + '_subj_stats.csv', float_format='%.2f')
+
     nstride_group_stats.to_csv(full_path + '_group_stats.csv',float_format='%.2f' )
+    nstride_group_stats_cvs.to_csv(full_path + '_group_stats_cvs.csv', float_format='%.4f')
+
     nstride_pct_subj_stats.to_csv(full_path + '_pct_subj_stats.csv', float_format='%.2f')
-    nstride_pct_group_stats.to_csv(full_path + '_pct_group_stats.csv', float_format='%.2f' )
 
+    nstride_pct_group_stats.to_csv(full_path + '_pct_group_stats.csv', float_format='%.2f')
+    nstride_pct_group_stats_cvs.to_csv(full_path + '_pct_group_stats_cvs.csv', float_format='%.4f')
     return
-
-
-
-
-
-def plot_stride_bouts_histogram (nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std, totalTF):
-
-    ##############################################################################################
-    #plot all bins that match the labels
-    if totalTF:
-        plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-    else:
-        plot_labels = ['Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-        nstride_all_median = nstride_all_median.drop(columns=['window_total_strides'])
-        nstride_all_std = nstride_all_std.drop(columns=['window_total_strides'])
-        nstride_pct_all_median= nstride_pct_all_median.drop(columns=['window_total_strides_pct'])
-        nstride_pct_all_std = nstride_pct_all_std.drop(columns=['window_total_strides_pct'])
-
-
-    fig, axs = plt.subplots(2, figsize=(8, 9))
-
-    #median std strides
-    median = nstride_all_median
-    std = nstride_all_std
-    ticks = list(range(len(plot_labels)))
-    axs[0].bar(median.index, median.values, yerr=std.values, capsize=5, color='lightblue', edgecolor='black')
-    axs[0].set_title('Median unilateral steps / day')
-    axs[0].set_xlabel('Bout length (# unilateral steps)')
-    axs[0].set_ylabel('Unilateral steps / day')
-    axs[0].set_xticks(ticks=ticks, labels=plot_labels)
-
-    median = nstride_pct_all_median
-    std = nstride_pct_all_std
-    ticks = list(range(len(plot_labels)))
-    axs[1].bar(median.index, median.values, yerr=std.values, capsize=5, color='violet', edgecolor='black')
-    axs[1].set_title('Median unilateral steps / day - % of total')
-    axs[1].set_xlabel('Bout length (# unilateral steps)')
-    axs[1].set_ylabel('Unilateral steps / day')
-    axs[1].set_xticks(ticks=ticks, labels=plot_labels)
-    plt.tight_layout()
-    plt.show()
-
-    print ('pause')
 
 def bouts_SML (nimbal_drive, study, window, path, subject_list):
     # stride totals - by bouts
@@ -204,112 +174,7 @@ def bouts_SML (nimbal_drive, study, window, path, subject_list):
 
     return
 
-
-
 '''
-duration = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
-graph_title1 = 'Bouts by seconds'
-file_out = 'Bouts_by_sec_summary_by_subject_7days.csv'
-
-#Figure - bouts width by stride numbers
-bin_width_time = [5, 10, 30, 60, 180, 600]
-
-####################################################
-#Figure 1 - mean bouts #steps and as percentage - all bins
-
-for subj in bouts['subj'].unique():
-    sub_set = bouts[bouts['subj'] == subj]
-    n_days = len(sub_set)
-
-    #sums
-    tot_steps = sub_set['total'].sum()
-    tot_steps_day = tot_steps / n_days
-
-    #original
-
-
-        unbouted = sub_set['<_3'].sum()
-        short = sub_set['<_5'].sum() + sub_set['<_10'].sum()
-        medium = sub_set['<_20'].sum() + sub_set['<_50'].sum()
-        long = sub_set['<_100'].sum() + sub_set['<_300'].sum() + sub_set['>_300'].sum()
-
-
-
-
-use_sums = False
-use_cv = True
-sum1 = []
-
-
-for subj in bouts['subj'].unique():
-    sub_set = bouts[bouts['subj'] == subj]
-    n_days = len(sub_set)
-
-    if use_sums:
-        #sums
-        tot_steps = sub_set['total'].sum()
-        tot_steps_day = tot_steps / n_days
-
-        #original
-        unbouted = sub_set['<_3'].sum()
-        short = sub_set['<_5'].sum() + sub_set['<_10'].sum()
-        medium = sub_set['<_20'].sum() + sub_set['<_50'].sum()
-        long = sub_set['<_100'].sum() + sub_set['<_300'].sum() + sub_set['>_300'].sum()
-
-
-    elif use_cv:
-        tot_steps = sub_set['total'].sum()
-        tot_steps_day = tot_steps / n_days
-
-        unbouted = sub_set['<_3'].std()/sub_set['<_3'].mean()
-        sub_set['short'] = sub_set['<_3']+sub_set['<_5'] + sub_set['<_10']
-        short = sub_set['short'].std() / sub_set['short'].mean()
-        sub_set['medium'] = sub_set['<_20'] + sub_set['<_50']
-        medium = sub_set['medium'].std() / sub_set['medium'].mean()
-
-            sub_set['long'] = sub_set['<_100'] + sub_set['<_300'] + sub_set['>_300']
-            long = sub_set['long'].std() / sub_set['long'].mean()
-
-        row = {'subj': subj, 'ndays':n_days, 'unbout': unbouted, 'short': short,
-              'medium': medium, 'long': long, 'total':tot_steps}
-        sum1.append(row)
-
-    sum_bouts = pd.DataFrame(sum1, columns=['subj','ndays','unbout','short','medium','long','total'])
-
-    #orig plot
-    x = sum_bouts['total']/sum_bouts['ndays']
-    #denom = sum_bouts['total']
-    #denom = sum_bouts['ndays']
-    denom = 1
-    unbout = sum_bouts['unbout']/denom
-    short = sum_bouts['short']/denom
-    med = sum_bouts['medium']/denom
-    long = sum_bouts['long']/denom
-
-    #plt.scatter(x, unbout, color='red', label = 'unbouted')
-    plt.scatter(x, short, color='orange', label='short <10')
-    #plt.scatter(x, med, color='blue', label='med 10-50')
-    plt.scatter(x, long, color='green', label='long >50')
-
-    #sns.jointplot(data=sum_bouts,x=(sum_bouts['total']/sum_bouts['ndays']), y=unbout, kind="scatter", marginal_kws=dict(bins=20, fill=True))
-    #sns.jointplot(x=x, y=short, kind="scatter", marginal_kws=dict(bins=20, fill=True))
-
-    #plt.scatter(long, med, color='blue', label='Med vs Long')
-    #plt.scatter(long, short, color='orange', label='Short vs Long')
-    #plt.scatter(long, unbout, color='red', label='Unbout vs Long')
-
-    plt.legend()
-    plt.title('All  ')
-    plt.xlabel('Mean steps / day')
-    plt.ylabel('Coefficient of variation')
-    plt.xlim(left=0, right=18000)
-    plt.ylim(bottom=0, top=1)
-    plt.show()
-    print()
-
-
-
-
 ###########################################
 #read in the cleaned data file for the HANNDS methods paper
 nimbal_dr = 'o:'
@@ -318,8 +183,6 @@ new_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 study ='SA-PR01'
 demodata = read_demo_data(study)
 
-#Import data files - use this if file already created
-#demodata = read_demo_ondri_data(nimbal_drive, new_path)
 
 #reads bout file as well
 if study == 'SA-PR01':
@@ -485,28 +348,5 @@ if gait_bout:
     plt.xlim(left=0, right=18000)
     plt.ylim(bottom=0, top=1)
     plt.show()
-    print()
+    print()'''
 
-
-if plot_density_summary:
-    # plot the bout density file
-    data_path = summary_path+'freq_step_per_min.csv'
-    hist_all = pd.read_csv(data_path)
-    #delete column 0 - lft over index?
-    hist_all = hist_all.drop(hist_all.columns[0], axis=1)
-    # salects subset
-    hist = hist_all[hist_all['subj'].isin(subset['SUBJECT'])]
-    #hist_ = hist_all
-
-    #only plot bin columns - inore subjct and day
-    cols_plot = hist.columns[3:]
-
-    for idx, row in hist.iterrows():
-            vals = row[cols_plot].values
-            x = cols_plot
-            plt.plot(x, vals)
-
-    plt.show()
-    print ()
-
-'''
