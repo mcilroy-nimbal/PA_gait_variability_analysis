@@ -43,6 +43,8 @@ figure4 = True
 figure5 = True
 figure6 = True
 
+central = 'mean'
+central1 = 'Mean'
 #create summary data files
 
 if create_bins:
@@ -78,41 +80,44 @@ if plot:
 
     path_24hr = nimbal_drive + paper_path + 'Summary_data\\' + study + '_24hr_' + group_name + '_bout_duration_'
     subj_24hr = pd.read_csv(path_24hr +'_subj_stats.csv', header=[0, 1])
-    group_24hr = pd.read_csv(path_24hr +'_group_stats.csv')
     subj_pct_24hr = pd.read_csv(path_24hr + '_pct_subj_stats.csv', header=[0, 1])
-    group_pct_24hr = pd.read_csv(path_24hr + '_pct_group_stats.csv')
+
+    #slects only median or mean based on the preset variables called central
+    group_24hr = pd.read_csv(path_24hr +'_group_stats_'+central+'.csv')
+    group_pct_24hr = pd.read_csv(path_24hr + '_pct_group_stats_'+central+'.csv')
 
     # group wide CVS for histogram
-    group_24hr_cvs = pd.read_csv(path_24hr +'_group_stats_cvs.csv')
-    group_pct_24hr_cvs = pd.read_csv(path_24hr + '_pct_group_stats_cvs.csv')
+    group_24hr_cvs = pd.read_csv(path_24hr +'_group_stats_cv_'+central+'.csv')
+    group_pct_24hr_cvs = pd.read_csv(path_24hr + '_pct_group_stats_cv_'+central+'.csv')
+
 
     path_1010 = nimbal_drive + paper_path + 'Summary_data\\' + study + '_1010_' + group_name + '_bout_duration_'
     subj_1010 = pd.read_csv(path_1010 +'_subj_stats.csv', header=[0, 1] )
-    group_1010 = pd.read_csv(path_1010 + '_group_stats.csv')
+    group_1010 = pd.read_csv(path_1010 + '_group_stats_'+central+'.csv')
     subj_pct_1010 = pd.read_csv(path_1010 + '_pct_subj_stats.csv', header=[0, 1])
-    group_pct_1010 = pd.read_csv(path_1010 + '_pct_group_stats.csv')
+    group_pct_1010 = pd.read_csv(path_1010 + '_pct_group_stats_'+central+'.csv')
 
     path_wake = nimbal_drive + paper_path + 'Summary_data\\' + study + '_wake_' + group_name + '_bout_duration_'
     subj_wake = pd.read_csv(path_wake + '_subj_stats.csv', header=[0, 1])
-    group_wake = pd.read_csv(path_wake + '_group_stats.csv')
+    group_wake = pd.read_csv(path_wake + '_group_stats_'+central+'.csv')
     subj_pct_wake = pd.read_csv(path_wake + '_pct_subj_stats.csv', header=[0, 1])
-    group_pct_wake = pd.read_csv(path_wake + '_pct_group_stats.csv')
+    group_pct_wake = pd.read_csv(path_wake + '_pct_group_stats_'+central+'.csv')
 
-    plot_24hr_all = subj_24hr[('window_total_strides','mean')]
-    plot_1010_all = subj_1010[('window_total_strides', 'mean')]
-    plot_wake_all = subj_wake[('window_total_strides', 'mean')]
+    plot_24hr_all = subj_24hr[('window_total_strides', central)]
+    plot_1010_all = subj_1010[('window_total_strides', central)]
+    plot_wake_all = subj_wake[('window_total_strides', central)]
 
-    plot_24hr_unbouted = subj_24hr[('window_not_bouted_strides', 'mean')]
-    plot_1010_unbouted = subj_1010[('window_not_bouted_strides', 'mean')]
-    plot_wake_unbouted = subj_wake[('window_not_bouted_strides', 'mean')]
+    plot_24hr_unbouted = subj_24hr[('window_not_bouted_strides', central)]
+    plot_1010_unbouted = subj_1010[('window_not_bouted_strides', central)]
+    plot_wake_unbouted = subj_wake[('window_not_bouted_strides', central)]
 
     plot_24hr_bouted = plot_24hr_all - plot_24hr_unbouted
     plot_1010_bouted = plot_1010_all - plot_1010_unbouted
     plot_wake_bouted = plot_wake_all - plot_wake_unbouted
 
-    short_24hr_bouted = subj_24hr[[('strides_<_5', 'median'), ('strides_<_10', 'median'),('strides_<_30', 'median')]]
-    med_24hr_bouted = subj_24hr[[('strides_<_60', 'median'), ('strides_<_180', 'median')]]
-    long_24hr_bouted = subj_24hr[[('strides_<_600', 'median'), ('strides_>_600', 'median')]]
+    short_24hr_bouted = subj_24hr[[('strides_<_5', central), ('strides_<_10', central),('strides_<_30', central)]]
+    med_24hr_bouted = subj_24hr[[('strides_<_60', central), ('strides_<_180', central)]]
+    long_24hr_bouted = subj_24hr[[('strides_<_600', central), ('strides_>_600', central)]]
 
     night_time_totals = plot_24hr_all - plot_wake_all
 
@@ -137,7 +142,7 @@ if plot:
         plt.ylim(bottom=0)
         plt.title('Steps / day comparing time window')
         plt.xlabel('Window')
-        plt.ylabel('Median unilateral steps / day')
+        plt.ylabel(central + ' unilateral steps / day')
         plt.tight_layout()
         plt.show()
 
@@ -153,7 +158,7 @@ if plot:
 
         plt.title('Steps / night')
         plt.xlabel('Window')
-        plt.ylabel('Median unilateral steps / night')
+        plt.ylabel(central + ' unilateral steps / night')
         plt.tight_layout()
         plt.show()
 
@@ -197,14 +202,14 @@ if plot:
 
         #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
         plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-        median_24hr_nototal = group_24hr.iloc[1:].reset_index(drop=True)
-        median_24hr_pct_nototal = group_pct_24hr.iloc[1:].reset_index(drop=True)
+        central_24hr_nototal = group_24hr.iloc[1:].reset_index(drop=True)
+        central_24hr_pct_nototal = group_pct_24hr.iloc[1:].reset_index(drop=True)
 
         fig, axs = plt.subplots(2, figsize=(8, 9))
         # median std strides
         ticks = list(range(len(plot_labels)))
-        axs[0].bar(median_24hr_nototal.index, median_24hr_nototal['Median'].values, yerr=median_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
-        axs[0].set_title('Median unilateral steps / day by bout length')
+        axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
+        axs[0].set_title(central1 + ' unilateral steps / day by bout length')
         axs[0].set_xlabel('Bout length (sec)')
         axs[0].set_ylabel('Unilateral steps / day')
         axs[0].set_xticks(ticks=ticks, labels=plot_labels)
@@ -212,8 +217,8 @@ if plot:
 
         # median std strides
         ticks = list(range(len(plot_labels)))
-        axs[1].bar(median_24hr_pct_nototal.index, median_24hr_pct_nototal['Median'].values, yerr=median_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
-        axs[1].set_title('Percent median unilateral steps/day by bout length')
+        axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
+        axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length')
         axs[1].set_xlabel('Bout length (sec)')
         axs[1].set_ylabel('% of total unilateral steps / day')
         axs[1].set_xticks(ticks=ticks, labels=plot_labels)
@@ -238,10 +243,10 @@ if plot:
 
         plt.suptitle('Total steps versus bouted and unbouted steps')
 
-        axs[0,0].set_ylabel('Median daily steps')
-        axs[1,0].set_ylabel('Median daily steps')
-        axs[1, 0].set_xlabel('Total steps (median) / day')
-        axs[1, 1].set_xlabel('Total steps (median) / day')
+        axs[0,0].set_ylabel(central + ' daily steps')
+        axs[1,0].set_ylabel(central + ' daily steps')
+        axs[1, 0].set_xlabel('Total steps ('+central+') / day')
+        axs[1, 1].set_xlabel('Total steps ('+central+') / day')
         plt.tight_layout()
         plt.show()
 
@@ -250,14 +255,14 @@ if plot:
         #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
         plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
 
-        median_24hr_nototal = group_24hr_cvs.iloc[1:].reset_index(drop=True)
-        median_24hr_pct_nototal = group_pct_24hr_cvs.iloc[1:].reset_index(drop=True)
+        central_24hr_nototal = group_24hr_cvs.iloc[1:].reset_index(drop=True)
+        central_24hr_pct_nototal = group_pct_24hr_cvs.iloc[1:].reset_index(drop=True)
 
         fig, axs = plt.subplots(2, figsize=(8, 9))
         # median std strides
         ticks = list(range(len(plot_labels)))
-        axs[0].bar(median_24hr_nototal.index, median_24hr_nototal['Median'].values, yerr=median_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
-        axs[0].set_title('Median between day variation by bout length')
+        axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
+        axs[0].set_title(central1 + ' between day variation by bout length')
         axs[0].set_xlabel('Bout length (sec)')
         axs[0].set_ylabel('Coefficient of variation')
         axs[0].set_xticks(ticks=ticks, labels=plot_labels)
@@ -265,8 +270,8 @@ if plot:
 
         # median std strides
         ticks = list(range(len(plot_labels)))
-        axs[1].bar(median_24hr_pct_nototal.index, median_24hr_pct_nototal['Median'].values, yerr=median_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
-        axs[1].set_title('Median Between day variations in percentage by bout length')
+        axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
+        axs[1].set_title(central1 + ' between day variations in percentage by bout length')
         axs[1].set_xlabel('Bout length (sec)')
         axs[1].set_ylabel('Coefficient ov variation')
         axs[1].set_xticks(ticks=ticks, labels=plot_labels)

@@ -60,13 +60,15 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
     nstride_subj_stats = nstride_subj_stats.rename(columns={'coeff_var': 'cv'})
 
     # Extract median and std columns using .xs()
+    means = nstride_subj_stats.xs('mean', axis=1, level=1)
     medians = nstride_subj_stats.xs('median', axis=1, level=1)
     cvs = nstride_subj_stats.xs('cv', axis=1, level=1)
 
     # Calculate mean and std
-    #nstride_group_stats = pd.DataFrame({'Median': medians.median(),'Std': medians.std(),'N' : medians.count() })
-    nstride_group_stats = pd.DataFrame({'Median': medians.median(),'Std': medians.std(), 'N': medians.count()})
-    nstride_group_stats_cvs = pd.DataFrame({'Median': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
+    nstride_group_stats_mean = pd.DataFrame({'Mean': means.mean(),'Std': means.std(),'N' : means.count()})
+    nstride_group_stats_median = pd.DataFrame({'Median': medians.median(),'Std': medians.std(), 'N': medians.count()})
+    nstride_group_stats_cv_mean = pd.DataFrame({'Mean': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
+    nstride_group_stats_cv_median = pd.DataFrame({'Median': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
 
     # mean bouts setp #s absolute
     #nstride_pct_subj_stats = steps.groupby('subj')[pct_bouts].agg(['mean', 'median', 'std', 'count'])
@@ -76,14 +78,15 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
     nstride_pct_subj_stats = nstride_pct_subj_stats.rename(columns={'coeff_var': 'cv'})
 
     # Extract median and std columns using .xs()
+    means = nstride_pct_subj_stats.xs('mean', axis=1, level=1)
     medians = nstride_pct_subj_stats.xs('median', axis=1, level=1)
     cvs = nstride_pct_subj_stats.xs('cv', axis=1, level=1)
 
     # Calculate mean and std
-    #nstride_pct_group_stats = pd.DataFrame({'Median': medians.median(), 'Std': medians.std(), 'N' : medians.count()})
-    nstride_pct_group_stats = pd.DataFrame({'Median': medians.median(), 'Std': medians.std(), 'N': medians.count()})
-    nstride_pct_group_stats_cvs = pd.DataFrame({'Median': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
-
+    nstride_pct_group_stats_mean = pd.DataFrame({'Mean': means.mean(), 'Std': means.std(), 'N' : means.count()})
+    nstride_pct_group_stats_median = pd.DataFrame({'Median': medians.median(), 'Std': medians.std(), 'N': medians.count()})
+    nstride_pct_group_stats_cv_median = pd.DataFrame({'Median': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
+    nstride_pct_group_stats_cv_mean = pd.DataFrame({'Mean': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
 
     full_path = nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_' + group_name + '_'
     if step_vs_dur:
@@ -92,13 +95,17 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
         full_path = full_path + 'bout_duration_'
     nstride_subj_stats.to_csv(full_path + '_subj_stats.csv', float_format='%.2f')
 
-    nstride_group_stats.to_csv(full_path + '_group_stats.csv',float_format='%.2f' )
-    nstride_group_stats_cvs.to_csv(full_path + '_group_stats_cvs.csv', float_format='%.4f')
+    nstride_group_stats_mean.to_csv(full_path + '_group_stats_mean.csv',float_format='%.2f' )
+    nstride_group_stats_median.to_csv(full_path + '_group_stats_median.csv', float_format='%.2f')
+    nstride_group_stats_cv_mean.to_csv(full_path + '_group_stats_cv_mean.csv', float_format='%.4f')
+    nstride_group_stats_cv_median.to_csv(full_path + '_group_stats_cv_median.csv', float_format='%.4f')
 
     nstride_pct_subj_stats.to_csv(full_path + '_pct_subj_stats.csv', float_format='%.2f')
 
-    nstride_pct_group_stats.to_csv(full_path + '_pct_group_stats.csv', float_format='%.2f')
-    nstride_pct_group_stats_cvs.to_csv(full_path + '_pct_group_stats_cvs.csv', float_format='%.4f')
+    nstride_pct_group_stats_mean.to_csv(full_path + '_pct_group_stats_mean.csv', float_format='%.2f')
+    nstride_pct_group_stats_median.to_csv(full_path + '_pct_group_stats_median.csv', float_format='%.2f')
+    nstride_pct_group_stats_cv_mean.to_csv(full_path + '_pct_group_stats_cv_mean.csv', float_format='%.4f')
+    nstride_pct_group_stats_cv_median.to_csv(full_path + '_pct_group_stats_cv_median.csv', float_format='%.4f')
     return
 
 def bouts_SML (nimbal_drive, study, window, path, subject_list):
