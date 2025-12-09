@@ -5,7 +5,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from Functions import (wake_sleep, steps_by_day, step_density_sec,
                        read_demo_ondri_data, read_demo_data, stride_time_interval,
-                       create_bin_files, create_density_files, select_subjects)
+                       create_bin_files, create_density_files, select_subjects,
+                       all_bouts_histogram)
 from Gait_bout_basic_anal_graphs import (calc_basic_stride_bouts_stats, bouts_SML)
 import numpy as np
 import seaborn as sns
@@ -29,26 +30,46 @@ master_subj_list = select_subjects(nimbal_drive, study)
 #master_subj_list = ['OND09_SBH0006']
 print('\nTotal # subjects: \t' + str(len(master_subj_list)) + '\n')
 print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
-group_name = 'Control'
+
+#select specific subjects from the study group
+#select ONDRI
+group_name = 'ADMCI'
+study = 'OND09'
+path = nimbal_drive + demo_path
+demodata = read_demo_ondri_data(path)
+#subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
+#subj_list = demodata[demodata['COHORT'] == 'CVD']['SUBJECT']
+#subj_list = demodata[demodata['COHORT'] == 'PD']['SUBJECT']
+subj_list = demodata[demodata['COHORT'] == 'AD/MCI']['SUBJECT']
+
+
+
+create_master_graph = False
 
 create_bins = False
 create_density = False
 calc_basic_stats = False
 plot = True
 figure1 = True #swarm totals
-figure1b = True
-figure2 = True  #KDE distibiton - bouts/unbouted
+figure1b = False
+
+figure2 = False  #KDE distibiton - bouts/unbouted
 figure3 = True  #bout disitbution
 figure4 = True
-figure5 = True
-figure6 = True
+figure5 = False
+figure6 = False
 
 central = 'mean'
 central1 = 'Mean'
 #create summary data files
 
+
+if create_master_graph:
+
+    all_bouts_histogram(study, root, nimbal_drive, paper_path, subj_list)
+
 if create_bins:
-    time_window ='24hr' #'1010'  'wake'
+    time_window ='1010'#'24hr' '1010'  'wake'
     create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list,
                              bin_list_steps, bin_width_time)
 
@@ -56,14 +77,10 @@ if create_density:
     create_density_files(study, root, nimbal_drive, group_name, paper_path, master_subj_list)
 
 if calc_basic_stats:
-    #select specific subjects from the study group
-    #select ONDRI controls
-    path = nimbal_drive + demo_path
-    demodata = read_demo_ondri_data(path)
-    subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
-    window = '24hr'
 
+    window = '24hr'
     step_vs_dur = False
+
     #calcualte medians and std for each bout and clustred bouts
     calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, paper_path, subj_list, group_name)
 
@@ -75,8 +92,6 @@ if calc_basic_stats:
 
 if plot:
     path = nimbal_drive + demo_path
-    group_name = 'Control'
-    study = 'OND09'
 
     path_24hr = nimbal_drive + paper_path + 'Summary_data\\' + study + '_24hr_' + group_name + '_bout_duration_'
     subj_24hr = pd.read_csv(path_24hr +'_subj_stats.csv', header=[0, 1])
@@ -89,7 +104,6 @@ if plot:
     # group wide CVS for histogram
     group_24hr_cvs = pd.read_csv(path_24hr +'_group_stats_cv_'+central+'.csv')
     group_pct_24hr_cvs = pd.read_csv(path_24hr + '_pct_group_stats_cv_'+central+'.csv')
-
 
     path_1010 = nimbal_drive + paper_path + 'Summary_data\\' + study + '_1010_' + group_name + '_bout_duration_'
     subj_1010 = pd.read_csv(path_1010 +'_subj_stats.csv', header=[0, 1] )

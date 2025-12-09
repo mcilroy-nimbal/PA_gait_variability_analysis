@@ -7,6 +7,77 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import glob
 from pathlib import Path
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+def all_bouts_histogram(study, root, nimbal_drive, paper_path, master_subj_list):
+
+    all_bouts = []
+
+    # check - but use this one - \prd\nimbalwear\OND09
+    if study == 'OND09':
+        path1 = root + '\\nimbalwear\\OND09\\analytics\\'
+    elif study == 'SA-PRO1':
+        path1 = root + '\\nimbalwear\\SA-PR01-022\\data\\'
+    else:
+        breakpoint()
+
+    # log_out_path = nimbal_drive + paper_path + 'Log_files\\'
+    summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+    bout_path = 'gait\\bouts\\'
+    
+    for j, subject in enumerate(master_subj_list):
+        visit = '01'
+        print('Subject: ' + subject)
+        try:
+            bouts = pd.read_csv(path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv')
+        except:
+            bouts = None
+            continue
+
+        # BOUTS **********************
+        bouts['date'] = pd.to_datetime(bouts['start_time']).dt.date
+        bouts['start_time'] = pd.to_datetime(bouts['start_time'])
+        bouts['end_time'] = pd.to_datetime(bouts['end_time'])
+        bouts['duration'] = (bouts['end_time'] - bouts['start_time']).dt.total_seconds()
+
+        #combine the pd dataframe each loop
+        all_bouts.append(bouts['duration'])
+
+    #plot
+    all = pd.concat(all_bouts, ignore_index=True).to_frame(name="duration")
+    val = all["duration"]
+    log_vals = np.log(val)
+    max_val = all["duration"].max()
+    min_val = all["duration"].min()
+
+    x = np.sort(all["duration"].values)  # sort values
+    y = np.arange(1, len(x) + 1) / len(x)  # cumulative proportion (0..1)
+
+    target = 0.97
+    idx = np.searchsorted(y, target)
+    value = x[idx]
+    print(f"Value accounting for {target * 100:.0f}% of data:", value)
+
+    plt.step(x, y, where="post")  # step plot
+    plt.title("Empirical CDF (ECDF)")
+    plt.xlabel("Value")
+    plt.ylabel("Cumulative Proportion")
+    plt.ylim(0, 1)  # full range
+    plt.xlim(0, 180)  # (min, max)
+    plt.show()
+
+    '''#sns.histplot(all["duration"], cumulative = True, bins=5000, kde=False)
+    sns.histplot(log_vals, cumulative = True, kde=False)
+    plt.title("Histogram of Accumulated Column Data")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
+    #plt.xlim(0, 180)  # (min, max)
+    plt.show()
+    '''
+    return
+
 
 def create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_subj_list,
                              bin_list_steps, bin_width_time):
