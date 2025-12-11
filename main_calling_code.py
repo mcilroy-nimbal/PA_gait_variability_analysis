@@ -60,7 +60,10 @@ figure1b = False
 
 figure2 = False  #KDE distibiton - bouts/unbouted
 figure3 = False  #bout disitbution
+
 figure4 = True
+figure4b = False
+
 figure5 = False
 figure6 = False
 
@@ -292,6 +295,35 @@ if plot:
         plt.show()
 
     if figure4:
+        df = pd.DataFrame({'Unbouted': unbouted_pct, 'Short': short_pct, 'Medium': med_pct, "Long": long_pct})
+        melted_df = df.melt(var_name='Bout class', value_name='% Total steps')
+
+        # Create the swarm plot
+        plt.figure(figsize=(6, 5))
+        # sns.swarmplot(x='Window', y='Total steps', data=melted_df, size=6)
+        # sns.catplot(data= melted_df, x='Window', y='Total steps', kind='swarm',palette={'24 HR': 'skyblue', '10AM-10PM': 'salmon'})
+
+        # Create violin plot
+        # sns.violinplot(x='Window', y='Total steps', data=melted_df, inner=None, palette={'24 HR': 'skyblue','Wake': 'magenta', '10AM-10PM': 'salmon'})
+        sns.boxplot(data=melted_df, x="Bout class", y="% Total steps", showcaps=True, hue="Bout class",
+                    boxprops={'facecolor': 'None'},  # transparent box so swarm is visible
+                    showfliers=False)  # hide outliers (swarm will show them)
+
+        # Overlay swarm plot
+        sns.swarmplot(x='Bout class', y='% Total steps', data=melted_df, hue="Bout class",
+                      palette=["red", "magenta", "blue", "green"], size=4)
+
+        plt.ylim(bottom=0)
+        # plt.title('Steps / day comparing time window')
+        plt.xlabel('Bout classification', fontsize=14)
+        # plt.xlabel('Step classification', fontsize=14)
+
+        plt.ylabel('% of total average unilateral steps / day', fontsize=14)
+        plt.tight_layout()
+        plt.show()
+
+
+    if figure4b:
         #plot_labels = ['Total','Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
 
         short = short_24hr_bouted.sum(axis=1)
