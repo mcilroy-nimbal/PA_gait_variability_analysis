@@ -54,18 +54,21 @@ def all_bouts_histogram(study, root, nimbal_drive, paper_path, master_subj_list)
 
     x = np.sort(all["duration"].values)  # sort values
     y = np.arange(1, len(x) + 1) / len(x)  # cumulative proportion (0..1)
+    y = y*100
 
     target = 0.97
     idx = np.searchsorted(y, target)
     value = x[idx]
     print(f"Value accounting for {target * 100:.0f}% of data:", value)
 
-    plt.step(x, y, where="post")  # step plot
-    plt.title("Empirical CDF (ECDF)")
-    plt.xlabel("Value")
-    plt.ylabel("Cumulative Proportion")
-    plt.ylim(0, 1)  # full range
+    plt.step(x, y, where="post", linewidth=4)  # step plot
+    plt.xlabel("Bout duration - seconds", fontsize=14)
+    plt.ylabel("Cumulative Proportion  %", fontsize=14)
+    plt.axvline(x=30, color='red', linestyle='--', linewidth=4)
+    plt.ylim(0, 100)  # full range
     plt.xlim(0, 180)  # (min, max)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
     plt.show()
 
     '''#sns.histplot(all["duration"], cumulative = True, bins=5000, kde=False)

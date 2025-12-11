@@ -33,14 +33,14 @@ print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
 
 #select specific subjects from the study group
 #select ONDRI
-group_name = 'ADMCI'
+group_name = 'Control'#
 study = 'OND09'
 path = nimbal_drive + demo_path
 demodata = read_demo_ondri_data(path)
-#subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
+subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
 #subj_list = demodata[demodata['COHORT'] == 'CVD']['SUBJECT']
 #subj_list = demodata[demodata['COHORT'] == 'PD']['SUBJECT']
-subj_list = demodata[demodata['COHORT'] == 'AD/MCI']['SUBJECT']
+#subj_list = demodata[demodata['COHORT'] == 'AD/MCI']['SUBJECT']
 
 
 
@@ -49,12 +49,17 @@ create_master_graph = False
 create_bins = False
 create_density = False
 calc_basic_stats = False
+
+tables1 = False
+tables2 = True
+
 plot = True
-figure1 = True #swarm totals
+
+figure1 = False #swarm totals
 figure1b = False
 
 figure2 = False  #KDE distibiton - bouts/unbouted
-figure3 = True  #bout disitbution
+figure3 = False  #bout disitbution
 figure4 = True
 figure5 = False
 figure6 = False
@@ -133,30 +138,74 @@ if plot:
     med_24hr_bouted = subj_24hr[[('strides_<_60', central), ('strides_<_180', central)]]
     long_24hr_bouted = subj_24hr[[('strides_<_600', central), ('strides_>_600', central)]]
 
+    short = short_24hr_bouted.sum(axis=1)
+    med = med_24hr_bouted.sum(axis=1)
+    long = long_24hr_bouted.sum(axis=1)
+    short_pct = 100*(short / plot_24hr_all)
+    med_pct = 100 * (med / plot_24hr_all)
+    long_pct = 100 * (long / plot_24hr_all)
+    unbouted_pct = 100 * (plot_24hr_unbouted / plot_24hr_all)
+
     night_time_totals = plot_24hr_all - plot_wake_all
 
+    if tables1:
+        #mean values for table
+        # Put them in a dictionary
+        #data = {"All": plot_24hr_all, "Bouted only": plot_24hr_bouted, "Unbouted only": plot_24hr_unbouted}
+        #data = {"All": plot_1010_all, "Bouted only": plot_1010_bouted, "Unbouted only": plot_1010_unbouted}
+        data = {"All": plot_wake_all, "Bouted only": plot_wake_bouted, "Unbouted only": plot_wake_unbouted}
 
+        summary = pd.DataFrame({
+        "mean": [np.nanmean(v) for v in data.values()],
+        "median": [np.nanmedian(v) for v in data.values()],
+        "std": [np.nanstd(v, ddof=1) for v in data.values()],
+        "n": [np.count_nonzero(~np.isnan(v)) for v in data.values()]}, index=data.keys())
+        print (summary)
+
+    if tables2:
+
+        data = {"Unbouted": plot_24hr_unbouted, "Short": short, "Medium": med, "Long": long}
+        summary = pd.DataFrame({
+            "mean": [np.nanmean(v) for v in data.values()],
+            "median": [np.nanmedian(v) for v in data.values()],
+            "std": [np.nanstd(v, ddof=1) for v in data.values()],
+            "n": [np.count_nonzero(~np.isnan(v)) for v in data.values()]}, index=data.keys())
+        print(summary)
+        data = {"Unbouted": unbouted_pct, "Short": short_pct, "Medium": med_pct, "Long": long_pct}
+        summary = pd.DataFrame({
+            "mean": [np.nanmean(v) for v in data.values()],
+            "median": [np.nanmedian(v) for v in data.values()],
+            "std": [np.nanstd(v, ddof=1) for v in data.values()],
+            "n": [np.count_nonzero(~np.isnan(v)) for v in data.values()]}, index=data.keys())
+        print(summary)
 
     if figure1:
         # Sample DataFrame with two numeric columns
+        #df = pd.DataFrame({'All steps': plot_24hr_all, 'Bouted only': plot_24hr_bouted, 'Unbouted': plot_24hr_unbouted})
+        #df = pd.DataFrame({'24 HR': plot_24hr_bouted, 'Wake': plot_wake_bouted, '10AM-10PM': plot_1010_bouted})
         df = pd.DataFrame({'24 HR': plot_24hr_all, 'Wake': plot_wake_all, '10AM-10PM': plot_1010_all})
         # Melt the DataFrame to long format for seaborn
         melted_df = df.melt(var_name='Window', value_name='Total steps')
 
         # Create the swarm plot
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=(6, 5))
         #sns.swarmplot(x='Window', y='Total steps', data=melted_df, size=6)
         #sns.catplot(data= melted_df, x='Window', y='Total steps', kind='swarm',palette={'24 HR': 'skyblue', '10AM-10PM': 'salmon'})
 
         # Create violin plot
-        sns.violinplot(x='Window', y='Total steps', data=melted_df, inner=None, palette={'24 HR': 'skyblue','Wake': 'magenta', '10AM-10PM': 'salmon'})
-        # Overlay swarm plot
-        sns.swarmplot(x='Window', y='Total steps', data=melted_df, color='black', size=4)
+        #sns.violinplot(x='Window', y='Total steps', data=melted_df, inner=None, palette={'24 HR': 'skyblue','Wake': 'magenta', '10AM-10PM': 'salmon'})
+        sns.boxplot(data=melted_df, x="Window", y="Total steps", showcaps=True, hue="Window", boxprops={'facecolor': 'None'},  # transparent box so swarm is visible
+            showfliers=False) # hide outliers (swarm will show them)
 
-        plt.ylim(bottom=0)
-        plt.title('Steps / day comparing time window')
-        plt.xlabel('Window')
-        plt.ylabel(central + ' unilateral steps / day')
+        # Overlay swarm plot
+        sns.swarmplot(x='Window', y='Total steps', data=melted_df, hue="Window", size=4)
+
+        plt.ylim(bottom=0, top=12000)
+        #plt.title('Steps / day comparing time window')
+        plt.xlabel('Analysis Window', fontsize=14)
+        #plt.xlabel('Step classification', fontsize=14)
+
+        plt.ylabel('Average unilateral steps / day', fontsize=14)
         plt.tight_layout()
         plt.show()
 
@@ -223,21 +272,22 @@ if plot:
         # median std strides
         ticks = list(range(len(plot_labels)))
         axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
-        axs[0].set_title(central1 + ' unilateral steps / day by bout length')
-        axs[0].set_xlabel('Bout length (sec)')
-        axs[0].set_ylabel('Unilateral steps / day')
-        axs[0].set_xticks(ticks=ticks, labels=plot_labels)
+        axs[0].set_title(central1 + ' unilateral steps / day by bout length', fontsize=14)
+        axs[0].set_xlabel('Bout length (sec)', fontsize=14)
+        axs[0].set_ylabel('Unilateral steps / day', fontsize=14)
+        axs[0].set_xticks(ticks=ticks, labels=plot_labels, fontsize=12)
         axs[0].set_ylim(bottom=0)
 
         # median std strides
         ticks = list(range(len(plot_labels)))
         axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
-        axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length')
-        axs[1].set_xlabel('Bout length (sec)')
-        axs[1].set_ylabel('% of total unilateral steps / day')
-        axs[1].set_xticks(ticks=ticks, labels=plot_labels)
+        axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
+        axs[1].set_xlabel('Bout length (sec)', fontsize=14)
+        axs[1].set_ylabel('% of total unilateral steps / day', fontsize=14)
+        axs[1].set_xticks(ticks=ticks, labels=plot_labels, fontsize=12)
         axs[1].set_ylim(bottom=0)
 
+        #axs.tick_params(axis='both', labelsize=14)
         plt.tight_layout()
         plt.show()
 
@@ -248,19 +298,31 @@ if plot:
         med = med_24hr_bouted.sum(axis=1)
         long = long_24hr_bouted.sum(axis=1)
 
-        fig, axs = plt.subplots(2,2, figsize=(8, 8), sharex=True, sharey=True)
+        fig, axs = plt.subplots(2,2, figsize=(8, 6), sharex=True, sharey=True)
 
-        sns.scatterplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted', ax=axs[0,0])
-        sns.scatterplot(x=plot_24hr_all, y=short, color='magenta', label='Short <30 sec', ax=axs[0,1])
-        sns.scatterplot(x=plot_24hr_all, y=med, color='blue', label='Medium 30-180 sec', ax=axs[1,0])
-        sns.scatterplot(x=plot_24hr_all, y=long, color='green', label='Long  > 180 sec',ax=axs[1,1])
+        #sns.scatterplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted', ax=axs[0,0])
+        #sns.scatterplot(x=plot_24hr_all, y=short, color='magenta', label='Short <30 sec', ax=axs[0,1])
+        #sns.scatterplot(x=plot_24hr_all, y=med, color='blue', label='Medium 30-180 sec', ax=axs[1,0])
+        #sns.scatterplot(x=plot_24hr_all, y=long, color='green', label='Long  > 180 sec',ax=axs[1,1])
+
+        sns.regplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted',
+                    scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[0,0])
+        sns.regplot(x=plot_24hr_all, y=short, color='magenta', label='Short <30 sec',
+                    scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[0, 1])
+        sns.regplot(x=plot_24hr_all, y=med, color='blue', label='Medium 30-180 sec',
+                    scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[1, 0])
+        sns.regplot(x=plot_24hr_all, y=long, color='green', label='Long > 180 sec',
+                    scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[1, 1])
 
         plt.suptitle('Total steps versus bouted and unbouted steps')
 
         axs[0,0].set_ylabel(central + ' daily steps')
         axs[1,0].set_ylabel(central + ' daily steps')
-        axs[1, 0].set_xlabel('Total steps ('+central+') / day')
-        axs[1, 1].set_xlabel('Total steps ('+central+') / day')
+        axs[0,0].set_xlabel('')
+        axs[0,1].set_xlabel('')
+        axs[1,0].set_xlabel('Total steps ('+central+') / day')
+        axs[1,1].set_xlabel('Total steps ('+central+') / day')
+        axs[0,0].set_ylim(bottom=0)
         plt.tight_layout()
         plt.show()
 
