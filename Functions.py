@@ -71,14 +71,6 @@ def all_bouts_histogram(study, root, nimbal_drive, paper_path, master_subj_list)
     plt.yticks(fontsize=14)
     plt.show()
 
-    '''#sns.histplot(all["duration"], cumulative = True, bins=5000, kde=False)
-    sns.histplot(log_vals, cumulative = True, kde=False)
-    plt.title("Histogram of Accumulated Column Data")
-    plt.xlabel("Value")
-    plt.ylabel("Frequency")
-    #plt.xlim(0, 180)  # (min, max)
-    plt.show()
-    '''
     return
 
 
