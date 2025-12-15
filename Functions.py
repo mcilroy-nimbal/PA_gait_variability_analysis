@@ -26,7 +26,7 @@ def all_bouts_histogram(study, root, nimbal_drive, paper_path, master_subj_list)
     # log_out_path = nimbal_drive + paper_path + 'Log_files\\'
     summary_path = nimbal_drive + paper_path + 'Summary_data\\'
     bout_path = 'gait\\bouts\\'
-    
+    subj_data = []
     for j, subject in enumerate(master_subj_list):
         visit = '01'
         print('Subject: ' + subject)
@@ -42,33 +42,61 @@ def all_bouts_histogram(study, root, nimbal_drive, paper_path, master_subj_list)
         bouts['end_time'] = pd.to_datetime(bouts['end_time'])
         bouts['duration'] = (bouts['end_time'] - bouts['start_time']).dt.total_seconds()
 
+        #find the % accoutn for by 30 sec for each subject separateley
+        # proportion of values <= 30
+        prop_leq_30 = 100 * np.mean(bouts['duration'] <= 30)
+
+        #subj_x = np.sort(bouts["duration"].values)  # sort values
+        #subj_cdf = np.arange(1, len(subj_x) + 1) / len(subj_x)  # cumulative proportion (0..1)
+        #subj_cdf = subj_cdf * 100
+        #target = 0.97
+
+        #idx = np.searchsorted(subj_cdf, target)
+        #value = subj_x[idx]
+        subj_data.append(prop_leq_30)
+
         #combine the pd dataframe each loop
         all_bouts.append(bouts['duration'])
 
     #plot
+    # find percentgae for all bouts
+    print(len(subj_data))
     all = pd.concat(all_bouts, ignore_index=True).to_frame(name="duration")
-    val = all["duration"]
-    log_vals = np.log(val)
-    max_val = all["duration"].max()
-    min_val = all["duration"].min()
+    #val = all["duration"]
+    #log_vals = np.log(val)
+    #max_val = all["duration"].max()
+    #min_val = all["duration"].min()
 
     x = np.sort(all["duration"].values)  # sort values
-    y = np.arange(1, len(x) + 1) / len(x)  # cumulative proportion (0..1)
-    y = y*100
+    cdf = np.arange(1, len(x) + 1) / len(x)  # cumulative proportion (0..1)
+    cdf = cdf*100
 
     target = 0.97
-    idx = np.searchsorted(y, target)
+    idx = np.searchsorted(cdf, target)
     value = x[idx]
     print(f"Value accounting for {target * 100:.0f}% of data:", value)
 
-    plt.step(x, y, where="post", linewidth=4)  # step plot
-    plt.xlabel("Bout duration - seconds", fontsize=14)
-    plt.ylabel("Cumulative Proportion  %", fontsize=14)
-    plt.axvline(x=30, color='red', linestyle='--', linewidth=4)
-    plt.ylim(0, 100)  # full range
-    plt.xlim(0, 180)  # (min, max)
-    plt.xticks(fontsize=14)
-    plt.yticks(fontsize=14)
+    fig, axes = plt.subplots(1,2, figsize=(9, 6),
+                            gridspec_kw={'width_ratios': [3, 1]})
+    axes[0].step(x, cdf, where="post", linewidth=4)  # step plot
+    axes[0].set_xlabel("Bout duration - seconds", fontsize=14)
+    axes[0].set_ylabel("Cumulative Proportion  %", fontsize=14)
+    axes[0].axvline(x=30, color='red', linestyle='--', linewidth=4)
+    axes[0].set_ylim(0, 100)  # full range
+    axes[0].set_xlim(0, 180)  # (min, max)
+    axes[0].tick_params(axis="x", labelsize=14)
+    axes[0].tick_params(axis="y", labelsize=14)
+
+    sns.boxplot(y=subj_data, color='lightblue', showcaps=True,showfliers=False, ax=axes[1])  # hide outliers (swarm will show them)
+    # Overlay swarm plot
+    sns.stripplot(y=subj_data, color="black", size=4, jitter=True, ax=axes[1])
+    axes[1].set_ylim(bottom=80, top=100)
+    # plt.title('Steps / day comparing time window')
+    #axes[1].set_xlabel('Percent bouts <= 30 secs', fontsize=14)
+    axes[1].tick_params(axis="y", labelsize=14)
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.88)
     plt.show()
 
     return

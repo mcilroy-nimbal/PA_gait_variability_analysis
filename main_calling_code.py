@@ -63,7 +63,7 @@ subj_lists = [list1, list2, list3]
 
 subject_tables = False
 
-create_master_graph = False
+create_master_graph = True
 
 create_bins = False
 create_density = False
@@ -78,7 +78,7 @@ figure1 = False #swarm totals
 figure1b = False
 
 figure2 = False  #KDE distibiton - bouts/unbouted
-figure3 = True  #bout disitbution
+figure3 = False #bout disitbution
 
 figure4 = False
 figure4b = False
