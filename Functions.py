@@ -9,7 +9,69 @@ import glob
 from pathlib import Path
 import seaborn as sns
 import matplotlib.pyplot as plt
+from variability_analysis_functions import (alpha_gini_index)
+import powerlaw
 
+def alpha_gini_bouts(study, root, nimbal_drive, paper_path, subj_list):
+    all_bouts = []
+    subj_fits = {}
+    subj_ginis = {}
+
+    # check - but use this one - \prd\nimbalwear\OND09
+    if study == 'OND09':
+        path1 = root + '\\nimbalwear\\OND09\\analytics\\'
+    elif study == 'SA-PRO1':
+        path1 = root + '\\nimbalwear\\SA-PR01-022\\data\\'
+    else:
+        breakpoint()
+
+    # log_out_path = nimbal_drive + paper_path + 'Log_files\\'
+    summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+    bout_path = 'gait\\bouts\\'
+    subj_summary = pd.DataFrame(columns=['Subj', 'Alpha', 'Gini', 'Xmin', 'Sigma'])
+
+    for j, subject in enumerate(subj_list):
+        visit = '01'
+        print('Subject: ' + subject)
+        try:
+            bouts = pd.read_csv(path1 + bout_path + subject + '_' + visit + '_GAIT_BOUTS.csv')
+        except FileNotFoundError:
+            print(f"File not found for {subject}, skipping.")
+            continue
+
+        # BOUTS **********************
+        bouts['date'] = pd.to_datetime(bouts['start_time']).dt.date
+        bouts['start_time'] = pd.to_datetime(bouts['start_time'])
+        bouts['end_time'] = pd.to_datetime(bouts['end_time'])
+        bouts['duration'] = (bouts['end_time'] - bouts['start_time']).dt.total_seconds()
+
+        # gini on all bout data for a person
+        xmin = None
+        if xmin == None:
+            fit = powerlaw.Fit(bouts['duration'])
+        else:
+            fit = powerlaw.Fit(bouts['duration'], xmin=xmin)
+        subj_fits[subject] = fit
+
+        # gini
+        data = np.sort(bouts['duration'])  # Sort values
+        n = len(data)
+        cumulative = np.cumsum(data)
+        gini = (2 * np.sum((np.arange(1, n + 1) * data)) / (n * np.sum(data))) - (n + 1) / n
+        alpha = fit.power_law.alpha
+        xmin = fit.power_law.xmin
+        sigma = fit.power_law.sigma
+        #likeli = fit.power_law.loglikelihoods
+        subj_summary.loc[len(subj_summary)] = [subject, alpha, gini, xmin, sigma]
+
+        all_bouts.append(bouts['duration'])
+
+    # all
+    all = pd.concat(all_bouts, ignore_index=True).to_frame(name="duration")
+    all = all.iloc[:, 0].to_numpy()
+    all_fit = powerlaw.Fit(all, verbose=False)
+
+    return subj_summary, subj_fits, all_fit
 
 def all_bouts_histogram(study, root, nimbal_drive, paper_path, master_subj_list):
 
@@ -41,6 +103,11 @@ def all_bouts_histogram(study, root, nimbal_drive, paper_path, master_subj_list)
         bouts['start_time'] = pd.to_datetime(bouts['start_time'])
         bouts['end_time'] = pd.to_datetime(bouts['end_time'])
         bouts['duration'] = (bouts['end_time'] - bouts['start_time']).dt.total_seconds()
+
+        #gini on all bout data for a person
+
+
+
 
         #find the % accoutn for by 30 sec for each subject separateley
         # proportion of values <= 30

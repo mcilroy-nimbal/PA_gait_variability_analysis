@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 from Functions import (wake_sleep, steps_by_day, step_density_sec,
                        read_demo_ondri_data, read_demo_data, stride_time_interval,
                        create_bin_files, create_density_files, select_subjects,
-                       all_bouts_histogram, create_table)
+                       all_bouts_histogram, create_table, alpha_gini_bouts)
 from Gait_bout_basic_anal_graphs import (calc_basic_stride_bouts_stats, bouts_SML)
+
 import numpy as np
 import seaborn as sns
 import datetime
@@ -63,7 +64,7 @@ subj_lists = [list1, list2, list3]
 
 subject_tables = False
 
-create_master_graph = True
+create_master_graph = False
 
 create_bins = False
 create_density = False
@@ -72,19 +73,24 @@ calc_basic_stats = False
 tables1 = False
 tables2 = False
 
+seven_day = True
+
 plot = True
 
 figure1 = False #swarm totals
 figure1b = False
 
 figure2 = False  #KDE distibiton - bouts/unbouted
-figure3 = False #bout disitbution
+figure3 = False #bout disitbution - steps and %
 
-figure4 = False
-figure4b = False
+figure4 = False #steps per class (s,m,l)
+figure4b = False #% steps per class (s,m,l)
 
-figure5 = False
-figure6 = False
+figure5 = False # 3 coffecint of varaition - bewteen day
+
+figure6 = True #raw density plot
+
+figure7 = False #gini
 
 central = 'mean'
 central1 = 'Mean'
@@ -94,6 +100,21 @@ central1 = 'Mean'
 #creates files
 #groups  - 0 Control, 1 PD, 2 ADMCI
 group = 0
+if seven_day:
+    path = nimbal_drive + demo_path
+    path_daily = nimbal_drive + paper_path + 'Summary_data\\OND09_24hr_bout_width_daily_bins_with_unbouted.csv'
+    subj_daily = pd.read_csv(path_daily)
+    #select only controls
+    #keep only 7 days
+
+    #Total steps per bin as percentage of total (not by mean / day)
+
+    #tabulate the mean percentages per bin
+
+    #
+
+
+
 if create_master_graph:
     all_bouts_histogram(study, root, nimbal_drive, paper_path, subj_lists[group])
 
@@ -127,8 +148,9 @@ if plot:
     path = nimbal_drive + demo_path
 
     path_24hr = nimbal_drive + paper_path + 'Summary_data\\' + study + '_24hr_' + group_name[group] + '_bout_duration_'
-    subj_24hr = pd.read_csv(path_24hr +'_subj_stats.csv', header=[0, 1])
-    subj_pct_24hr = pd.read_csv(path_24hr + '_pct_subj_stats.csv', header=[0, 1])
+    subj_24hr = pd.read_csv(path_24hr +'_subj_stats.csv', header=[0, 1], skiprows=[2])
+
+    subj_pct_24hr = pd.read_csv(path_24hr + '_pct_subj_stats.csv', header=[0, 1], skiprows=[2])
 
     #slects only median or mean based on the preset variables called central
     group_24hr = pd.read_csv(path_24hr +'_group_stats_'+central+'.csv')
@@ -151,10 +173,12 @@ if plot:
     #group_pct_wake = pd.read_csv(path_wake + '_pct_group_stats_'+central+'.csv')
 
     plot_24hr_all = subj_24hr[('window_total_strides', central)]
+    plot_24hr_all = plot_24hr_all[1:]
     #plot_1010_all = subj_1010[('window_total_strides', central)]
     #plot_wake_all = subj_wake[('window_total_strides', central)]
 
     plot_24hr_unbouted = subj_24hr[('window_not_bouted_strides', central)]
+    plot_24hr_unbouted = plot_24hr_unbouted[1:]
     #plot_1010_unbouted = subj_1010[('window_not_bouted_strides', central)]
     #plot_wake_unbouted = subj_wake[('window_not_bouted_strides', central)]
 
@@ -169,15 +193,20 @@ if plot:
     short = short_24hr_bouted.sum(axis=1)
     med = med_24hr_bouted.sum(axis=1)
     long = long_24hr_bouted.sum(axis=1)
+
+
+    corr_df = pd.DataFrame({'All': plot_24hr_all, 'Unbouted': plot_24hr_unbouted,'Short': short,'Medium': med,'Long': long})
+    corr = corr_df.corr(method='spearman')
+    print(corr)
+
     short_pct = 100*(short / plot_24hr_all)
     med_pct = 100 * (med / plot_24hr_all)
     long_pct = 100 * (long / plot_24hr_all)
     unbouted_pct = 100 * (plot_24hr_unbouted / plot_24hr_all)
 
+
+
     #night_time_totals = plot_24hr_all - plot_wake_all
-
-
-
 
 
     if tables1:
@@ -355,10 +384,6 @@ if plot:
     if figure4b:
         #plot_labels = ['Total','Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
 
-        short = short_24hr_bouted.sum(axis=1)
-        med = med_24hr_bouted.sum(axis=1)
-        long = long_24hr_bouted.sum(axis=1)
-
         fig, axs = plt.subplots(2,2, figsize=(8, 6), sharex=True, sharey=True)
 
         #sns.scatterplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted', ax=axs[0,0])
@@ -395,7 +420,7 @@ if plot:
         central_24hr_nototal = group_24hr_cvs.iloc[1:].reset_index(drop=True)
         central_24hr_pct_nototal = group_pct_24hr_cvs.iloc[1:].reset_index(drop=True)
 
-        fig, axs = plt.subplots(2, figsize=(8, 9))
+        fig, axs = plt.subplots(2, figsize=(6, 9))
         # median std strides
         ticks = list(range(len(plot_labels)))
         axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
@@ -453,32 +478,35 @@ if plot:
         plt.tight_layout()
         plt.show()
         print ('pause')
-        '''
-        data_path = summary_path + 'freq_step_per_min.csv'
-        hist_all = pd.read_csv(data_path)
-        # delete column 0 - lft over index?
-        hist_all = hist_all.drop(hist_all.columns[0], axis=1)
-        # salects subset
-        hist = hist_all[hist_all['subj'].isin(subset['SUBJECT'])]
-        # hist_ = hist_all
 
-        # only plot bin columns - inore subjct and day
-        cols_plot = hist.columns[3:]
+    if figure7: #alpha-gini analysis
+        #run on control list only first
+        subj_summary, subj_fits, all_fit = alpha_gini_bouts(study, root, nimbal_drive, paper_path, subj_lists[0])
+        subj_summary['Total bouted'] = plot_24hr_bouted
+        subj_summary['Med'] = med
+        subj_summary['Long'] = long
+        corr_bout_gini = subj_summary.drop(columns=['Subj']).corr()
+        print (corr_bout_gini)
+        stats_bout_gini = subj_summary.drop(columns=['Subj']).agg(['count', 'mean', 'median', 'std', 'min', 'max']).T
+        print (stats_bout_gini)
+        if False: #plots powerlaw data
+            # ---- Plot ----
+            fig = plt.figure(figsize=(8, 6))
+            # 1) Plot each subject's **fitted power-law PDF**
 
-        for idx, row in hist.iterrows():
-            vals = row[cols_plot].values
-            x = cols_plot
-            plt.plot(x, vals)
+            for subj, fit in subj_fits.items():
+                fit.power_law.plot_pdf(color='lightgrey', linestyle='-', linewidth=1.5)
 
-        plt.show()
-        print()
-
-    '''
-    print('pause')
-    '''
-    #plot_stride_bouts_histogram(nstride_all_median, nstride_all_std, nstride_pct_all_median, nstride_pct_all_std,
-    #                            totalTF=False)
-    print ('pause')
-    #bouts_SML(nimbal_drive, study, window, paper_path, subj_list)
-    '''
-
+            # 2) Plot **pooled empirical** and **pooled fitted** in highlighted style
+            # all_fit.plot_pdf(color='black', linewidth=2.5, alpha=0.5, label='Pooled empirical')
+            all_fit.power_law.plot_pdf(color='crimson', linestyle='--', linewidth=3, label='Pooled power-law fit')
+            # plt.axvline(all_fit.xmin, color='crimson', linestyle=':', linewidth=2,
+            #        label=f'pooled xmin={all_fit.xmin:.2g}')
+            # plt.xscale('log')
+            # plt.yscale('log')
+            # plt.title('Subject and Group Power-law Fits')
+            plt.xlabel('Log - Bout duration (secs)', fontsize=14)
+            plt.ylabel('Log - Proportion', fontsize=14)
+            # plt.legend(fontsize=14)
+            plt.tight_layout()
+            plt.show()
