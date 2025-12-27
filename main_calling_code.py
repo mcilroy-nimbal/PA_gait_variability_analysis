@@ -26,6 +26,10 @@ demo_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 bin_list_steps = [5, 10, 25, 50, 100, 300]
 bin_width_time = [5, 10, 30, 60, 180, 600]
 
+#values for density analysis
+window_size = 15
+step_size = 1
+
 #which subjects?
 master_subj_list = select_subjects(nimbal_drive, study)
 #master_subj_list = ['OND09_SBH0006']
@@ -67,13 +71,14 @@ subject_tables = False
 create_master_graph = False
 
 create_bins = False
-create_density = False
+create_density = True
+create_stride_time = False
 calc_basic_stats = False
 
 tables1 = False
 tables2 = False
 
-seven_day = True
+seven_day = False
 
 plot = True
 
@@ -124,7 +129,12 @@ if create_bins:
                              bin_list_steps, bin_width_time)
 
 if create_density:
-    create_density_files(study, root, nimbal_drive, group_name[group], paper_path, master_subj_list)
+    window_size = 15
+    step_size = 1
+    create_density_files(study, root, nimbal_drive, group_name[group], paper_path, master_subj_list,
+                         window_size, step_size, create_stride_time)
+
+
 
 if calc_basic_stats:
 
@@ -204,10 +214,7 @@ if plot:
     long_pct = 100 * (long / plot_24hr_all)
     unbouted_pct = 100 * (plot_24hr_unbouted / plot_24hr_all)
 
-
-
     #night_time_totals = plot_24hr_all - plot_wake_all
-
 
     if tables1:
         #mean values for table
@@ -442,7 +449,7 @@ if plot:
         plt.tight_layout()
         plt.show()
 
-    if figure6:
+    if figure6:  #density plot
         #path = nimbal_drive + demo_path
         #demodata = read_demo_ondri_data(path)
         #subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
@@ -453,12 +460,13 @@ if plot:
         sorted = subj_total.sort_values(by=subj_total.columns[1]).reset_index(drop=True)
         subj_list = sorted.iloc[:,0]
         visit = '01'
+        window_text = 'win_' + str(window_size) + 's_step_' + str(step_size) + 's_'
 
         # plot the bout density file
         path_density = nimbal_drive + paper_path + 'Summary_data\\density\\'+study+'\\'
         intensity_blocks = []
         for subj in subj_list:
-            file = subj+'_'+visit+'_60sec_density.csv'
+            file = subj+'_'+visit+'_'+window_text+'_density.csv'
             density_subj = pd.read_csv(path_density + file)
             density_subj = density_subj.iloc[2:].reset_index(drop=True)
             density_subj = density_subj.iloc[:,1:]

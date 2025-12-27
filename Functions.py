@@ -281,7 +281,7 @@ def create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_
 
     return
 
-def create_density_files(study, root, nimbal_drive, group_name, paper_path, master_subj_list):
+def create_density_files(study, root, nimbal_drive, group_name, paper_path, master_subj_list, window_size, step_size, stride):
 
     # check - but use this one - \prd\nimbalwear\OND09
     if study == 'OND09':
@@ -342,14 +342,16 @@ def create_density_files(study, root, nimbal_drive, group_name, paper_path, mast
 
         ##############################################################
         # runs density function for each subject and day
-        time_sec = 60
-        data = step_density_sec(steps, merged_daily, time_sec)
-        data.to_csv(summary_path + 'density\\' + study + '\\' + subject + '_' + visit + '_' + str(time_sec) + 'sec_density.csv')
+        data = step_density_sec(steps, merged_daily, window_size, step_size)
+
+        window_text = 'win_'+str(window_size)+'s_step_'+str(step_size)+'s_'
+        data.to_csv(summary_path + 'density\\' + study + '\\' + subject + '_' + visit + '_' + window_text + '_density.csv')
 
         ##############################################################
-        # runs stride time for each subejct and day
-        data = stride_time_interval(steps, merged_daily)
-        data.to_csv(summary_path + 'stride_time\\' + study + '\\' + subject + '_' + visit + '_stride_time.csv')
+        # runs stride time for each subject and day
+        if stride:
+            data = stride_time_interval(steps, merged_daily)
+            data.to_csv(summary_path + 'stride_time\\' + study + '\\' + subject + '_' + visit + '_stride_time.csv')
 
     return
 
@@ -671,32 +673,87 @@ def steps_by_day (time_window, steps_summary, steps, bin_list_steps, width_summa
     return bout_bin, nbouted
 '''
 
-def step_density_sec(steps, merged_daily, time_sec):
+def step_density_sec(steps, merged_daily, window_size, step_size):
 
     # loop through days
-    header_days = [f'day_{i + 1}' for i in range(len(merged_daily))]
-    data = pd.DataFrame(columns=header_days)
-    count=0
-    for i, row in merged_daily.iterrows():
+    #header_days = [f'day_{i + 1}' for i in range(len(merged_daily))]
 
+    data = pd.DataFrame()
+    data.index = range(0, 86401)
+
+    count = 0
+    steps['step_time'] = pd.to_datetime(steps['step_time'])
+
+    for i, row in merged_daily.iterrows():
+        curr_day = row['date']
+        steps['date'] = pd.to_datetime(steps['step_time']).dt.date
+        day_steps = steps[steps['date'] == curr_day]
+
+        '''
+        #My original methods
         curr_day = row['date']
         steps['date'] = pd.to_datetime(steps['step_time']).dt.date
         all = steps[steps['date'] == curr_day]
-        #loop through every minute and find step count - index is minutes of day
-
+        #convert all step times to seconds
         time = pd.to_datetime(all['step_time']).dt.time
-        all['time_sec'] = time.apply(lambda t: t.hour * 3600 + t.minute * 60 + t.second)
+        all['time_sec'] = time.apply(lambda t: t.hour * 3600 + t.minute * t.second)
+        print ('Day: ' + str(i) + ' # steps: '+ str(len(time)))
         min_array = []
-        full_range= int(86400 / time_sec)
-        for step in range(full_range):
-            start = step * time_sec
-            end = (step+1) * time_sec
-            sub = all[(all['time_sec'] > start) & (all['time_sec'] <= end)]
-            min_array.append(len(sub))
-        data[header_days[count]] = [curr_day] + min_array
 
+        if overlap == False: #step by window length
+            #loop through every window and find step count - index is minutes of day
+            full_range= int(86400 / window)
+            for step in range(full_range):
+                start = step * window
+                end = (step+1) * window
+                sub = all[(all['time_sec'] > start) & (all['time_sec'] <= end)]
+                min_array.append(len(sub))
+            data[header_days[count]] = [curr_day] + min_array
+        else:
+            #overlap TRUE - every secsond
+            # loop through every window and find step count - index is minutes of day
+            full_range = int(86400)
+            for step in range(full_range):
+                start = step * window
+                end = (step + 1) * window
+                sub = all[(all['time_sec'] > start) & (all['time_sec'] <= end)]
+                min_array.append(len(sub))
+            data[header_days[count]] = [curr_day] + min_array
         #print ('Total - '+ header_days[count] + ':  '+str(sum(min_array)))
         count = count+1
+        '''
+        #Kit's methods
+        # resmaple to 1 second counts
+        step_count_seconds = day_steps.set_index('step_time').resample('1s', origin='start_day').size().rename('step_count')
+
+        # pad window_size at start and end
+        pad_start = step_count_seconds.index.min() - pd.Timedelta(seconds=window_size - 1)
+        pad_end = step_count_seconds.index.max() + pd.Timedelta(seconds=window_size - 1)
+
+        # OR pad to full days
+        # pad_start = step_count_seconds.index.min().floor('D')
+        # pad_end = step_count_seconds.index.max().ceil('D') - pd.Timedelta(seconds=1)
+
+        padded_range = pd.date_range(start=pad_start, end=pad_end, freq='s')
+        step_count_seconds = step_count_seconds.reindex(padded_range).fillna(0)
+
+        #convert count column to integer
+        #step_count_seconds[1] = step_count_seconds[1].astype(int)
+        # rolling sums
+        step_count_rolling = step_count_seconds.rolling(window=window_size, min_periods=window_size,
+                                                        step=step_size).sum().rename('step_count_rolling')
+
+        # move timestamp to start of window
+        day_counts = step_count_rolling.shift(-(window_size - 1))
+
+        #create column of seconds frommidnight
+        sec_midnight = (day_counts.index - day_counts.index.normalize()).total_seconds().astype(int)
+        day_counts.index = sec_midnight
+
+        #day_count = day_counts.astype(int).to_list()
+
+        data[curr_day] = day_counts
+        #count = count + 1
     return data
 
 def stride_time_interval(steps, merged_daily):
