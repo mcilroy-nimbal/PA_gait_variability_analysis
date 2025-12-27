@@ -723,7 +723,7 @@ def step_density_sec(steps, merged_daily, window_size, step_size):
         count = count+1
         '''
         #Kit's methods
-        # resmaple to 1 second counts
+        # resample to 1 second counts
         step_count_seconds = day_steps.set_index('step_time').resample('1s', origin='start_day').size().rename('step_count')
 
         # pad window_size at start and end
@@ -738,7 +738,6 @@ def step_density_sec(steps, merged_daily, window_size, step_size):
         step_count_seconds = step_count_seconds.reindex(padded_range).fillna(0)
 
         #convert count column to integer
-        #step_count_seconds[1] = step_count_seconds[1].astype(int)
         # rolling sums
         step_count_rolling = step_count_seconds.rolling(window=window_size, min_periods=window_size,
                                                         step=step_size).sum().rename('step_count_rolling')
@@ -750,9 +749,21 @@ def step_density_sec(steps, merged_daily, window_size, step_size):
         sec_midnight = (day_counts.index - day_counts.index.normalize()).total_seconds().astype(int)
         day_counts.index = sec_midnight
 
-        #day_count = day_counts.astype(int).to_list()
+        #drop any that occur with index not zero to start
+        if 0 in day_counts.index:
+            first_zero = day_counts.index.get_loc(0)
+            df = day_counts.iloc[first_zero:].copy()
+        else:
+            print("No index value equal to 0 found.")
 
-        data[curr_day] = day_counts
+        #remove any at end due to ove next day
+        mask = day_counts.index.to_series().diff() < 0
+        day_count_clean = day_counts[~mask].copy()
+
+        if day_count_clean.index.has_duplicates:
+            break
+        #day_count = day_counts.astype(int).to_list()
+        data[curr_day] = day_count_clean
         #count = count + 1
     return data
 
