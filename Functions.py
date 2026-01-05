@@ -751,8 +751,11 @@ def step_density_sec(steps, merged_daily, window_size, step_size):
 
         #drop any that occur with index not zero to start
         if 0 in day_counts.index:
-            first_zero = day_counts.index.get_loc(0)
-            df = day_counts.iloc[first_zero:].copy()
+            #first_zero = day_counts.index.get_loc(0)
+            first_zero = day_counts.index.get_indexer_for([0])[0]
+            if first_zero < 5000:
+                day_counts = day_counts.iloc[first_zero:].copy()
+
         else:
             print("No index value equal to 0 found.")
 
