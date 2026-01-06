@@ -90,9 +90,9 @@ print('\tOverlap (sec): '+ '\t' + str(step_size) )
 create_density = False
 create_stride_time = False
 calc_basic_stats = False
-calc_preferred = False
+calc_preferred = True
 density_graph = False
-compare_density = True
+compare_density = False
 
 #create the files
 if create_density:
@@ -153,16 +153,20 @@ if calc_preferred:
         combined = density_subj.stack()
         #drop NA , 0 and values >
         #convert na to zeros
+        combined = combined.fillna(0)
 
-        cleaned = combined[(combined.notna()) & (combined != 0)]
+        #cleaned = combined[(combined.notna()) & (combined != 0)]
         #cropped around min and max to narrow preferred calcualtion
-        cropped = cleaned[(cleaned > min) & (cleaned < max)]
+        cleaned = combined
 
-        stats = cropped.describe()
+        cropped = cleaned[(cleaned > 0) & (cleaned < max)]
+
+        #stats = cropped.describe()
+
         # convert to a row and label it with subject ID
-        stats_df = stats.to_frame().T
-        stats_df["subject"] = subj
-        group_stats.append(stats_df)
+        #stats_df = stats.to_frame().T
+        #stats_df["subject"] = subj
+        #group_stats.append(stats_df)
 
         #caluclate peak value from histogram need bin #s
         #counts, bins = np.histogram(cropped, bins=50)
@@ -171,13 +175,17 @@ if calc_preferred:
         #peak_bin_end = bins[peak_bin_index + 1]
         #print("\tPeak bin:\t", peak_bin_start, "to", peak_bin_end)
 
-        #calculate peak based on KDE
-        #kde = gaussian_kde(cropped)
-        # Evaluate KDE on a grid
-        #x_grid = np.linspace(cropped.min(), cropped.max(), 1000)
-        #density = kde(x_grid)
+        if cropped.dropna().empty:
+            print(f"No data for {subj}, skipping")
+            continue
 
-        # Peak = x where density is highest
+        #calculate peak based on KDE
+        kde = gaussian_kde(cropped)
+        # Evaluate KDE on a grid
+        x_grid = np.linspace(cropped.min(), cropped.max(), 1000)
+        density = kde(x_grid)
+        plt.plot(x_grid, density)
+        #Peak = x where density is highest
         #peak_value = x_grid[np.argmax(density)]
         #print("\tKDE peak:\t", peak_value)
         #print ('done')
@@ -194,11 +202,19 @@ if calc_preferred:
         plt.show()
         print('pause')
         '''
-    final_stats = pd.concat(group_stats, ignore_index=True)
-    path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
-    file = 'All_' + visit + '_' + window_text + '_cropped_density_stats.csv'
-    final_stats.to_csv(path_density+file, index=False)
-    print (final_stats)
+
+    plt.xlabel("Stride Density")
+    plt.ylabel("Density")
+    plt.title("Distribution Density by Subject")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    #final_stats = pd.concat(group_stats, ignore_index=True)
+    #path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    #file = 'All_' + visit + '_' + window_text + '_cropped_density_stats.csv'
+    #final_stats.to_csv(path_density+file, index=False)
+    #print (final_stats)
 
 if compare_density:
     path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'

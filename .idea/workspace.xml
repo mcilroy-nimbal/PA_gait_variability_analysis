@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <change beforePath="$PROJECT_DIR$/Functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/Functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stride_time_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/stride_time_analysis.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,29 +45,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.AAIC2025_data.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Functions.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Gait_bout_basic_anal_graphs.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Gait_pattern_paper.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Gait_pattern_paper_STEP1.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Gait_pattern_paper_STEP2.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Gait_pattern_paper_STEP3.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.STEP1_create_bout_bin_density_files.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Step_PA_density_processing.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.create_bout_bin_and_density_files.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.gait_pattern_plots.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.main.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.main_calling_code.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.read_average_bouts.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.read_average_density.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.select_study_subjects.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.select_study_subjects_SAProj.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.variability_analysis_functions.executor&quot;: &quot;Debug&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.AAIC2025_data.executor": "Debug",
+    "Python.Functions.executor": "Debug",
+    "Python.Gait_bout_basic_anal_graphs.executor": "Debug",
+    "Python.Gait_pattern_paper.executor": "Debug",
+    "Python.Gait_pattern_paper_STEP1.executor": "Debug",
+    "Python.Gait_pattern_paper_STEP2.executor": "Debug",
+    "Python.Gait_pattern_paper_STEP3.executor": "Debug",
+    "Python.STEP1_create_bout_bin_density_files.executor": "Debug",
+    "Python.Step_PA_density_processing.executor": "Debug",
+    "Python.create_bout_bin_and_density_files.executor": "Debug",
+    "Python.gait_pattern_plots.executor": "Debug",
+    "Python.main.executor": "Debug",
+    "Python.main_calling_code.executor": "Debug",
+    "Python.read_average_bouts.executor": "Debug",
+    "Python.read_average_density.executor": "Debug",
+    "Python.select_study_subjects.executor": "Debug",
+    "Python.select_study_subjects_SAProj.executor": "Debug",
+    "Python.stride_time_analysis.executor": "Debug",
+    "Python.variability_analysis_functions.executor": "Debug",
+    "RunOnceActivity.ShowReadmeOnStart": "true"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -586,11 +587,6 @@
           <url>file://$PROJECT_DIR$/main_calling_code.py</url>
           <line>162</line>
           <option name="timeStamp" value="625" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Functions.py</url>
-          <line>763</line>
-          <option name="timeStamp" value="645" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
