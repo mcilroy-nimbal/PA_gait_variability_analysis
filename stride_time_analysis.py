@@ -90,9 +90,12 @@ print('\tOverlap (sec): '+ '\t' + str(step_size) )
 create_density = False
 create_stride_time = False
 calc_basic_stats = False
-calc_preferred = True
+calc_preferred = False
 density_graph = False
 compare_density = False
+stride_time = True
+plot_stride_time = False  #done within stride-time
+
 
 #create the files
 if create_density:
@@ -228,3 +231,95 @@ if compare_density:
     plt.xlabel("df1 value")
     plt.ylabel("df2 value")
     plt.show()
+
+if stride_time:
+
+    # calc and plot / file pre_density
+    path_density = nimbal_drive + paper_path + 'Summary_data\\stride_time\\' + study + '\\'
+    results = []
+    for subj in subj_list:
+        print('\tSubject: \t' + subj)
+        file = subj + '_' + visit + '_stride_time.csv'
+        raw_data = pd.read_csv(path_density + file)
+
+        # flatten to 1 array
+        combined = raw_data.stack()
+        # drop NA , 0 and values
+        combined = raw_data.stack()
+        clean = combined[(combined > 0) & (combined < 2)]
+        # convert na to zeros
+        clean = clean.fillna(0)
+        n = len(clean)
+        if clean.dropna().empty:
+            print(f"No data for {subj}, skipping")
+            continue
+
+        # calculate peak based on KDE
+        kde = gaussian_kde(clean)
+        # Evaluate KDE on a grid
+        x = np.linspace(clean.min(), clean.max(), 50)
+
+        y = kde(x)
+        #plt.plot(x, y)
+
+        # Normalize density
+        y_norm = y / y.sum()
+
+        # Peak = x where density is highest
+        peak = x[np.argmax(y_norm)]
+
+        #Weighted mean (≈ KDE mean)
+        mean = np.sum(x * y_norm)
+
+        # Weighted variance
+        variance = np.sum((x - mean)**2 * y_norm)
+
+        # Append row
+        results.append({"subject": subj, "mode": peak, "mean": mean, "variance": variance, "sample_size": n})
+
+
+    #plt.xlabel("Stride Density")
+    #plt.ylabel("Density")
+    #plt.title("Distribution Density by Subject")
+    #plt.legend()
+    #plt.grid(True)
+    #plt.show()
+    results = pd.DataFrame(results)
+    results["std"] = results["variance"] ** 0.5
+
+    if plot_stride_time:
+        fig = plt.figure(figsize=(12, 8))
+
+        gs = fig.add_gridspec(1, 2, width_ratios=[4, 1], wspace=0.05)
+        # Left subplot (raster plot)
+        ax1 = fig.add_subplot(gs[0, 0])
+        # Right subplot (sample size bar plot)
+        ax2 = fig.add_subplot(gs[0, 1])
+
+        #plt.figure(figsize=(10, 8))
+        #sns.set(style="whitegrid")
+        # Sort subjects so the raster is clean
+
+        results = results.sort_values("mode")
+        ax1.errorbar(x=results["mode"], y=results["subject"], xerr=results["std"], fmt="o", ecolor="gray", capsize=3, markersize=3, color="steelblue" )
+        ax1.set_xlabel("Stride time (secs)")
+        ax1.set_ylabel("")
+        ax1.set_yticks([])
+
+        # Right: sample size bars
+        y_positions = range(len(results))
+        ax2.barh(y_positions, results["sample_size"], color="lightgray", edgecolor="black")
+        # Only show min and max x‑axis labels
+        xmin = results["sample_size"].min()
+        xmax = results["sample_size"].max()
+        ax2.set_xticks([xmin, xmax])
+
+        ax2.set_xlabel("# strides")
+        ax2.set_yticks([]) # no subject labels ax2.set_title("Sample Size per Subject")
+        ax2.set_ylabel("")
+
+        #plt.title("Subject Raster: Mode with Horizontal Variance Bars")
+        plt.tight_layout()
+        plt.show()
+
+    xxxx
