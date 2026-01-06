@@ -80,7 +80,7 @@ subj_list = sorted.iloc[:, 0]
 print('Total # subjects for this analysis: \t' + str(len(subj_list)))
 
 #values for density analysis
-window_size = 15
+window_size = 10
 step_size = 1
 visit = '01'
 window_text = 'win_' + str(window_size) + 's_step_' + str(step_size) + 's_'
@@ -90,8 +90,9 @@ print('\tOverlap (sec): '+ '\t' + str(step_size) )
 create_density = False
 create_stride_time = False
 calc_basic_stats = False
-calc_preferred = True
+calc_preferred = False
 density_graph = False
+compare_density = True
 
 #create the files
 if create_density:
@@ -130,12 +131,13 @@ if density_graph:  # density plot
 
 if calc_preferred:
     max = 3.0
-    min = 0.25
+    min = 0.5
 
     #   path = nimbal_drive + demo_path
 
     # calc and plot / file pre_density
     path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    group_stats = []
 
     for subj in subj_list:
         print('\tSubject: \t'+subj)
@@ -150,27 +152,35 @@ if calc_preferred:
         # flatten to 1 array
         combined = density_subj.stack()
         #drop NA , 0 and values >
+        #convert na to zeros
+
         cleaned = combined[(combined.notna()) & (combined != 0)]
         #cropped around min and max to narrow preferred calcualtion
         cropped = cleaned[(cleaned > min) & (cleaned < max)]
 
+        stats = cropped.describe()
+        # convert to a row and label it with subject ID
+        stats_df = stats.to_frame().T
+        stats_df["subject"] = subj
+        group_stats.append(stats_df)
+
         #caluclate peak value from histogram need bin #s
-        counts, bins = np.histogram(cropped, bins=50)
-        peak_bin_index = counts.argmax()
-        peak_bin_start = bins[peak_bin_index]
-        peak_bin_end = bins[peak_bin_index + 1]
-        print("\tPeak bin:\t", peak_bin_start, "to", peak_bin_end)
+        #counts, bins = np.histogram(cropped, bins=50)
+        #peak_bin_index = counts.argmax()
+        #peak_bin_start = bins[peak_bin_index]
+        #peak_bin_end = bins[peak_bin_index + 1]
+        #print("\tPeak bin:\t", peak_bin_start, "to", peak_bin_end)
 
         #calculate peak based on KDE
-        kde = gaussian_kde(cropped)
+        #kde = gaussian_kde(cropped)
         # Evaluate KDE on a grid
-        x_grid = np.linspace(cropped.min(), cropped.max(), 1000)
-        density = kde(x_grid)
+        #x_grid = np.linspace(cropped.min(), cropped.max(), 1000)
+        #density = kde(x_grid)
 
         # Peak = x where density is highest
-        peak_value = x_grid[np.argmax(density)]
-        print("\tKDE peak:\t", peak_value)
-        print ('done')
+        #peak_value = x_grid[np.argmax(density)]
+        #print("\tKDE peak:\t", peak_value)
+        #print ('done')
 
 
         '''
@@ -184,3 +194,21 @@ if calc_preferred:
         plt.show()
         print('pause')
         '''
+    final_stats = pd.concat(group_stats, ignore_index=True)
+    path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    file = 'All_' + visit + '_' + window_text + '_cropped_density_stats.csv'
+    final_stats.to_csv(path_density+file, index=False)
+    print (final_stats)
+
+if compare_density:
+    path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    file = 'All_' + visit + '_' + window_text + '_density_stats.csv'
+    final_stats1 = pd.read_csv(path_density + 'All_01_win_10s_step_1s__density_stats.csv')
+    final_stats2 = pd.read_csv(path_density + 'All_01_win_10s_step_1s__cropped_density_stats.csv')
+    merged = final_stats1.merge(final_stats2, on='subject')
+    corr = merged["50%_x"].corr(merged["50%_y"])
+    print('n: '+str(len(merged))+ ' r: '+ str(corr))
+    plt.scatter(merged["50%_x"], merged["50%_y"])
+    plt.xlabel("df1 value")
+    plt.ylabel("df2 value")
+    plt.show()
