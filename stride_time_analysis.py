@@ -322,4 +322,39 @@ if stride_time:
         plt.tight_layout()
         plt.show()
 
-    xxxx
+        #density data to determin time in each
+        # catgory: none - 0
+        #          step >0 to density < peak - std
+        #          walk > peak - std
+        path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+
+        for subj in subj_list:
+            print('\tSubject: \t' + subj)
+
+            #find values from results panda that has stride tiem details
+            stride_time_row = results[results['subject'] == subj]
+            cut_point = stride_time_row['mode'] - (stride_time_row['variance']**0.5)
+
+
+            file = subj + '_' + visit + '_' + window_text + '_density.csv'
+            raw_data = pd.read_csv(path_density + file)
+            raw_data = raw_data.iloc[2:].reset_index(drop=True)
+            raw_data = raw_data.iloc[:, 1:]
+            # convert to density  strides / sec
+            density_subj = raw_data / window_size
+            # flatten to 1 array
+            combined = density_subj.stack()
+            # convert na to zeros
+            combined = combined.fillna(0)
+
+            if combined.dropna().empty:
+                print(f"No data for {subj}, skipping")
+                continue
+
+            total_n = len(combined)
+            no_steps = combined.count(0)
+            steps = len(combined[(combined > 0) & (combined < cut_point)])
+            walks = len(combined[(combined > cut_point)])
+
+            # Append row
+            results.append({"subject": subj, "mode": peak, "mean": mean, "variance": variance, "sample_size": n})
