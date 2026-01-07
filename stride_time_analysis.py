@@ -328,6 +328,9 @@ if stride_time:
     #          walk > peak - std
     path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
     output = []
+    intensity_blocks_steps = []
+    intensity_blocks_walks = []
+
     for subj in subj_list:
         print('\tSubject: \t' + subj)
 
@@ -345,19 +348,43 @@ if stride_time:
         #combined = density_subj.stack()
         # convert na to zeros
         raw_data = raw_data.fillna(0)
-        density = raw_data / window_size
+        density = (1 / raw_data).where(raw_data != 0, 0)
+        #density = window_size / raw_data
         if density.dropna().empty:
             print(f"No data for {subj}, skipping")
             continue
 
         total_n = density.size
         no_steps = (density == 0).sum().sum()
-        steps = ((density > 0) & (density < cut_point)).sum().sum()
-        walks = (density > cut_point).sum().sum()
+
+        steps_mask = ((density > 0) & (density < cut_point)).sum().sum()
+        steps = steps_mask.sum().sum()
+
+        walks_mask = (density > cut_point)
+        walks = walks_mask.sum().sum()
+
+        #rotated = walks_density_subj.T
+        #    intensity_blocks.append(rotated)
+        #intensity_matrix = pd.concat(intensity_blocks, axis=0, ignore_index=True)
+        #intensity_matrix = intensity_matrix.apply(pd.to_numeric, errors='coerce')
+        #intensity_matrix = intensity_matrix.fillna(0)
+        #intensity_array = intensity_matrix.to_numpy(dtype=float)
+
+
 
         # Append row
         output.append({"subject": subj,"mode": stride_time_row['mode'].iloc[0],
                       "95CI": 1.96*stride_time_row['variance'].iloc[0]**0.5,
-                       "cut_point": cut_point, "total_n": total_n, "low_steps": steps, "high_walks": walks})
+                       "cut_point": cut_point, "total_n": total_n, "No_steps": no_steps,
+                       "low_steps": steps, "high_walks": walks})
     output = pd.DataFrame(output)
     print (output)
+    #plt.figure(figsize=(10, 6))
+    #plt.imshow(intensity_matrix, aspect='auto', cmap='viridis')  # or 'hot', 'plasma', 'magma'
+    #plt.colorbar(label='Intensity')
+    #plt.xlabel('Time (minutes) (midnight-midnight)')
+    #plt.ylabel('Subjects and days stacked')
+    #plt.title('Daily step density (all subjects/days)')
+    #plt.tight_layout()
+    #plt.show()
+    #print('pause')
