@@ -322,39 +322,42 @@ if stride_time:
         plt.tight_layout()
         plt.show()
 
-        #density data to determin time in each
-        # catgory: none - 0
-        #          step >0 to density < peak - std
-        #          walk > peak - std
-        path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    #density data to determin time in each
+    # catgory: none - 0
+    #          step >0 to density < peak - std
+    #          walk > peak - std
+    path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    output = []
+    for subj in subj_list:
+        print('\tSubject: \t' + subj)
 
-        for subj in subj_list:
-            print('\tSubject: \t' + subj)
+        #find values from results panda that has stride tiem details
+        stride_time_row = results[results['subject'] == subj]
+        cut_point = stride_time_row['mode'].iloc[0] - (1.96*(stride_time_row['variance'].iloc[0]**0.5))
 
-            #find values from results panda that has stride tiem details
-            stride_time_row = results[results['subject'] == subj]
-            cut_point = stride_time_row['mode'] - (stride_time_row['variance']**0.5)
+        file = subj + '_' + visit + '_' + window_text + '_density.csv'
+        raw_data = pd.read_csv(path_density + file)
+        raw_data = raw_data.iloc[2:].reset_index(drop=True)
+        raw_data = raw_data.iloc[:, 1:]
+        # convert to density  strides / sec
 
+        # flatten to 1 array
+        #combined = density_subj.stack()
+        # convert na to zeros
+        raw_data = raw_data.fillna(0)
+        density = raw_data / window_size
+        if density.dropna().empty:
+            print(f"No data for {subj}, skipping")
+            continue
 
-            file = subj + '_' + visit + '_' + window_text + '_density.csv'
-            raw_data = pd.read_csv(path_density + file)
-            raw_data = raw_data.iloc[2:].reset_index(drop=True)
-            raw_data = raw_data.iloc[:, 1:]
-            # convert to density  strides / sec
-            density_subj = raw_data / window_size
-            # flatten to 1 array
-            combined = density_subj.stack()
-            # convert na to zeros
-            combined = combined.fillna(0)
+        total_n = density.size
+        no_steps = (density == 0).sum().sum()
+        steps = ((density > 0) & (density < cut_point)).sum().sum()
+        walks = (density > cut_point).sum().sum()
 
-            if combined.dropna().empty:
-                print(f"No data for {subj}, skipping")
-                continue
-
-            total_n = len(combined)
-            no_steps = combined.count(0)
-            steps = len(combined[(combined > 0) & (combined < cut_point)])
-            walks = len(combined[(combined > cut_point)])
-
-            # Append row
-            results.append({"subject": subj, "mode": peak, "mean": mean, "variance": variance, "sample_size": n})
+        # Append row
+        output.append({"subject": subj,"mode": stride_time_row['mode'].iloc[0],
+                      "95CI": 1.96*stride_time_row['variance'].iloc[0]**0.5,
+                       "cut_point": cut_point, "total_n": total_n, "low_steps": steps, "high_walks": walks})
+    output = pd.DataFrame(output)
+    print (output)
