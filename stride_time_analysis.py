@@ -95,7 +95,7 @@ density_graph = False
 compare_density = False
 stride_time = True
 plot_stride_time = False  #done within stride-time
-
+plot_density2 = True
 
 #create the files
 if create_density:
@@ -328,8 +328,9 @@ if stride_time:
     #          walk > peak - std
     path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
     output = []
-    intensity_blocks_steps = []
-    intensity_blocks_walks = []
+    intensity_steps = []
+    intensity_walks = []
+    intensity_all = []
 
     for subj in subj_list:
         print('\tSubject: \t' + subj)
@@ -356,21 +357,20 @@ if stride_time:
 
         total_n = density.size
         no_steps = (density == 0).sum().sum()
-
-        steps_mask = ((density > 0) & (density < cut_point)).sum().sum()
+        steps_mask = ((density > 0) & (density < cut_point))
         steps = steps_mask.sum().sum()
+        steps_density = density[steps_mask]
 
         walks_mask = (density > cut_point)
         walks = walks_mask.sum().sum()
+        walks_density = density[walks_mask]
 
-        #rotated = walks_density_subj.T
-        #    intensity_blocks.append(rotated)
-        #intensity_matrix = pd.concat(intensity_blocks, axis=0, ignore_index=True)
-        #intensity_matrix = intensity_matrix.apply(pd.to_numeric, errors='coerce')
-        #intensity_matrix = intensity_matrix.fillna(0)
-        #intensity_array = intensity_matrix.to_numpy(dtype=float)
-
-
+        rotated = walks_density.T
+        intensity_walks.append(rotated)
+        rotated = steps_density.T
+        intensity_steps.append(rotated)
+        rotated = density.T
+        intensity_all.append(rotated)
 
         # Append row
         output.append({"subject": subj,"mode": stride_time_row['mode'].iloc[0],
@@ -378,13 +378,38 @@ if stride_time:
                        "cut_point": cut_point, "total_n": total_n, "No_steps": no_steps,
                        "low_steps": steps, "high_walks": walks})
     output = pd.DataFrame(output)
-    print (output)
-    #plt.figure(figsize=(10, 6))
-    #plt.imshow(intensity_matrix, aspect='auto', cmap='viridis')  # or 'hot', 'plasma', 'magma'
-    #plt.colorbar(label='Intensity')
-    #plt.xlabel('Time (minutes) (midnight-midnight)')
-    #plt.ylabel('Subjects and days stacked')
-    #plt.title('Daily step density (all subjects/days)')
-    #plt.tight_layout()
-    #plt.show()
-    #print('pause')
+    output.to_csv(path+"step_classification_pref_v1.csv", index=False)
+
+
+    if plot_density2:
+
+
+        plt.figure(figsize=(10, 6))
+        intensity_matrix = pd.concat(intensity_all, axis=0, ignore_index=True)
+        intensity_matrix = intensity_matrix.apply(pd.to_numeric, errors='coerce')
+        intensity_matrix = intensity_matrix.fillna(0)
+        #intensity_array = intensity_matrix.to_numpy(dtype=float)
+        plt.imshow(intensity_matrix, aspect='auto', cmap='viridis')  # or 'hot', 'plasma', 'magma'
+        plt.title("All steps")
+        plt.tight_layout()
+        plt.show()
+
+        plt.figure(figsize=(10, 6))
+        intensity_matrix = pd.concat(intensity_steps, axis=0, ignore_index=True)
+        intensity_matrix = intensity_matrix.apply(pd.to_numeric, errors='coerce')
+        intensity_matrix = intensity_matrix.fillna(0)
+        # intensity_array = intensity_matrix.to_numpy(dtype=float)
+        plt.imshow(intensity_matrix, aspect='auto', cmap='viridis')  # or 'hot', 'plasma', 'magma'
+        plt.title("Steps only")
+        plt.tight_layout()
+        plt.show()
+
+        plt.figure(figsize=(10, 6))
+        intensity_matrix = pd.concat(intensity_steps, axis=0, ignore_index=True)
+        intensity_matrix = intensity_matrix.apply(pd.to_numeric, errors='coerce')
+        intensity_matrix = intensity_matrix.fillna(0)
+        # intensity_array = intensity_matrix.to_numpy(dtype=float)
+        plt.imshow(intensity_matrix, aspect='auto', cmap='viridis')  # or 'hot', 'plasma', 'magma'
+        plt.title("Walks only")
+        plt.tight_layout()
+        plt.show()
