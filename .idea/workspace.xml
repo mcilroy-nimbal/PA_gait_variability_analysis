@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <change beforePath="$PROJECT_DIR$/main_calling_code.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_calling_code.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/stride_time_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/stride_time_analysis.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -66,7 +67,8 @@
     "Python.select_study_subjects_SAProj.executor": "Debug",
     "Python.stride_time_analysis.executor": "Debug",
     "Python.variability_analysis_functions.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/wmcilroy/PycharmProjects/FFA analysis"
   }
 }]]></component>
   <component name="SharedIndexes">
@@ -84,62 +86,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1742520861178</updated>
-    </task>
-    <task id="LOCAL-00003" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1742907815543</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1742907815543</updated>
-    </task>
-    <task id="LOCAL-00004" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1743100897956</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1743100897956</updated>
-    </task>
-    <task id="LOCAL-00005" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1743305403751</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1743305403751</updated>
-    </task>
-    <task id="LOCAL-00006" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1743476149311</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1743476149311</updated>
-    </task>
-    <task id="LOCAL-00007" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1744318511373</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1744318511373</updated>
-    </task>
-    <task id="LOCAL-00008" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1744388803504</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1744388803504</updated>
-    </task>
-    <task id="LOCAL-00009" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1744396209170</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1744396209170</updated>
     </task>
     <task id="LOCAL-00010" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
       <option name="closed" value="true" />
@@ -477,7 +423,63 @@
       <option name="project" value="LOCAL" />
       <updated>1766802627651</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL-00052" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1767672561389</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1767672561389</updated>
+    </task>
+    <task id="LOCAL-00053" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1767717220144</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1767717220144</updated>
+    </task>
+    <task id="LOCAL-00054" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1767740084982</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1767740084982</updated>
+    </task>
+    <task id="LOCAL-00055" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1767741945668</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1767741945668</updated>
+    </task>
+    <task id="LOCAL-00056" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1767760099067</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1767760099067</updated>
+    </task>
+    <task id="LOCAL-00057" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1767796257264</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1767796257264</updated>
+    </task>
+    <task id="LOCAL-00058" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1767813239157</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1767813239157</updated>
+    </task>
+    <option name="localTasksCounter" value="59" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

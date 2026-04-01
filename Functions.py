@@ -181,7 +181,7 @@ def create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_
         breakpoint()
 
     #log_out_path = nimbal_drive + paper_path + 'Log_files\\'
-    summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+    summary_path = nimbal_drive + paper_path + 'Created_data\\bout_bins\\daily_values\\'
 
     nw_path = 'nonwear\\daily_cropped\\'
     bout_path = 'gait\\bouts\\'
@@ -222,7 +222,7 @@ def create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_
     steps_summary = pd.DataFrame(columns=steps_header)
     width_summary = pd.DataFrame(columns=width_header)
 
-    # TODO fix the walkign at night/sleep calculation
+    # TODO fix the walking at night/sleep calculation
 
     for j, subject in enumerate(master_subj_list):
         visit = '01'
@@ -966,7 +966,7 @@ def create_table(data, cont_vars, categ_vars):
                                         'percent': percentages.values})
             all_tables.append(summary_pct)
         # Combine all summaries
-        pct = pd.concat(all_tables, ignore_index=True)
+        pct = pd.concat(all_tables, ignore_index=False)
         # Optional: rearrange columns
         return pct
 

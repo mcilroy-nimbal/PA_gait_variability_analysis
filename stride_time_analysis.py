@@ -91,11 +91,11 @@ create_density = False
 create_stride_time = False
 calc_basic_stats = False
 calc_preferred = False
-density_graph = False
+density_graph = True
 compare_density = False
-stride_time = True
+stride_time = False
 plot_stride_time = False  #done within stride-time
-plot_density2 = True
+plot_density2 = False
 
 #create the files
 if create_density:

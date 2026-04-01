@@ -17,13 +17,17 @@ import openpyxl
 def coeff_var(x):
     return np.std(x, ddof=1) / np.mean(x) if np.mean(x) != 0 else np.nan
 
-def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path, subject_list, group_name):
+def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path, subjects, group_name, min_days, max_days):
     #stride totals - by bouts
     #averages across days for each subject
     if step_vs_dur:
-        steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_steps_daily_bins.csv')
+        steps = pd.read_csv(nimbal_drive + path + 'Created_data\\bout_bins\\daily_values\\' + study + '_' + window + '_bout_steps_daily_bins_with_unbouted.csv')
     else:
-        steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_width_daily_bins.csv')
+        steps = pd.read_csv(nimbal_drive + path + 'Created_data\\bout_bins\\daily_values\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
+
+    #select only specific subjects
+    steps = steps[steps['subj'].isin(subjects)]
+    print('# subjects PRIOR to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
 
     if window == 'wake':
         #remove any less than 10 hours - for cocnern of code right now
@@ -34,8 +38,19 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
         steps = steps[steps['hours'] > 10]
         steps.drop(columns=['hours'], inplace=True)
 
-    #select only specific subjects
-    steps = steps[steps['subj'].isin(subject_list)]
+    #loop through each subject to see if meets min days
+    # Step 1: get total rows per subject
+    counts = steps.groupby('subj')['subj'].transform('size')
+    # Step 2: keep only valid subjects
+    steps = steps[(counts >= min_days)]
+    # Step 3: cap rows per subject at max_days
+    steps = steps[steps.groupby('subj').cumcount() < max_days]
+
+    #need to remove subject SBHY0202 they we in a wheelchair
+    steps = steps[steps['subj'] != 'OND09_SBH0202']
+
+
+    print('# subjects AFTER to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
 
     #select column headers to select only stride columns and
     # these are the strides per bout class
@@ -88,27 +103,64 @@ def calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, path
     nstride_pct_group_stats_cv_median = pd.DataFrame({'Median': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
     nstride_pct_group_stats_cv_mean = pd.DataFrame({'Mean': cvs.median(), 'Std': cvs.std(), 'N': cvs.count()})
 
-    full_path = nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_' + group_name + '_'
+    full_path = nimbal_drive + path + 'created_data\\bout_bins\\summary_subject_level\\' + study + '_' + window + '_' + group_name + '_'
     if step_vs_dur:
         full_path = full_path + 'bout_steps_'
     else:
         full_path = full_path + 'bout_duration_'
-    nstride_subj_stats.to_csv(full_path + '_subj_stats.csv', float_format='%.2f')
+    nstride_subj_stats.to_csv(full_path + 'subj_stats.csv', float_format='%.2f')
+    nstride_pct_subj_stats.to_csv(full_path + 'pct_subj_stats.csv', float_format='%.2f')
 
+    full_path = nimbal_drive + path + 'created_data\\bout_bins\\summary_group_level\\' + study + '_' + window + '_' + group_name + '_'
+    if step_vs_dur:
+        full_path = full_path + 'bout_steps_'
+    else:
+        full_path = full_path + 'bout_duration_'
     nstride_group_stats_mean.to_csv(full_path + '_group_stats_mean.csv',float_format='%.2f' )
     nstride_group_stats_median.to_csv(full_path + '_group_stats_median.csv', float_format='%.2f')
     nstride_group_stats_cv_mean.to_csv(full_path + '_group_stats_cv_mean.csv', float_format='%.4f')
     nstride_group_stats_cv_median.to_csv(full_path + '_group_stats_cv_median.csv', float_format='%.4f')
 
-    nstride_pct_subj_stats.to_csv(full_path + '_pct_subj_stats.csv', float_format='%.2f')
-
     nstride_pct_group_stats_mean.to_csv(full_path + '_pct_group_stats_mean.csv', float_format='%.2f')
     nstride_pct_group_stats_median.to_csv(full_path + '_pct_group_stats_median.csv', float_format='%.2f')
     nstride_pct_group_stats_cv_mean.to_csv(full_path + '_pct_group_stats_cv_mean.csv', float_format='%.4f')
     nstride_pct_group_stats_cv_median.to_csv(full_path + '_pct_group_stats_cv_median.csv', float_format='%.4f')
+
+    '''#SML files
+    SML = pd.DataFrame(columns=['subj'])
+    
+    SML['strides_short'] = steps['strides_<_5'] + steps['strides_<_10'] + steps['strides_<_30']
+    SML['strides_medium'] = steps['strides_<_60'] + steps['strides_<_180']
+    SML['strides_long'] = steps['strides_<_600'] + steps['strides_>_600']
+        
+    # this adds unbouted
+    SML_subj_median = steps.groupby('subj')[SML_bouts].median()
+    SML_median = SML_subj_median.median()
+    SML_subj_means = steps.groupby('subj')[SML_bouts].mean()
+    SML_std = SML_subj_means.std()
+
+    # calculate the percentage of steps in bouts relative to total (daily)
+    for col in stride_bouts:
+        steps[col + '_pct'] = steps[col] / steps['window_total_strides'] * 100
+    # these are the prct strides per bout class
+    pct_bouts = steps.columns[steps.columns.str.contains('_pct')].tolist()
+    SML_pct_bouts = ['strides_short_pct', 'strides_medium_pct', 'strides_long_pct']
+    SML_pct_bouts.insert(0, 'window_not_bouted_strides')
+    SML_pct_bouts.insert(0, 'window_total_strides')
+    # bouts setp #s percentage
+    SML_pct_subj_median = steps.groupby('subj')[SML_pct_bouts].median()
+    SML_pct_median = SML_pct_subj_median.median()
+    SML_pct_subj_mean = steps.groupby('subj')[SML_pct_bouts].mean()
+    SML_pct_std = SML_pct_subj_mean.std()
+
+
+    full_path = nimbal_drive + path + 'created_data\\bout_bins\\summary_group_level\\' + study + '_' + window + '_' + group_name
+    #SML.to_csv(full_path + '_SML_stats.csv', float_format='%.2f')
+    '''
     return
 
-def bouts_SML (nimbal_drive, study, window, path, subject_list):
+def bouts_SML (nimbal_drive, study, window, path, subjects, group_name):
+
     # stride totals - by bouts
     # averages across days for each subject
     steps = pd.read_csv(nimbal_drive + path + 'Summary_data\\' + study + '_' + window + '_bout_steps_daily_bins_with_unbouted.csv')
