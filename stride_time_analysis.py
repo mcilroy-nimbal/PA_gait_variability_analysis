@@ -17,6 +17,7 @@ import openpyxl
 import warnings
 warnings.filterwarnings("ignore")
 
+
 #set up file paths
 study = 'OND09'
 root = 'W:'
@@ -27,45 +28,68 @@ demo_path = '\\Papers_NEW_April9\\Shared_Common_data\\OND09\\'
 bin_list_steps = [5, 10, 25, 50, 100, 300]
 bin_width_time = [5, 10, 30, 60, 180, 600]
 
+#values for density analysis
+window_size = 15
+step_size = 1
+window_text = 'win_' + str(window_size) + 's_step_' + str(step_size) + 's_'
+print('\tWindow size (sec): '+ '\t' + str(window_size))
+print('\tOverlap (sec): '+ '\t' + str(step_size) )
+
+#min and max # days to include
+min_days = 7
+max_days = 7
+
 #which subjects?
 master_subj_list = select_subjects(nimbal_drive, study)
 #master_subj_list = ['OND09_SBH0006']
 print('\nTotal # subjects: \t' + str(len(master_subj_list)) + '\n')
-#print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
+print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
 
 #select specific subjects from the study group
 #select ONDRI
-group_name = ['Control', 'PD', 'ADMCI']
+group_name = ['Community Dwelling', 'PD', 'ADMCI', 'CVD']
 
 study = 'OND09'
+visit = '01'
 path = nimbal_drive + demo_path
 demodata = read_demo_ondri_data(path)
+
+'''
 #demogarphci details by group
 #AGE,SEX,MRTL_STATUS,EMPLOY_STATUS, LIVING_CIRCUM
-#data = demodata
-#categ, cont = create_table(data, ['AGE'], ['SEX','MRTL_STATUS','EMPLOY_STATUS', 'LIVING_CIRCUM'])
-
-for i in range(3):
+data = demodata[demodata['COHORT'].isin(group_name)]
+categ, cont = create_table(data, ['AGE'], ['SEX','COHORT', 'MRTL_STATUS','EMPLOY_STATUS', 'LIVING_CIRCUM'])
+for i in range(5):
     if i == 0:
         label = 'Community Dwelling'
     elif i == 1:
         label = 'PD'
     elif i == 2:
-        label = 'AD_MCI'
-    #data = demodata[demodata['COHORT'] == label]
-    #categ, cont = create_table(data, ['AGE'], ['SEX','MRTL_STATUS','EMPLOY_STATUS', 'LIVING_CIRCUM'])
-    #print (group_name[i], categ, cont)
+        label = 'AD/MCI'
+    elif i == 3:
+        label = 'CVD'
+    elif i == 4:
+        label = 'ALL'
+    data = demodata[demodata['COHORT'] == label]
+    categ, cont = create_table(data, ['AGE'], ['SEX','MRTL_STATUS','EMPLOY_STATUS', 'LIVING_CIRCUM'])
+    print (group_name[i], categ, cont)
+'''
 
 #subject lists
-list1 = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
-list2 = demodata[demodata['COHORT'] == 'PD']['SUBJECT']
-list3 = demodata[demodata['COHORT'] == 'AD/MCI']['SUBJECT']
-subj_lists = [list1, list2, list3]
+group_lists = [0,1,2,3,4]
+group_lists[0] = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
+print ('Number subjects CONTROL: '+str(len(group_lists[0])))
+group_lists[1] = demodata[demodata['COHORT'] == 'PD']['SUBJECT']
+print('Number subjects in PD: '+str(len(group_lists[1])))
+group_lists[2] = demodata[demodata['COHORT'] == 'AD/MCI']['SUBJECT']
+print('Number subjects in ADMCI: '+str(len(group_lists[2])))
+group_lists[3] = demodata[demodata['COHORT'] == 'CVD']['SUBJECT']
+print('Number subjects in CVD: '+str(len(group_lists[3])))
+group_lists[4] = demodata[demodata['COHORT'].isin(group_name)]['SUBJECT']
+print('Number subjects in ALL: '+str(len(group_lists[4])))
 
-#which grousp to run data on
-#groups  - 0 Control, 1 PD, 2 ADMCI
-group = 0
-
+'''################################################
+#sorting the subejct by mean step count
 #read the bouts data to get step totals for the analysis
 path = nimbal_drive + demo_path
 path_24hr = nimbal_drive + paper_path + 'Summary_data\\' + study + '_24hr_' + group_name[group] + '_bout_duration_'
@@ -78,19 +102,20 @@ subj_total = subj_total.iloc[1:].reset_index(drop=True)
 sorted = subj_total.sort_values(by=subj_total.columns[1]).reset_index(drop=True)
 subj_list = sorted.iloc[:, 0]
 print('Total # subjects for this analysis: \t' + str(len(subj_list)))
+'''
 
-#values for density analysis
-window_size = 10
-step_size = 1
-visit = '01'
-window_text = 'win_' + str(window_size) + 's_step_' + str(step_size) + 's_'
-print('\tWindow size (sec): '+ '\t' + str(window_size))
-print('\tOverlap (sec): '+ '\t' + str(step_size) )
+#select subjects to use
+subj_list = group_lists[4]  #this uses all for this versions
 
-create_density = False
+create_density = True  #need to run this first to create the density files for each subject in the master list
+
+create_bout_cadence = False #this reads the bout files and calcualtes cadence for each bout
+min_bout_length = 30
+
 create_stride_time = False
 calc_basic_stats = False
-calc_preferred = False
+calc_preferred = False #this estimates cadence
+
 density_graph = True
 compare_density = False
 stride_time = False
@@ -98,14 +123,33 @@ plot_stride_time = False  #done within stride-time
 plot_density2 = False
 
 #create the files
+if create_bout_cadence:
+    min_bout_length = 30
+    #create_cadence_bout_summary
+
 if create_density:
-    create_density_files(study, root, nimbal_drive, group_name[group], paper_path, master_subj_list,
+    group=4 #for ALL
+    create_density_files(study, root, nimbal_drive, group_name[group], paper_path, subj_list,
                          window_size, step_size, create_stride_time)
 
 if density_graph:  # density plot
-    # path = nimbal_drive + demo_path
-    # demodata = read_demo_ondri_data(path)
-    # subj_list = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
+
+    '''
+    #sort subject order based on some feature liek total steps for graphin
+    #sorting the subejct by mean step count
+    #read the bouts data to get step totals for the analysis
+    path = nimbal_drive + demo_path
+    path_24hr = nimbal_drive + paper_path + 'Summary_data\\' + study + '_24hr_' + group_name[group] + '_bout_duration_'
+    subj_24hr = pd.read_csv(path_24hr +'_subj_stats.csv', header=[0, 1], skiprows=[2])
+    subj_pct_24hr = pd.read_csv(path_24hr + '_pct_subj_stats.csv', header=[0, 1], skiprows=[2])
+
+    # reorder based on meda step totals set subj list from steps files?
+    subj_total = subj_24hr.iloc[:, 0:2]  # selects subj and total median column
+    subj_total = subj_total.iloc[1:].reset_index(drop=True)
+    sorted = subj_total.sort_values(by=subj_total.columns[1]).reset_index(drop=True)
+    subj_list = sorted.iloc[:, 0]
+    print('Total # subjects for this analysis: \t' + str(len(subj_list)))
+    '''
 
     # plot the bout density file
     path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
@@ -139,7 +183,7 @@ if calc_preferred:
     #   path = nimbal_drive + demo_path
 
     # calc and plot / file pre_density
-    path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    path_density = nimbal_drive + paper_path + 'created_data\\density\\' + study + '\\'
     group_stats = []
 
     for subj in subj_list:
@@ -161,7 +205,6 @@ if calc_preferred:
         #cleaned = combined[(combined.notna()) & (combined != 0)]
         #cropped around min and max to narrow preferred calcualtion
         cleaned = combined
-
         cropped = cleaned[(cleaned > 0) & (cleaned < max)]
 
         #stats = cropped.describe()
@@ -235,7 +278,7 @@ if compare_density:
 if stride_time:
 
     # calc and plot / file pre_density
-    path_density = nimbal_drive + paper_path + 'Summary_data\\stride_time\\' + study + '\\'
+    path_density = nimbal_drive + paper_path + 'created_data\\stride_time\\' + study + '\\'
     results = []
     for subj in subj_list:
         print('\tSubject: \t' + subj)
@@ -326,7 +369,7 @@ if stride_time:
     # catgory: none - 0
     #          step >0 to density < peak - std
     #          walk > peak - std
-    path_density = nimbal_drive + paper_path + 'Summary_data\\density\\' + study + '\\'
+    path_density = nimbal_drive + paper_path + 'created_data\\density\\' + study + '\\'
     output = []
     intensity_steps = []
     intensity_walks = []

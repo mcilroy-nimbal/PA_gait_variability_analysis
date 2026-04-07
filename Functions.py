@@ -291,11 +291,11 @@ def create_density_files(study, root, nimbal_drive, group_name, paper_path, mast
     else:
         breakpoint()
 
-    summary_path = nimbal_drive + paper_path + 'Summary_data\\'
+    summary_path = nimbal_drive + paper_path + 'created_data\\Summary_data\\'
 
-    folder_path = Path(summary_path + 'density\\') / study
+    folder_path = Path(summary_path + 'created_data\\density\\') / study
     folder_path.mkdir(parents=True, exist_ok=True)
-    folder_path = Path(summary_path + 'stride_time\\') / study
+    folder_path = Path(summary_path + 'created_data\\stride_time\\') / study
     folder_path.mkdir(parents=True, exist_ok=True)
 
 
