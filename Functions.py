@@ -281,7 +281,7 @@ def create_bin_files(time_window, study, root, nimbal_drive, paper_path, master_
 
     return
 
-def create_density_files(study, root, nimbal_drive, group_name, paper_path, master_subj_list, window_size, step_size, stride):
+def create_density_files(study, root, nimbal_drive, group_name, paper_path, master_subj_list, window_size, step_size):
 
     # check - but use this one - \prd\nimbalwear\OND09
     if study == 'OND09':
@@ -291,11 +291,11 @@ def create_density_files(study, root, nimbal_drive, group_name, paper_path, mast
     else:
         breakpoint()
 
-    summary_path = nimbal_drive + paper_path + 'created_data\\Summary_data\\'
+    summary_path = nimbal_drive + paper_path + 'created_data\\'
 
-    folder_path = Path(summary_path + 'created_data\\density\\') / study
+    folder_path = Path(summary_path + 'density\\') / study
     folder_path.mkdir(parents=True, exist_ok=True)
-    folder_path = Path(summary_path + 'created_data\\stride_time\\') / study
+    folder_path = Path(summary_path + 'stride_time\\') / study
     folder_path.mkdir(parents=True, exist_ok=True)
 
 
@@ -349,9 +349,8 @@ def create_density_files(study, root, nimbal_drive, group_name, paper_path, mast
 
         ##############################################################
         # runs stride time for each subject and day
-        if stride:
-            data = stride_time_interval(steps, merged_daily)
-            data.to_csv(summary_path + 'stride_time\\' + study + '\\' + subject + '_' + visit + '_stride_time.csv')
+        data = stride_time_interval(steps, merged_daily)
+        data.to_csv(summary_path + 'stride_time\\' + study + '\\' + subject + '_' + visit + '_stride_time.csv')
 
     return
 
@@ -1025,3 +1024,20 @@ def get_demo_characteristics(study, sub_study):
 
 
     return demodata
+
+def select_subset_ON09(nimbal_drive, path, study, subjects, window, group_name, min_days, max_days):
+    steps = pd.read_csv(nimbal_drive + path + 'created_data\\bout_bins\\daily_values\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
+    # select only specific subjects
+    steps = steps[steps['subj'].isin(subjects)]
+    print('# subjects PRIOR to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
+    # loop through each subject to see if meets min days
+    # Step 1: get total rows per subject
+    counts = steps.groupby('subj')['subj'].transform('size')
+    # Step 2: keep only valid subjects
+    steps = steps[(counts >= min_days)]
+    # Step 3: cap rows per subject at max_days
+    steps = steps[steps.groupby('subj').cumcount() < max_days]
+    # need to remove subject SBHY0202 they we in a wheelchair
+    steps = steps[steps['subj'] != 'OND09_SBH0202']
+    revised_subjects = steps['subj']
+    return revised_subjects

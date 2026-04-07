@@ -47,7 +47,7 @@ print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
 
 #select specific subjects from the study group
 #select ONDRI
-group_name = ['Community Dwelling', 'PD', 'ADMCI', 'CVD']
+group_name = ['Community Dwelling', 'PD', 'ADMCI', 'CVD', 'ALL']
 
 study = 'OND09'
 visit = '01'
@@ -88,6 +88,27 @@ print('Number subjects in CVD: '+str(len(group_lists[3])))
 group_lists[4] = demodata[demodata['COHORT'].isin(group_name)]['SUBJECT']
 print('Number subjects in ALL: '+str(len(group_lists[4])))
 
+window = '24hr'
+subject_list = select_subset(nimbal_drive, path, study, subjects, window, group_name, min_days, max_days)
+
+
+steps = pd.read_csv(nimbal_drive + path + 'created_data\\bout_bins\\daily_values\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
+# select only specific subjects
+steps = steps[steps['subj'].isin(subjects)]
+print('# subjects PRIOR to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
+# loop through each subject to see if meets min days
+# Step 1: get total rows per subject
+counts = steps.groupby('subj')['subj'].transform('size')
+# Step 2: keep only valid subjects
+steps = steps[(counts >= min_days)]
+# Step 3: cap rows per subject at max_days
+steps = steps[steps.groupby('subj').cumcount() < max_days]
+# need to remove subject SBHY0202 they we in a wheelchair
+steps = steps[steps['subj'] != 'OND09_SBH0202']
+
+
+
+
 '''################################################
 #sorting the subejct by mean step count
 #read the bouts data to get step totals for the analysis
@@ -105,18 +126,31 @@ print('Total # subjects for this analysis: \t' + str(len(subj_list)))
 '''
 
 #select subjects to use
-subj_list = group_lists[4]  #this uses all for this versions
+group = 4
+subj_list = group_lists[group]  #this uses all for this versions
 
-create_density = True  #need to run this first to create the density files for each subject in the master list
+# files that get created
+# density file
+# stride time file
 
+#need to run this first to create the density files for each subject in the master list
+#creates both density (per unit time) and stride time files for each day and subject
+#only need to do this once
+create_density = False
+if create_density:
+    group = 4 #for ALL
+    create_density_files(study, root, nimbal_drive, group_name[group], paper_path, subj_list,
+                         window_size, step_size)
+
+calc_preferred = True #this estimates cadence
+
+analyze_stride_time = False
 create_bout_cadence = False #this reads the bout files and calcualtes cadence for each bout
-min_bout_length = 30
 
-create_stride_time = False
 calc_basic_stats = False
-calc_preferred = False #this estimates cadence
 
-density_graph = True
+
+density_graph = False
 compare_density = False
 stride_time = False
 plot_stride_time = False  #done within stride-time
@@ -127,16 +161,16 @@ if create_bout_cadence:
     min_bout_length = 30
     #create_cadence_bout_summary
 
-if create_density:
-    group=4 #for ALL
-    create_density_files(study, root, nimbal_drive, group_name[group], paper_path, subj_list,
-                         window_size, step_size, create_stride_time)
+
+
+
+
 
 if density_graph:  # density plot
 
     '''
     #sort subject order based on some feature liek total steps for graphin
-    #sorting the subejct by mean step count
+    #sorting the subject by mean step count
     #read the bouts data to get step totals for the analysis
     path = nimbal_drive + demo_path
     path_24hr = nimbal_drive + paper_path + 'Summary_data\\' + study + '_24hr_' + group_name[group] + '_bout_duration_'
@@ -179,13 +213,9 @@ if density_graph:  # density plot
 if calc_preferred:
     max = 3.0
     min = 0.5
-
-    #   path = nimbal_drive + demo_path
-
     # calc and plot / file pre_density
     path_density = nimbal_drive + paper_path + 'created_data\\density\\' + study + '\\'
     group_stats = []
-
     for subj in subj_list:
         print('\tSubject: \t'+subj)
         file = subj + '_' + visit + '_' + window_text + '_density.csv'
@@ -320,16 +350,10 @@ if stride_time:
         # Append row
         results.append({"subject": subj, "mode": peak, "mean": mean, "variance": variance, "sample_size": n})
 
-
-    #plt.xlabel("Stride Density")
-    #plt.ylabel("Density")
-    #plt.title("Distribution Density by Subject")
-    #plt.legend()
-    #plt.grid(True)
-    #plt.show()
     results = pd.DataFrame(results)
     results["std"] = results["variance"] ** 0.5
 
+    #will plot the KDE if want to vie it whiel processing - but slows thinsg down alot - good for debugging
     if plot_stride_time:
         fig = plt.figure(figsize=(12, 8))
 
@@ -378,7 +402,7 @@ if stride_time:
     for subj in subj_list:
         print('\tSubject: \t' + subj)
 
-        #find values from results panda that has stride tiem details
+        #find values from results panda that has stride time details
         stride_time_row = results[results['subject'] == subj]
         cut_point = stride_time_row['mode'].iloc[0] - (1.96*(stride_time_row['variance'].iloc[0]**0.5))
 

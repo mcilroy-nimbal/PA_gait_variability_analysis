@@ -83,6 +83,8 @@ print('Number subjects in CVD: '+str(len(group_lists[3])))
 group_lists[4] = demodata[demodata['COHORT'].isin(group_name)]['SUBJECT']
 print('Number subjects in ALL: '+str(len(group_lists[4])))
 
+
+
 #STEP 1 - subject # list to include
 subjects = group_lists[4]
 print('\nTotal # subjects in selected list: \t' + str(len(subjects)) + '\n')
