@@ -484,7 +484,7 @@ for index, group in enumerate(groups):
         data_out['cluster'] = data_out['cluster'].replace({0: '1'})
         data_out['cluster'] = data_out['cluster'].replace({1: '2'})
         data_out['cluster'] = data_out['cluster'].replace({2: '3'})
-        data_out['cluster'] = data_out['cluster'].replace({3: '3'})
+        data_out['cluster'] = data_out['cluster'].replace({3: '4'})
 
         x = np.arange(len(cols))
         plt.figure(figsize=(10, 6))
