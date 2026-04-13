@@ -462,15 +462,39 @@ for index, group in enumerate(groups):
         x = np.arange(len(cols))
         plt.figure(figsize=(10, 6))
         sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['Low','High/Low','High'], palette='Set2', linewidth=5)
-        plt.xlabel('Bout durations', fontsize=24)
-        plt.ylabel('Strides/day', fontsize=24)
-        plt.xticks(ticks=x, labels=cols, fontsize=18)
+        plt.xlabel('Bout durations', fontsize=18)
+        plt.ylabel('Strides/day', fontsize=18)
+        plt.xticks(ticks=x, labels=cols, fontsize=16)
         plt.yticks(fontsize=18)
-        plt.title('Bout pattern clusters', fontsize=32)
-        plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
+        plt.title('Bout pattern clusters', fontsize=24)
+        plt.legend(title='Cluster', title_fontsize=18, fontsize=18)
         plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n3.png")
         plt.close()
 
+        #sum across subject days
+        print ('Run and plot cluster analysis....')
+        cluster_data = subset_cluster
+        ncluster = 4
+        data_out, labels = clustering(cluster_data, ncluster=ncluster)
+        subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: 'Low'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: 'High'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: 'High/Low'})
+        data_out['cluster'] = data_out['cluster'].replace({0: 'Low'})
+        data_out['cluster'] = data_out['cluster'].replace({1: 'High'})
+        data_out['cluster'] = data_out['cluster'].replace({2: 'High/Low'})
+
+        x = np.arange(len(cols))
+        plt.figure(figsize=(10, 6))
+        sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['Low','High/Low','High'], palette='Set2', linewidth=5)
+        plt.xlabel('Bout durations', fontsize=18)
+        plt.ylabel('Strides/day', fontsize=18)
+        plt.xticks(ticks=x, labels=cols, fontsize=16)
+        plt.yticks(fontsize=18)
+        plt.title('Bout pattern clusters', fontsize=24)
+        plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
+        plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n4.png")
+        plt.close()
 
 
 
