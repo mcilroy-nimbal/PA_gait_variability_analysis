@@ -138,7 +138,7 @@ figure5 = False # 3 coffecint of varaition - bewteen day
 figure6 = False
 figure7 = False #gini
 common_path = nimbal_drive + paper_path + 'Created_data\\bout_bins\\'
-'''
+
 
 ##############################################################
 # Results part 1 - 24 vs 1010 vs wake  - Figure 1A
@@ -169,8 +169,10 @@ plt.ylim(bottom=0, top=12000)
 plt.xlabel('Analysis Window', fontsize=14)
 plt.ylabel('Average unilateral steps / day', fontsize=14)
 plt.tight_layout()
-plt.show()
+plt.savefig(nimbal_drive+paper_path+"Figures_tables\\Figures\\Figure_ALL_24hr_1010_wake.png")
+plt.close()
 
+summary_tables=[]
 for index, group in enumerate(groups):
     print (group)
     subjects = group_lists[index]
@@ -190,9 +192,13 @@ for index, group in enumerate(groups):
     # Create DataFrame
     df = pd.DataFrame(data)
     # Calculate statistics
-    summary_table = df.agg(['count','mean', 'std', 'max', 'min'])
-    # Display result
-    print(summary_table)
+    summary = df.agg(['count','mean', 'std', 'max', 'min'])
+    summary = summary.stack().rename(group)  # rows = (stat, variable)
+    summary_tables.append(summary)
+
+final_summary = pd.concat(summary_tables, axis=1)
+final_summary.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_24hr_1010_wake.csv")
+
 
 ################################################################################
 #Fig 1 B and tables
@@ -218,187 +224,118 @@ plt.ylim(bottom=0, top=12000)
 plt.xlabel('Analysis Window', fontsize=14)
 plt.ylabel('Average unilateral steps / day', fontsize=14)
 plt.tight_layout()
-plt.show()
+plt.savefig(nimbal_drive+paper_path+"Figures_tables\\Figures\\Figure_ALL_bouted_unbouted.png")
+plt.close()
+
 
 ######################################################################################
-#Bout histogram - all subejcts only - MEEDIANS AND STD
-group = 'ALL'
-group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__group_stats_'+central+'.csv')
-group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__pct_group_stats_'+central+'.csv')
-
-#plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+#Bout histogram - Total and percent steps - MEANS AND STD
 plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-central_24hr_nototal = group_24hr.iloc[1:].reset_index(drop=True)
-central_24hr_pct_nototal = group_pct_24hr.iloc[1:].reset_index(drop=True)
+summary1 = []
+summary2 = []
 
-fig, axs = plt.subplots(2, figsize=(6, 9))
-# median std strides
-ticks = list(range(len(plot_labels)))
-axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
-#axs[0].set_title(central1 + ' unilateral steps / day by bout length', fontsize=14)
-axs[0].set_xlabel('Bout length (sec)', fontsize=14)
-axs[0].set_ylabel('Unilateral steps / day', fontsize=14)
-axs[0].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-axs[0].set_ylim(bottom=0, top=2250)
+for index, group in enumerate(groups):
 
-# median std strides
-ticks = list(range(len(plot_labels)))
-axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
-#axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
-axs[1].set_xlabel('Bout length (sec)', fontsize=14)
-axs[1].set_ylabel('% of total unilateral steps / day', fontsize=14)
-axs[1].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-axs[1].set_ylim(bottom=0, top=35)
+    group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__group_stats_'+central+'.csv')
+    group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__pct_group_stats_'+central+'.csv')
 
-#axs.tick_params(axis='both', labelsize=14)
-plt.tight_layout()
-plt.show()
+    #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+    plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
+    central_24hr_nototal = group_24hr.iloc[1:].reset_index(drop=True)
+    central_24hr_pct_nototal = group_pct_24hr.iloc[1:].reset_index(drop=True)
 
+    fig, axs = plt.subplots(2, figsize=(6, 9))
+    # median std strides
+    ticks = list(range(len(plot_labels)))
+    axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
+    #axs[0].set_title(central1 + ' unilateral steps / day by bout length', fontsize=14)
+    axs[0].set_xlabel('Bout length (sec)', fontsize=14)
+    axs[0].set_ylabel('Unilateral steps / day', fontsize=14)
+    axs[0].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
+    axs[0].set_ylim(bottom=0, top=2250)
+
+    # median std strides
+    ticks = list(range(len(plot_labels)))
+    axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
+    #axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
+    axs[1].set_xlabel('Bout length (sec)', fontsize=14)
+    axs[1].set_ylabel('% of total unilateral steps / day', fontsize=14)
+    axs[1].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
+    axs[1].set_ylim(bottom=0, top=35)
+
+    #axs.tick_params(axis='both', labelsize=14)
+    plt.tight_layout()
+    plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_"+group+"_bout_bins_histogram.png")
+    plt.close()
+
+    # Calculate statistics
+    df_group = central_24hr_nototal.copy()
+    df_group['Group'] = group
+    summary1.append(df_group)
+    df_group = central_24hr_pct_nototal.copy()
+    df_group['Group'] = group
+    summary2.append(df_group)
+summary1 = pd.concat(summary1, ignore_index=True)
+summary1.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_bin_bouts_total_steps.csv")
+summary2 = pd.concat(summary2, ignore_index=True)
+summary2.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_bin_bouts_percent_steps.csv")
 
 #######################################################################
-#Bout histogram - all subjects only - CV AND STD
-group = 'ALL'
-group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__group_stats_'+central+'.csv')
-group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__pct_group_stats_'+central+'.csv')
+#Bout histogram - Intraday variation CV AND STD
+summary1 = []
+summary2 = []
 
-#plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-central_24hr_nototal = group_24hr.iloc[1:].reset_index(drop=True)
-central_24hr_pct_nototal = group_pct_24hr.iloc[1:].reset_index(drop=True)
+for index, group in enumerate(groups):
+    #group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__group_stats_'+central+'.csv')
+    #group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__pct_group_stats_'+central+'.csv')
+    group_24hr = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + group + '_bout_duration__group_stats_cv_' + central + '.csv')
+    group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + group + '_bout_duration__pct_group_stats_cv_' + central + '.csv')
 
-fig, axs = plt.subplots(2, figsize=(6, 9))
-# median std strides
-ticks = list(range(len(plot_labels)))
-axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
-#axs[0].set_title(central1 + ' unilateral steps / day by bout length', fontsize=14)
-axs[0].set_xlabel('Bout length (sec)', fontsize=14)
-axs[0].set_ylabel('Mean unilateral steps / day', fontsize=14)
-axs[0].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-axs[0].set_ylim(bottom=0, top=2250)
+    #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+    plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
+    central_24hr_nototal = group_24hr.iloc[1:].reset_index(drop=True)
+    central_24hr_pct_nototal = group_pct_24hr.iloc[1:].reset_index(drop=True)
 
-# median std strides
-ticks = list(range(len(plot_labels)))
-axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
-#axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
-axs[1].set_xlabel('Bout length (sec)', fontsize=14)
-axs[1].set_ylabel('% of total unilateral steps / day', fontsize=14)
-axs[1].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-axs[1].set_ylim(bottom=0, top=35)
+    fig, axs = plt.subplots(2, figsize=(6, 9))
+    # median std strides
+    ticks = list(range(len(plot_labels)))
+    axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
+    #axs[0].set_title(central1 + ' unilateral steps / day by bout length', fontsize=14)
+    axs[0].set_xlabel('Bout length (sec)', fontsize=14)
+    axs[0].set_ylabel('Intraday variability (CV) total steps / day', fontsize=14)
+    axs[0].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
+    axs[0].set_ylim(bottom=0, top=2.5)
 
-#axs.tick_params(axis='both', labelsize=14)
-plt.tight_layout()
-plt.show()
+    # median std strides
+    ticks = list(range(len(plot_labels)))
+    axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
+    #axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
+    axs[1].set_xlabel('Bout length (sec)', fontsize=14)
+    axs[1].set_ylabel('Intraday variability (CV) % steps / day', fontsize=14)
+    axs[1].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
+    axs[1].set_ylim(bottom=0, top=2.5)
 
-###################################################################
-#Bout histogram - all subjects only - CV AND STD
-group = 'ALL'
-group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__group_stats_cv_'+central+'.csv')
-group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__pct_group_stats_cv_'+central+'.csv')
+    #axs.tick_params(axis='both', labelsize=14)
+    plt.tight_layout()
+    plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_" + group + "_CV_bout_bins_histogram.png")
+    plt.close()
 
-#plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-central_24hr_nototal = group_24hr.iloc[1:].reset_index(drop=True)
-central_24hr_pct_nototal = group_pct_24hr.iloc[1:].reset_index(drop=True)
-
-fig, axs = plt.subplots(2, figsize=(6, 9))
-# median std strides
-ticks = list(range(len(plot_labels)))
-axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
-#axs[0].set_title(central1 + ' unilateral steps / day by bout length', fontsize=14)
-axs[0].set_xlabel('Bout length (sec)', fontsize=14)
-axs[0].set_ylabel('Inter-day CV unilateral steps', fontsize=14)
-axs[0].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-axs[0].set_ylim(bottom=0, top=2.5)
-
-# median std strides
-ticks = list(range(len(plot_labels)))
-axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
-#axs[1].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
-axs[1].set_xlabel('Bout length (sec)', fontsize=14)
-axs[1].set_ylabel('Inter-day CV of % unilateral steps', fontsize=14)
-axs[1].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-axs[1].set_ylim(bottom=0, top=3.5)
-
-#axs.tick_params(axis='both', labelsize=14)
-plt.tight_layout()
-plt.show()
+    # Calculate statistics
+    df_group = central_24hr_nototal.copy()
+    df_group['Group'] = group
+    summary1.append(df_group)
+    df_group = central_24hr_pct_nototal.copy()
+    df_group['Group'] = group
+    summary2.append(df_group)
+summary1 = pd.concat(summary1, ignore_index=True)
+summary1.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_bin_bouts_CV_total_steps.csv")
+summary2 = pd.concat(summary2, ignore_index=True)
+summary2.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_bin_bouts_CV_percent_steps.csv")
 
 
 
-#############################################################
-# bout means and STD for each group and bout
-
-grps = ['Control', 'PD', 'ADMCI', 'CVD']
-#plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-colors = ['lightgrey', 'lightblue','lightgreen','salmon']
-order =[[0,0],[0,1],[1,0],[1,1]]
-
-
-fig, axs = plt.subplots(2,2, figsize=(12, 9))
-# median std strides
-ticks = list(range(len(plot_labels)))
-for i, grp in enumerate(grps):
-    xy = order[i]
-
-    group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + grp + '_bout_duration__group_stats_'+central+'.csv')
-    central_24hr = group_24hr.iloc[1:].reset_index(drop=True)
-
-    #group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + grp + '_bout_duration__pct_group_stats_'+central+'.csv')
-    #central_24hr = group_pct_24hr.iloc[1:].reset_index(drop=True)
-
-    # percent
-    axs[xy[0],xy[1]].bar(central_24hr.index, central_24hr[central1].values, yerr=central_24hr['Std'], capsize=5, color=colors[i], edgecolor='black')
-    #axs[i].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    #axs[i].set_title('Total ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    axs[xy[0],xy[1]].set_xlabel('Bout length (sec)', fontsize=14)
-    axs[xy[0], xy[1]].set_ylabel('Mean unilateral steps / day', fontsize=14)
-    #axs[xy[0],xy[1]].set_ylabel('% of total unilateral steps / day', fontsize=14)
-    axs[xy[0],xy[1]].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-    axs[xy[0],xy[1]].set_ylim(bottom=0, top=2000)
-    #axs[xy[0],xy[1]].set_ylim(bottom=0, top=45)
-    axs[xy[0],xy[1]].set_title('Group: '+grp)
-
-#axs.tick_params(axis='both', labelsize=14)
-plt.tight_layout()
-plt.show()
-
-fig, axs = plt.subplots(2,2, figsize=(12, 9))
-# CVS std strides
-ticks = list(range(len(plot_labels)))
-for i, grp in enumerate(grps):
-    xy = order[i]
-
-    group_24hr = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + grp + '_bout_duration__group_stats_cv_' + central + '.csv')
-    #group_pct_24hr_cvs = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + grp + '_bout_duration__pct_group_stats_cv_' + central + '.csv')
-
-    central_24hr = group_24hr.iloc[1:].reset_index(drop=True)
-    #central_24hr = group_pct_24hr.iloc[1:].reset_index(drop=True)
-
-    # percent
-    axs[xy[0],xy[1]].bar(central_24hr.index, central_24hr[central1].values, yerr=central_24hr['Std'], capsize=5, color=colors[i], edgecolor='black')
-    #axs[i].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    #axs[i].set_title('Total ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    axs[xy[0],xy[1]].set_xlabel('Bout length (sec)', fontsize=14)
-    axs[xy[0], xy[1]].set_ylabel('Coefficient of variation (interday)', fontsize=14)
-    #axs[xy[0],xy[1]].set_ylabel('% of total unilateral steps / day', fontsize=14)
-    axs[xy[0],xy[1]].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-    axs[xy[0],xy[1]].set_ylim(bottom=0, top=3.5)
-    #axs[xy[0],xy[1]].set_ylim(bottom=0, top=45)
-    axs[xy[0],xy[1]].set_title('Group: '+grp)
-
-#axs.tick_params(axis='both', labelsize=14)
-plt.tight_layout()
-plt.show()
-
-'''
-
-
-
-
-'''
 ########################################################################################
-#Bout histogram
+#SML - Swarm plots and scatter
 
 grps = ['Control', 'PD', 'ADMCI', 'CVD', 'ALL']
 #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
@@ -409,11 +346,11 @@ colors = ['lightgrey', 'lightblue','lightgreen','salmon']
 # median std strides
 #ticks = list(range(len(plot_labels)))
 plt.figure(figsize=(8, 6))
-for i, grp in enumerate(grps):
-    #xy = order[i]
 
-    subj_24hr = pd.read_csv(common_path + 'summary_subject_level\\'+study + '_24hr_' + grp + '_bout_duration_subj_stats.csv', header=[0, 1], skiprows=[2])
-    subj_pct_24hr = pd.read_csv(common_path + 'summary_subject_level\\'+study + '_24hr_' + grp + '_bout_duration_pct_subj_stats.csv', header=[0, 1], skiprows=[2])
+for index, group in enumerate(groups):
+
+    subj_24hr = pd.read_csv(common_path + 'summary_subject_level\\'+study + '_24hr_' + group + '_bout_duration_subj_stats.csv', header=[0, 1], skiprows=[2])
+    subj_pct_24hr = pd.read_csv(common_path + 'summary_subject_level\\'+study + '_24hr_' + group + '_bout_duration_pct_subj_stats.csv', header=[0, 1], skiprows=[2])
     plot_24hr_all = subj_24hr[('window_total_strides', central)]
 
     short_24hr_bouted = subj_24hr[[('strides_<_5', central), ('strides_<_10', central),('strides_<_30', central)]]
@@ -421,7 +358,6 @@ for i, grp in enumerate(grps):
     long_24hr_bouted = subj_24hr[[('strides_<_600', central), ('strides_>_600', central)]]
 
     plot_24hr_unbouted = subj_24hr[('window_not_bouted_strides', central)]
-    #plot_24hr_unbouted = plot_24hr_unbouted[1:]
     plot_24hr_bouted = plot_24hr_all - plot_24hr_unbouted
 
     short = short_24hr_bouted.sum(axis=1)
@@ -446,16 +382,14 @@ for i, grp in enumerate(grps):
                   palette=["red", "magenta", "blue", "green"], size=4)
 
     plt.ylim(bottom=0)
-    plt.title('Group: '+grp)
+    #plt.title('Group: '+grp)
     plt.xlabel('Bout classification', fontsize=14)
-    # plt.xlabel('Step classification', fontsize=14)
 
     plt.ylabel('% of total average unilateral steps / day', fontsize=14)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_" + group + "_SML_swarm_plot.png")
+    plt.close()
 
-
-    # plot_labels = ['Total','Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
     fig, axs = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey=True)
 
     sns.regplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted',
@@ -477,9 +411,16 @@ for i, grp in enumerate(grps):
     axs[1, 1].set_xlabel('Total steps (' + central + ') / day')
     axs[0, 0].set_ylim(bottom=0)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_" + group + "_SML_scatter_plots.png")
+    plt.close()
 
 
+
+
+
+
+
+'''
 
 if tables1:
     #mean values for table
@@ -754,4 +695,70 @@ if figure7: #alpha-gini analysis
         # plt.legend(fontsize=14)
         plt.tight_layout()
         plt.show()
+
+#############################################################
+# bout means and STD for each group and bout
+
+grps = ['Control', 'PD', 'ADMCI', 'CVD']
+#plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
+plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
+colors = ['lightgrey', 'lightblue','lightgreen','salmon']
+order =[[0,0],[0,1],[1,0],[1,1]]
+
+
+fig, axs = plt.subplots(2,2, figsize=(12, 9))
+# median std strides
+ticks = list(range(len(plot_labels)))
+for i, grp in enumerate(grps):
+    xy = order[i]
+
+    group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + grp + '_bout_duration__group_stats_'+central+'.csv')
+    central_24hr = group_24hr.iloc[1:].reset_index(drop=True)
+
+    #group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + grp + '_bout_duration__pct_group_stats_'+central+'.csv')
+    #central_24hr = group_pct_24hr.iloc[1:].reset_index(drop=True)
+
+    # percent
+    axs[xy[0],xy[1]].bar(central_24hr.index, central_24hr[central1].values, yerr=central_24hr['Std'], capsize=5, color=colors[i], edgecolor='black')
+    #axs[i].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
+    #axs[i].set_title('Total ' + central + ' unilateral steps/day by bout length', fontsize=14)
+    axs[xy[0],xy[1]].set_xlabel('Bout length (sec)', fontsize=14)
+    axs[xy[0], xy[1]].set_ylabel('Mean unilateral steps / day', fontsize=14)
+    #axs[xy[0],xy[1]].set_ylabel('% of total unilateral steps / day', fontsize=14)
+    axs[xy[0],xy[1]].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
+    axs[xy[0],xy[1]].set_ylim(bottom=0, top=2000)
+    #axs[xy[0],xy[1]].set_ylim(bottom=0, top=45)
+    axs[xy[0],xy[1]].set_title('Group: '+grp)
+
+#axs.tick_params(axis='both', labelsize=14)
+plt.tight_layout()
+plt.show()
+
+fig, axs = plt.subplots(2,2, figsize=(12, 9))
+# CVS std strides
+ticks = list(range(len(plot_labels)))
+for i, grp in enumerate(grps):
+    xy = order[i]
+
+    group_24hr = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + grp + '_bout_duration__group_stats_cv_' + central + '.csv')
+    #group_pct_24hr_cvs = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + grp + '_bout_duration__pct_group_stats_cv_' + central + '.csv')
+
+    central_24hr = group_24hr.iloc[1:].reset_index(drop=True)
+    #central_24hr = group_pct_24hr.iloc[1:].reset_index(drop=True)
+
+    # percent
+    axs[xy[0],xy[1]].bar(central_24hr.index, central_24hr[central1].values, yerr=central_24hr['Std'], capsize=5, color=colors[i], edgecolor='black')
+    #axs[i].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
+    #axs[i].set_title('Total ' + central + ' unilateral steps/day by bout length', fontsize=14)
+    axs[xy[0],xy[1]].set_xlabel('Bout length (sec)', fontsize=14)
+    axs[xy[0], xy[1]].set_ylabel('Coefficient of variation (interday)', fontsize=14)
+    #axs[xy[0],xy[1]].set_ylabel('% of total unilateral steps / day', fontsize=14)
+    axs[xy[0],xy[1]].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
+    axs[xy[0],xy[1]].set_ylim(bottom=0, top=3.5)
+    #axs[xy[0],xy[1]].set_ylim(bottom=0, top=45)
+    axs[xy[0],xy[1]].set_title('Group: '+grp)
+
+#axs.tick_params(axis='both', labelsize=14)
+plt.tight_layout()
+plt.show()
 '''
