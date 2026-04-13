@@ -226,6 +226,7 @@ if plot_cluster:
 
 #features indivdiuasl in the clusters - table 2
 #add the cluster column to demo data
+
 subject_clusters = subject_clusters.rename(columns={'GROUP': 'CLUSTER'})
 demo_data = demo_data.merge(
     subject_clusters[['SUBJECT', 'CLUSTER']],  # Only bring in needed column

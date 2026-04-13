@@ -1025,6 +1025,53 @@ def get_demo_characteristics(study, sub_study):
 
     return demodata
 
+def get_demo_by_group (nclusters, demodata, subject_clusters):
+    #for ONDRI data
+    subject_clusters = subject_clusters.rename(columns={'GROUP': 'CLUSTER'})
+
+    #add column to subejct clusters from demodata
+    # 1 - only keep subject ids that match subj_cluster ids
+    merged = subject_clusters.merge(demodata[['SUBJECT', 'COHORT', 'AGE', 'SEX', 'EMPLOY_STATUS', 'MRTL_STATUS']], on='SUBJECT', how='left')
+
+    ct = pd.crosstab(merged['CLUSTER'], merged['COHORT'])
+    pct = pd.crosstab(merged['CLUSTER'], merged['COHORT'], normalize='columns')
+    result = ct.astype(str) + " (" + (pct * 100).round(1).astype(str) + "%)"
+    print (result)
+
+    merged['MRTL_STATUS'] = merged['MRTL_STATUS'].apply(
+        lambda x: 1 if x == 'Married' or x == 'Domestic Partnership' else 2)
+    merged['SEX'] = merged['SEX'].apply(lambda x: 1 if x == 'FEMALE' else 2)
+    mergedemo_data['EMPLOY_STATUS'] = demo_data['EMPLOY_STATUS'].apply(lambda x: 1 if x == 'Working now' else 2)
+    mapping = {'Community Dwelling': 1,'AD/MCI': 2, 'PD': 3, 'CVD': 4, 'ALS': 5, 'FTD': 6}
+    demo_data['COHORT'] = demo_data['COHORT'].map(mapping)
+
+    group_counts = demo_data.groupby('CLUSTER')['COHORT'].value_counts().unstack()
+    print(group_counts)
+    sex_counts = demo_data.groupby('CLUSTER')['SEX'].value_counts().unstack()
+    print(sex_counts)
+    work_counts = demo_data.groupby('CLUSTER')['EMPLOY_STATUS'].value_counts().unstack()
+    print(work_counts)
+    cohort_counts = demo_data.groupby('CLUSTER')['COHORT'].value_counts().unstack()
+    print(cohort_counts)
+
+    # Table 1
+    cont_vars = ['AGE']
+    categ_vars = ['SEX', 'COHORT', 'EMPLOY_STATUS']
+
+    categ_table = pd.DataFrame()
+    cont_table = pd.DataFrame()
+    for i in range(nclusters):
+            cluster_id = subject_clusters[subject_clusters['CLUSTER'] == i]
+            print('Cluster ' + str(i) + ' - n: ' + str(len(cluster_id)))
+
+            cluster_demo = demo_data[demo_data['SUBJECT'].isin(cluster_id['Subject'])]
+            categ, cont = create_table(cluster_demo, cont_vars, categ_vars)
+            categ_table = pd.concat([categ_table, categ], ignore_index=True)
+            cont_table = pd.concat([cont_table, cont], ignore_index=True)
+            print('pause')
+
+    return categ_table, cont_table
+
 def select_subset_ON09(nimbal_drive, path, study, subjects, window, group_name, min_days, max_days):
     steps = pd.read_csv(nimbal_drive + path + 'created_data\\bout_bins\\daily_values\\' + study + '_' + window + '_bout_width_daily_bins_with_unbouted.csv')
     # select only specific subjects

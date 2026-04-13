@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from Functions import (wake_sleep, steps_by_day, step_density_sec, clustering,
                        read_demo_ondri_data, read_demo_data, stride_time_interval,
                        create_bin_files, create_density_files, select_subjects,
-                       all_bouts_histogram, create_table, alpha_gini_bouts)
+                       all_bouts_histogram, create_table, alpha_gini_bouts, get_demo_by_group)
 from Gait_bout_basic_anal_graphs import (calc_basic_stride_bouts_stats, bouts_SML)
 
 import numpy as np
@@ -43,7 +43,7 @@ print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
 
 #select specific subjects from the study group
 #select ONDRI
-group_name = ['Community Dwelling', 'PD', 'ADMCI', 'CVD']
+group_name = ['Community Dwelling', 'PD', 'AD/MCI', 'CVD']
 
 study = 'OND09'
 path = nimbal_drive + demo_path
@@ -390,8 +390,6 @@ for index, group in enumerate(groups):
     plt.close()
 
 
-
-
     fig, axs = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey=True)
 
     sns.regplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted',
@@ -434,6 +432,7 @@ for index, group in enumerate(groups):
     if group == 'ALL':
         df = pd.DataFrame(data1)
         df['Subject'] = subj_24hr.iloc[:,0]
+
         # Select the variables of interest
         cols = ["Unbouted", "Short", "Medium", "Long"]
         df[cols] = df[cols].apply(pd.to_numeric, errors="coerce")
@@ -451,17 +450,18 @@ for index, group in enumerate(groups):
         cluster_data = subset_cluster
         ncluster = 3
         data_out, labels = clustering(cluster_data, ncluster=ncluster)
-        subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: 'Low'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: 'High'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: 'High/Low'})
-        data_out['cluster'] = data_out['cluster'].replace({0: 'Low'})
-        data_out['cluster'] = data_out['cluster'].replace({1: 'High'})
-        data_out['cluster'] = data_out['cluster'].replace({2: 'High/Low'})
+
+        subject_clusters = pd.DataFrame({'SUBJECT': df['Subject'],'GROUP': labels})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: '0'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: '1'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: '2'})
+        data_out['cluster'] = data_out['cluster'].replace({0: '0'})
+        data_out['cluster'] = data_out['cluster'].replace({1: '1'})
+        data_out['cluster'] = data_out['cluster'].replace({2: '2'})
 
         x = np.arange(len(cols))
         plt.figure(figsize=(10, 6))
-        sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['Low','High/Low','High'], palette='Set2', linewidth=5)
+        sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['0','1','2'], palette='Set2', linewidth=5)
         plt.xlabel('Bout durations', fontsize=18)
         plt.ylabel('Strides/day', fontsize=18)
         plt.xticks(ticks=x, labels=cols, fontsize=16)
@@ -470,6 +470,10 @@ for index, group in enumerate(groups):
         plt.legend(title='Cluster', title_fontsize=18, fontsize=18)
         plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n3.png")
         plt.close()
+
+        table1, table2 = get_demo_by_group(ncluster, demodata, subject_clusters)
+        table1.to_csv(nimbal_drive + paper_path + "Figures_tables\\Tables\\Table_Clusters_3_cont_demo.csv")
+        table2.to_csv(nimbal_drive + paper_path + "Figures_tables\\Tables\\Table_Clusters_3_cat_demo.csv")
 
         #sum across subject days
         print ('Run and plot cluster analysis....')
@@ -498,6 +502,34 @@ for index, group in enumerate(groups):
         plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n4.png")
         plt.close()
 
+        #sum across subject days
+        print ('Run and plot cluster analysis....')
+        cluster_data = subset_cluster
+        ncluster = 5
+        data_out, labels = clustering(cluster_data, ncluster=ncluster)
+        subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: '1'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: '2'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: '3'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({3: '4'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({4: '5'})
+        data_out['cluster'] = data_out['cluster'].replace({0: '1'})
+        data_out['cluster'] = data_out['cluster'].replace({1: '2'})
+        data_out['cluster'] = data_out['cluster'].replace({2: '3'})
+        data_out['cluster'] = data_out['cluster'].replace({3: '4'})
+        data_out['cluster'] = data_out['cluster'].replace({4: '5'})
+
+        x = np.arange(len(cols))
+        plt.figure(figsize=(10, 6))
+        sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['1','2','3','4','5'], palette='Set2', linewidth=5)
+        plt.xlabel('Bout durations', fontsize=18)
+        plt.ylabel('Strides/day', fontsize=18)
+        plt.xticks(ticks=x, labels=cols, fontsize=16)
+        plt.yticks(fontsize=18)
+        plt.title('Bout pattern clusters', fontsize=24)
+        plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
+        plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n5.png")
+        plt.close()
 
 
 
