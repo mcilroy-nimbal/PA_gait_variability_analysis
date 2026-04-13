@@ -358,7 +358,7 @@ for index, group in enumerate(groups):
     short = short_24hr_bouted.sum(axis=1)
     med = med_24hr_bouted.sum(axis=1)
     long = long_24hr_bouted.sum(axis=1)
-    unbouted = plot_24hr_unbouted.sum()
+    unbouted = plot_24hr_unbouted
 
     short_pct = 100*(short / plot_24hr_all)
     med_pct = 100 * (med / plot_24hr_all)
@@ -377,7 +377,7 @@ for index, group in enumerate(groups):
                 boxprops={'facecolor': 'None'},  # transparent box so swarm is visible
                 showfliers=False)  # hide outliers (swarm will show them)
     # Overlay swarm plot
-    sns.swarmplot(x='Bout class', y='% Total steps', data=melted_df, hue="Bout class",
+    sns.swarmplot(x='Bout class', y='% Total steps', data=melted_df_pct, hue="Bout class",
                   palette=["red", "magenta", "blue", "green"], size=4)
 
     plt.ylim(bottom=0)
@@ -386,8 +386,11 @@ for index, group in enumerate(groups):
 
     plt.ylabel('% of total average unilateral steps / day', fontsize=14)
     plt.tight_layout()
-    plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_" + group + "_SML_swarm_plot.png")
+    plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_" + group + "_SML_percent_swarm_plot.png")
     plt.close()
+
+
+
 
     fig, axs = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey=True)
 
@@ -438,7 +441,7 @@ for index, group in enumerate(groups):
         # Compute correlation matrix (default = Pearson)
         corr_matrix = df[cols].corr().round(4)
         # Write to CSV
-        corr_matrix.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_ALL_SML_coorelations.csv")
+        corr_matrix.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_ALL_SML_correlations.csv")
 
         #Cluster analysis
         subset_cluster = df[cols]
