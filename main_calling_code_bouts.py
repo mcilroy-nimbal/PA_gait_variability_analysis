@@ -3,7 +3,7 @@ import glob
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
-from Functions import (wake_sleep, steps_by_day, step_density_sec,
+from Functions import (wake_sleep, steps_by_day, step_density_sec, clustering,
                        read_demo_ondri_data, read_demo_data, stride_time_interval,
                        create_bin_files, create_density_files, select_subjects,
                        all_bouts_histogram, create_table, alpha_gini_bouts)
@@ -233,6 +233,7 @@ plt.close()
 plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
 summary1 = []
 summary2 = []
+print ('Running BIN bout analysis - means - all bouts')
 
 for index, group in enumerate(groups):
 
@@ -284,6 +285,7 @@ summary2.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_bi
 #Bout histogram - Intraday variation CV AND STD
 summary1 = []
 summary2 = []
+print ('Running bout bin analysis - CVs - all bouts')
 
 for index, group in enumerate(groups):
     #group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + group + '_bout_duration__group_stats_'+central+'.csv')
@@ -335,17 +337,10 @@ summary2.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_bi
 
 
 ########################################################################################
-#SML - Swarm plots and scatter
-
-grps = ['Control', 'PD', 'ADMCI', 'CVD', 'ALL']
-#plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-#plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-colors = ['lightgrey', 'lightblue','lightgreen','salmon']
-#order =[[0,0],[0,1],[1,0],[1,1]]
-#fig, axs = plt.subplots(2,2, figsize=(12, 9))
-# median std strides
-#ticks = list(range(len(plot_labels)))
-plt.figure(figsize=(8, 6))
+#SML
+print ('Running SML bout analysis - all bouts')
+summary1 = []
+summary2 = []
 
 for index, group in enumerate(groups):
 
@@ -370,11 +365,15 @@ for index, group in enumerate(groups):
     long_pct = 100 * (long / plot_24hr_all)
     unbouted_pct = 100 * (plot_24hr_unbouted / plot_24hr_all)
 
-    df = pd.DataFrame({'Unbouted': unbouted_pct, 'Short': short_pct, 'Medium': med_pct, "Long": long_pct})
-    melted_df = df.melt(var_name='Bout class', value_name='% Total steps')
+    df_pct = pd.DataFrame({'Unbouted': unbouted_pct, 'Short': short_pct, 'Medium': med_pct, "Long": long_pct})
+    melted_df_pct = df_pct.melt(var_name='Bout class', value_name='% Total steps')
 
+    df_tot = pd.DataFrame({'Unbouted': unbouted, 'Short': short, 'Medium': med, "Long": long})
+    melted_df_tot = df_tot.melt(var_name='Bout class', value_name='% Total steps')
+
+    plt.figure(figsize=(8, 6))
     # Create the swarm plot
-    sns.boxplot(data=melted_df, x="Bout class", y="% Total steps", showcaps=True, hue="Bout class",
+    sns.boxplot(data=melted_df_pct, x="Bout class", y="% Total steps", showcaps=True, hue="Bout class",
                 boxprops={'facecolor': 'None'},  # transparent box so swarm is visible
                 showfliers=False)  # hide outliers (swarm will show them)
     # Overlay swarm plot
@@ -414,219 +413,73 @@ for index, group in enumerate(groups):
     plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_" + group + "_SML_scatter_plots.png")
     plt.close()
 
+    data1 = {"Group:": group, "Unbouted": unbouted, "Short": short, "Medium": med, "Long": long}
+    summary = pd.DataFrame({
+        "mean": [np.nanmean(pd.to_numeric(v, errors="coerce")) for v in data1.values()],
+        "median": [np.nanmedian(pd.to_numeric(v, errors="coerce")) for v in data1.values()],
+        "std": [np.nanstd(pd.to_numeric(v, errors="coerce")) for v in data1.values()],
+        "n": [np.count_nonzero(~np.isnan(pd.to_numeric(v, errors="coerce"))) for v in data1.values()]}, index=data1.keys())
+    summary1.append(summary)
+
+    data2 = {"Group": group, "Unbouted": unbouted_pct, "Short": short_pct, "Medium": med_pct, "Long": long_pct}
+    summary = pd.DataFrame({"mean": [np.nanmean(pd.to_numeric(v, errors="coerce")) for v in data2.values()],
+        "median": [np.nanmedian(pd.to_numeric(v, errors="coerce")) for v in data2.values()],
+        "std": [np.nanstd(pd.to_numeric(v, errors="coerce")) for v in data2.values()],
+        "n": [np.count_nonzero(~np.isnan(pd.to_numeric(v, errors="coerce"))) for v in data2.values()]}, index=data2.keys())
+    summary2.append(summary)
+
+    if group == 'ALL':
+        df = pd.DataFrame(data1)
+        df['Subject'] = subj_24hr.iloc[:,0]
+        # Select the variables of interest
+        cols = ["Unbouted", "Short", "Medium", "Long"]
+        df[cols] = df[cols].apply(pd.to_numeric, errors="coerce")
+
+        # Compute correlation matrix (default = Pearson)
+        corr_matrix = df[cols].corr().round(4)
+        # Write to CSV
+        corr_matrix.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_ALL_SML_coorelations.csv")
+
+        #Cluster analysis
+        subset_cluster = df[cols]
+
+        #sum across subject days
+        print ('Run and plot cluster analysis....')
+        cluster_data = subset_cluster
+        ncluster = 3
+        data_out, labels = clustering(cluster_data, ncluster=ncluster)
+        subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: 'Low'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: 'High'})
+        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: 'High/Low'})
+        data_out['cluster'] = data_out['cluster'].replace({0: 'Low'})
+        data_out['cluster'] = data_out['cluster'].replace({1: 'High'})
+        data_out['cluster'] = data_out['cluster'].replace({2: 'High/Low'})
+
+        x = np.arange(len(cols))
+        plt.figure(figsize=(10, 6))
+        sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['Low','High/Low','High'], palette='Set2', linewidth=5)
+        plt.xlabel('Bout durations', fontsize=24)
+        plt.ylabel('Strides/day', fontsize=24)
+        plt.xticks(ticks=x, labels=cols, fontsize=18)
+        plt.yticks(fontsize=18)
+        plt.title('Bout pattern clusters', fontsize=32)
+        plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
+        plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n3.png")
+        plt.close()
 
 
 
+
+
+summary1 = pd.concat(summary1, ignore_index=True)
+summary1.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_SML_total_steps.csv")
+summary2 = pd.concat(summary2, ignore_index=True)
+summary2.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_SML_percent_steps.csv")
 
 
 
 '''
-
-if tables1:
-    #mean values for table
-    # Put them in a dictionary
-    data = {"All": plot_24hr_all, "Bouted only": plot_24hr_bouted, "Unbouted only": plot_24hr_unbouted}
-    #data = {"All": plot_1010_all, "Bouted only": plot_1010_bouted, "Unbouted only": plot_1010_unbouted}
-    #data = {"All": plot_wake_all, "Bouted only": plot_wake_bouted, "Unbouted only": plot_wake_unbouted}
-
-    summary = pd.DataFrame({
-    "mean": [np.nanmean(v) for v in data.values()],
-    "median": [np.nanmedian(v) for v in data.values()],
-    "std": [np.nanstd(v, ddof=1) for v in data.values()],
-    "n": [np.count_nonzero(~np.isnan(v)) for v in data.values()]}, index=data.keys())
-    print (summary)
-
-if tables2:
-    data = {"Unbouted": plot_24hr_unbouted, "Short": short, "Medium": med, "Long": long}
-    summary = pd.DataFrame({
-        "mean": [np.nanmean(v) for v in data.values()],
-        "median": [np.nanmedian(v) for v in data.values()],
-        "std": [np.nanstd(v, ddof=1) for v in data.values()],
-        "n": [np.count_nonzero(~np.isnan(v)) for v in data.values()]}, index=data.keys())
-    print(summary)
-    data = {"Unbouted": unbouted_pct, "Short": short_pct, "Medium": med_pct, "Long": long_pct}
-    summary = pd.DataFrame({"mean": [np.nanmean(v) for v in data.values()],
-        "median": [np.nanmedian(v) for v in data.values()],
-        "std": [np.nanstd(v, ddof=1) for v in data.values()],
-        "n": [np.count_nonzero(~np.isnan(v)) for v in data.values()]}, index=data.keys())
-    print(summary)
-
-if figure1:
-    # Sample DataFrame with two numeric columns
-    #df = pd.DataFrame({'All steps': plot_24hr_all, 'Bouted only': plot_24hr_bouted, 'Unbouted': plot_24hr_unbouted})
-    #df = pd.DataFrame({'24 HR': plot_24hr_bouted, 'Wake': plot_wake_bouted, '10AM-10PM': plot_1010_bouted})
-    df = pd.DataFrame({'24 HR': plot_24hr_all, 'Wake': plot_wake_all, '10AM-10PM': plot_1010_all})
-    # Melt the DataFrame to long format for seaborn
-    melted_df = df.melt(var_name='Window', value_name='Total steps')
-
-    # Create the swarm plot
-    plt.figure(figsize=(6, 5))
-    #sns.swarmplot(x='Window', y='Total steps', data=melted_df, size=6)
-    #sns.catplot(data= melted_df, x='Window', y='Total steps', kind='swarm',palette={'24 HR': 'skyblue', '10AM-10PM': 'salmon'})
-
-    # Create violin plot
-    #sns.violinplot(x='Window', y='Total steps', data=melted_df, inner=None, palette={'24 HR': 'skyblue','Wake': 'magenta', '10AM-10PM': 'salmon'})
-    sns.boxplot(data=melted_df, x="Window", y="Total steps", showcaps=True, hue="Window", boxprops={'facecolor': 'None'},  # transparent box so swarm is visible
-        showfliers=False) # hide outliers (swarm will show them)
-
-    # Overlay swarm plot
-    sns.swarmplot(x='Window', y='Total steps', data=melted_df, hue="Window", size=4)
-    plt.ylim(bottom=0, top=12000)
-    #plt.title('Steps / day comparing time window')
-    plt.xlabel('Analysis Window', fontsize=14)
-    #plt.xlabel('Step classification', fontsize=14)
-
-    plt.ylabel('Average unilateral steps / day', fontsize=14)
-    plt.tight_layout()
-    plt.show()
-
-    
-    if figure1b:
-        # Create the swarm plot
-        plt.figure(figsize=(8, 6))
-        # Create violin plot
-        sns.violinplot(y=night_time_totals, inner=None, color='magenta')
-        # Overlay swarm plot
-        sns.swarmplot(y=night_time_totals, color='black', size=4)
-
-        plt.ylim(bottom=0, top=1000)
-
-        plt.title('Steps / night')
-        plt.xlabel('Window')
-        plt.ylabel(central + ' unilateral steps / night')
-        plt.tight_layout()
-        plt.show()
-    
-
-    
-    if figure2:
-        fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharex=True)
-
-        # Plot 1
-        sns.kdeplot(x=plot_24hr_all, fill=True, label='24 HR', color='skyblue', alpha=0.5, ax=axes[0])
-        sns.kdeplot(x=plot_wake_all, fill=True, label='Wake', color='magenta', alpha=0.5, ax=axes[0])
-        sns.kdeplot(x=plot_1010_all, fill=True, label='10AM–10PM', color='salmon', alpha=0.5, ax=axes[0])
-        axes[0].set_title('Total unilateral steps')
-        axes[0].set_xlabel('Step Count')
-        axes[0].set_yticks([])
-        axes[0].legend()
-
-        # Plot 2
-        sns.kdeplot(x=plot_24hr_unbouted, fill=True, label='24 HR', color='skyblue', alpha=0.5, ax=axes[1])
-        sns.kdeplot(x=plot_wake_unbouted, fill=True, label='Wake', color='magenta', alpha=0.5, ax=axes[1])
-        sns.kdeplot(x=plot_1010_unbouted, fill=True, label='10AM–10PM', color='salmon', alpha=0.5, ax=axes[1])
-        axes[1].set_title('Unbouted unilateral steps')
-        axes[1].set_xlabel('Step Count')
-        axes[1].set_yticks([])
-        axes[1].legend()
-
-        # Plot 3
-        sns.kdeplot(x=plot_24hr_bouted, fill=True, label='24 HR', color='skyblue', alpha=0.5, ax=axes[2])
-        sns.kdeplot(x=plot_wake_bouted, fill=True, label='Wake', color='magenta', alpha=0.5, ax=axes[2])
-        sns.kdeplot(x=plot_1010_bouted, fill=True, label='10AM–10PM', color='salmon', alpha=0.5, ax=axes[2])
-        axes[2].set_title('Bouted unilateral steps')
-        axes[2].set_xlabel('Step Count')
-        axes[2].set_yticks([])
-        axes[2].legend()
-
-        # Final layout
-        fig.suptitle('Step Count Distributions Across Time Windows', fontsize=16)
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.88)
-        plt.show()
-    
-
-
-
-if figure4:
-    df = pd.DataFrame({'Unbouted': unbouted_pct, 'Short': short_pct, 'Medium': med_pct, "Long": long_pct})
-    melted_df = df.melt(var_name='Bout class', value_name='% Total steps')
-
-    # Create the swarm plot
-    plt.figure(figsize=(6, 5))
-    # sns.swarmplot(x='Window', y='Total steps', data=melted_df, size=6)
-    # sns.catplot(data= melted_df, x='Window', y='Total steps', kind='swarm',palette={'24 HR': 'skyblue', '10AM-10PM': 'salmon'})
-
-    # Create violin plot
-    # sns.violinplot(x='Window', y='Total steps', data=melted_df, inner=None, palette={'24 HR': 'skyblue','Wake': 'magenta', '10AM-10PM': 'salmon'})
-    sns.boxplot(data=melted_df, x="Bout class", y="% Total steps", showcaps=True, hue="Bout class",
-                boxprops={'facecolor': 'None'},  # transparent box so swarm is visible
-                showfliers=False)  # hide outliers (swarm will show them)
-
-    # Overlay swarm plot
-    sns.swarmplot(x='Bout class', y='% Total steps', data=melted_df, hue="Bout class",
-                  palette=["red", "magenta", "blue", "green"], size=4)
-
-    plt.ylim(bottom=0)
-    # plt.title('Steps / day comparing time window')
-    plt.xlabel('Bout classification', fontsize=14)
-    # plt.xlabel('Step classification', fontsize=14)
-
-    plt.ylabel('% of total average unilateral steps / day', fontsize=14)
-    plt.tight_layout()
-    plt.show()
-
-
-if figure4b:
-    #plot_labels = ['Total','Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-
-    fig, axs = plt.subplots(2,2, figsize=(8, 6), sharex=True, sharey=True)
-
-    #sns.scatterplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted', ax=axs[0,0])
-    #sns.scatterplot(x=plot_24hr_all, y=short, color='magenta', label='Short <30 sec', ax=axs[0,1])
-    #sns.scatterplot(x=plot_24hr_all, y=med, color='blue', label='Medium 30-180 sec', ax=axs[1,0])
-    #sns.scatterplot(x=plot_24hr_all, y=long, color='green', label='Long  > 180 sec',ax=axs[1,1])
-
-    sns.regplot(x=plot_24hr_all, y=plot_24hr_unbouted, color='red', label='Unbouted',
-                scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[0,0])
-    sns.regplot(x=plot_24hr_all, y=short, color='magenta', label='Short <30 sec',
-                scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[0, 1])
-    sns.regplot(x=plot_24hr_all, y=med, color='blue', label='Medium 30-180 sec',
-                scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[1, 0])
-    sns.regplot(x=plot_24hr_all, y=long, color='green', label='Long > 180 sec',
-                scatter_kws={"s": 20, "alpha": 0.7}, line_kws={"color": "grey"}, ci=None, ax=axs[1, 1])
-
-    plt.suptitle('Total steps versus bouted and unbouted steps')
-
-    axs[0,0].set_ylabel(central + ' daily steps')
-    axs[1,0].set_ylabel(central + ' daily steps')
-    axs[0,0].set_xlabel('')
-    axs[0,1].set_xlabel('')
-    axs[1,0].set_xlabel('Total steps ('+central+') / day')
-    axs[1,1].set_xlabel('Total steps ('+central+') / day')
-    axs[0,0].set_ylim(bottom=0)
-    plt.tight_layout()
-    plt.show()
-
-if figure5:
-
-    #plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-    plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-
-    central_24hr_nototal = group_24hr_cvs.iloc[1:].reset_index(drop=True)
-    central_24hr_pct_nototal = group_pct_24hr_cvs.iloc[1:].reset_index(drop=True)
-
-    fig, axs = plt.subplots(2, figsize=(6, 9))
-    # median std strides
-    ticks = list(range(len(plot_labels)))
-    axs[0].bar(central_24hr_nototal.index, central_24hr_nototal[central1].values, yerr=central_24hr_nototal['Std'], capsize=5, color='lightblue', edgecolor='black')
-    #axs[0].set_title(central1 + ' between day variation by bout length')
-    axs[0].set_xlabel('Bout length (sec)', fontsize=14)
-    axs[0].set_ylabel('Coefficient of variation', fontsize=14)
-    axs[0].set_xticks(ticks=ticks, labels=plot_labels, fontsize=12)
-    axs[0].set_ylim(bottom=0)
-
-    # median std strides
-    ticks = list(range(len(plot_labels)))
-    axs[1].bar(central_24hr_pct_nototal.index, central_24hr_pct_nototal[central1].values, yerr=central_24hr_pct_nototal['Std'], capsize=5, color='lightgreen', edgecolor='black')
-    #axs[1].set_title(central1 + ' between day variations in percentage by bout length')
-    axs[1].set_xlabel('Bout length (sec)', fontsize=14)
-    axs[1].set_ylabel('Coefficient ov variation', fontsize=14)
-    axs[1].set_xticks(ticks=ticks, labels=plot_labels, fontsize=12)
-    axs[1].set_ylim(bottom=0)
-
-    plt.tight_layout()
-    plt.show()
 
 if figure6:  #density plot
     #path = nimbal_drive + demo_path
@@ -696,69 +549,4 @@ if figure7: #alpha-gini analysis
         plt.tight_layout()
         plt.show()
 
-#############################################################
-# bout means and STD for each group and bout
-
-grps = ['Control', 'PD', 'ADMCI', 'CVD']
-#plot_labels = ['Total', 'Unbouted', '<5', '5-10', '10-25', '25-50', '50-100', '100-300', '>300']
-plot_labels = ['Unbouted', '<5', '5-10', '10-30', '30-60', '60-180', '180-600', '>600']
-colors = ['lightgrey', 'lightblue','lightgreen','salmon']
-order =[[0,0],[0,1],[1,0],[1,1]]
-
-
-fig, axs = plt.subplots(2,2, figsize=(12, 9))
-# median std strides
-ticks = list(range(len(plot_labels)))
-for i, grp in enumerate(grps):
-    xy = order[i]
-
-    group_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + grp + '_bout_duration__group_stats_'+central+'.csv')
-    central_24hr = group_24hr.iloc[1:].reset_index(drop=True)
-
-    #group_pct_24hr = pd.read_csv(common_path + 'summary_group_level\\'+study+ '_24hr_' + grp + '_bout_duration__pct_group_stats_'+central+'.csv')
-    #central_24hr = group_pct_24hr.iloc[1:].reset_index(drop=True)
-
-    # percent
-    axs[xy[0],xy[1]].bar(central_24hr.index, central_24hr[central1].values, yerr=central_24hr['Std'], capsize=5, color=colors[i], edgecolor='black')
-    #axs[i].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    #axs[i].set_title('Total ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    axs[xy[0],xy[1]].set_xlabel('Bout length (sec)', fontsize=14)
-    axs[xy[0], xy[1]].set_ylabel('Mean unilateral steps / day', fontsize=14)
-    #axs[xy[0],xy[1]].set_ylabel('% of total unilateral steps / day', fontsize=14)
-    axs[xy[0],xy[1]].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-    axs[xy[0],xy[1]].set_ylim(bottom=0, top=2000)
-    #axs[xy[0],xy[1]].set_ylim(bottom=0, top=45)
-    axs[xy[0],xy[1]].set_title('Group: '+grp)
-
-#axs.tick_params(axis='both', labelsize=14)
-plt.tight_layout()
-plt.show()
-
-fig, axs = plt.subplots(2,2, figsize=(12, 9))
-# CVS std strides
-ticks = list(range(len(plot_labels)))
-for i, grp in enumerate(grps):
-    xy = order[i]
-
-    group_24hr = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + grp + '_bout_duration__group_stats_cv_' + central + '.csv')
-    #group_pct_24hr_cvs = pd.read_csv(common_path + 'summary_group_level\\' + study + '_24hr_' + grp + '_bout_duration__pct_group_stats_cv_' + central + '.csv')
-
-    central_24hr = group_24hr.iloc[1:].reset_index(drop=True)
-    #central_24hr = group_pct_24hr.iloc[1:].reset_index(drop=True)
-
-    # percent
-    axs[xy[0],xy[1]].bar(central_24hr.index, central_24hr[central1].values, yerr=central_24hr['Std'], capsize=5, color=colors[i], edgecolor='black')
-    #axs[i].set_title('Percent ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    #axs[i].set_title('Total ' + central + ' unilateral steps/day by bout length', fontsize=14)
-    axs[xy[0],xy[1]].set_xlabel('Bout length (sec)', fontsize=14)
-    axs[xy[0], xy[1]].set_ylabel('Coefficient of variation (interday)', fontsize=14)
-    #axs[xy[0],xy[1]].set_ylabel('% of total unilateral steps / day', fontsize=14)
-    axs[xy[0],xy[1]].set_xticks(ticks=ticks, labels=plot_labels, fontsize=10)
-    axs[xy[0],xy[1]].set_ylim(bottom=0, top=3.5)
-    #axs[xy[0],xy[1]].set_ylim(bottom=0, top=45)
-    axs[xy[0],xy[1]].set_title('Group: '+grp)
-
-#axs.tick_params(axis='both', labelsize=14)
-plt.tight_layout()
-plt.show()
 '''
