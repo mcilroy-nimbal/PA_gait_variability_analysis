@@ -48,6 +48,50 @@ group_name = ['Community Dwelling', 'PD', 'AD/MCI', 'CVD']
 study = 'OND09'
 path = nimbal_drive + demo_path
 demodata = read_demo_ondri_data(path)
+subject_cohort = demodata[['SUBJECT','COHORT']]
+print(type(subject_cohort))
+
+#subject lists
+
+group_lists = [0,1,2,3]
+group_lists[0] = subject_cohort[subject_cohort['COHORT'] == 'Community Dwelling']['SUBJECT']
+print ('Number subjects CONTROL: '+str(len(group_lists[0])))
+group_lists[1] = subject_cohort[subject_cohort['COHORT'] == 'PD']['SUBJECT']
+print('Number subjects in PD: '+str(len(group_lists[1])))
+group_lists[2] = subject_cohort[subject_cohort['COHORT'] == 'AD/MCI']['SUBJECT']
+print('Number subjects in ADMCI: '+str(len(group_lists[2])))
+group_lists[3] = subject_cohort[subject_cohort['COHORT'] == 'CVD']['SUBJECT']
+print('Number subjects in CVD: '+str(len(group_lists[3])))
+
+
+
+combined = pd.concat([group_lists[0],group_lists[1],group_lists[2],group_lists[3]], ignore_index=True)
+group_lists.append(combined)
+
+#group_lists.append(group_lists[0]+group_lists[1]+group_lists[2]+group_lists[3])
+#_demodata[demodata['COHORT'].isin(group_name)]['SUBJECT']
+
+#STEP 1 - subject # list to include
+subjects = group_lists[4] # All
+print('\nTotal # subjects in selected list: \t' + str(len(subjects)) + '\n')
+steps = pd.read_csv(nimbal_drive + paper_path + 'Created_data\\bout_bins\\daily_values\\' + study + '_24hr_bout_width_daily_bins_with_unbouted.csv')
+
+#select only specific subjects
+steps = steps[steps['subj'].isin(subjects)]
+
+#loop through each subject to see if meets min days
+# Step 1: get total rows per subject
+counts = steps.groupby('subj')['subj'].transform('size')
+# Step 2: keep only valid subjects
+steps = steps[(counts >= min_days)]
+# Step 3: cap rows per subject at max_days
+steps = steps[steps.groupby('subj').cumcount() < max_days]
+#need to remove subject SBHY0202 they we in a wheelchair
+steps = steps[steps['subj'] != 'OND09_SBH0202']
+
+print('# subjects PRIOR to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
+
+
 
 '''
 #demogarphci details by group
@@ -70,24 +114,24 @@ for i in range(5):
     print (group_name[i], categ, cont)
 '''
 
-#subject lists
-group_lists = [0,1,2,3,4]
-group_lists[0] = demodata[demodata['COHORT'] == 'Community Dwelling']['SUBJECT']
-print ('Number subjects CONTROL: '+str(len(group_lists[0])))
-group_lists[1] = demodata[demodata['COHORT'] == 'PD']['SUBJECT']
-print('Number subjects in PD: '+str(len(group_lists[1])))
-group_lists[2] = demodata[demodata['COHORT'] == 'AD/MCI']['SUBJECT']
-print('Number subjects in ADMCI: '+str(len(group_lists[2])))
-group_lists[3] = demodata[demodata['COHORT'] == 'CVD']['SUBJECT']
-print('Number subjects in CVD: '+str(len(group_lists[3])))
-group_lists[4] = demodata[demodata['COHORT'].isin(group_name)]['SUBJECT']
-print('Number subjects in ALL: '+str(len(group_lists[4])))
+steps = pd.read_csv(nimbal_drive + path + 'Created_data\\bout_bins\\daily_values\\' + study + '_24hr_bout_width_daily_bins_with_unbouted.csv')
+
+#select only specific subjects
+steps = steps[steps['subj'].isin(subjects)]
+print('# subjects PRIOR to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
+#loop through each subject to see if meets min days
+# Step 1: get total rows per subject
+counts = steps.groupby('subj')['subj'].transform('size')
+# Step 2: keep only valid subjects
+steps = steps[(counts >= min_days)]
+# Step 3: cap rows per subject at max_days
+steps = steps[steps.groupby('subj').cumcount() < max_days]
+
+#need to remove subject SBHY0202 they we in a wheelchair
+steps = steps[steps['subj'] != 'OND09_SBH0202']
 
 
 
-#STEP 1 - subject # list to include
-subjects = group_lists[4]
-print('\nTotal # subjects in selected list: \t' + str(len(subjects)) + '\n')
 create_bins = False
 #Bins must be created before graphing - this creates the daily totals
 #does it for all subjects on the list provided regardless of number of days
@@ -95,6 +139,8 @@ create_bins = False
 if create_bins:
     for window in ['1010', '24hr', 'wake']:
         create_bin_files(window, study, root, nimbal_drive, paper_path, subjects, bin_list_steps, bin_width_time)
+
+
 
 #STEP 2 - SUMMARY DATA ACROSS WINDOWS AND GROUPS
 #must limit to time window
