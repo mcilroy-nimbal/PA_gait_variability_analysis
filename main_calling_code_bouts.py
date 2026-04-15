@@ -49,10 +49,37 @@ study = 'OND09'
 path = nimbal_drive + demo_path
 demodata = read_demo_ondri_data(path)
 subject_cohort = demodata[['SUBJECT','COHORT']]
-print(type(subject_cohort))
+counts = subject_cohort.groupby("COHORT").size().reset_index(name="n")
+print(counts)
+print('\nTotal # subjects in starting list: \t' + str(len(subject_cohort)) + '\n')
+
+#keep on thos in the groups of interest
+selected = subject_cohort[subject_cohort["COHORT"].isin(group_name)]
+print('\nTotal # subjects in all target groups list: \t' + str(len(selected)) + '\n')
+
+#STEP 1 - subject # list to include
+steps = pd.read_csv(nimbal_drive + paper_path + 'Created_data\\bout_bins\\daily_values\\' + study + '_24hr_bout_width_daily_bins_with_unbouted.csv')
+
+#select only specific subjects
+steps = steps[steps['subj'].isin(selected['SUBJECT'])]
+steps['Cohort'] = selected['COHORT']
+
+#loop through each subject to see if meets min days
+# Step 1: get total rows per subject
+counts = steps.groupby('subj')['subj'].transform('size')
+# Step 2: keep only valid subjects
+steps = steps[(counts >= min_days)]
+# Step 3: cap rows per subject at max_days
+steps = steps[steps.groupby('subj').cumcount() < max_days]
+
+#need to remove subject SBHY0202 they we in a wheelchair
+steps = steps[steps['subj'] != 'OND09_SBH0202']
+subject_cohort = subject_cohort[subject_cohort["SUBJECT"].isin(steps["subj"])]
+counts = subject_cohort.groupby("COHORT").size().reset_index(name="n")
+print(counts)
+print('\nTotal # subjects in starting list: \t' + str(len(subject_cohort)) + '\n')
 
 #subject lists
-
 group_lists = [0,1,2,3]
 group_lists[0] = subject_cohort[subject_cohort['COHORT'] == 'Community Dwelling']['SUBJECT']
 print ('Number subjects CONTROL: '+str(len(group_lists[0])))
@@ -62,41 +89,13 @@ group_lists[2] = subject_cohort[subject_cohort['COHORT'] == 'AD/MCI']['SUBJECT']
 print('Number subjects in ADMCI: '+str(len(group_lists[2])))
 group_lists[3] = subject_cohort[subject_cohort['COHORT'] == 'CVD']['SUBJECT']
 print('Number subjects in CVD: '+str(len(group_lists[3])))
-
-
-
 combined = pd.concat([group_lists[0],group_lists[1],group_lists[2],group_lists[3]], ignore_index=True)
 group_lists.append(combined)
-
-#group_lists.append(group_lists[0]+group_lists[1]+group_lists[2]+group_lists[3])
-#_demodata[demodata['COHORT'].isin(group_name)]['SUBJECT']
-
-#STEP 1 - subject # list to include
-subjects = group_lists[4] # All
-print('\nTotal # subjects in selected list: \t' + str(len(subjects)) + '\n')
-steps = pd.read_csv(nimbal_drive + paper_path + 'Created_data\\bout_bins\\daily_values\\' + study + '_24hr_bout_width_daily_bins_with_unbouted.csv')
-
-#select only specific subjects
-steps = steps[steps['subj'].isin(subjects)]
-
-#loop through each subject to see if meets min days
-# Step 1: get total rows per subject
-counts = steps.groupby('subj')['subj'].transform('size')
-# Step 2: keep only valid subjects
-steps = steps[(counts >= min_days)]
-# Step 3: cap rows per subject at max_days
-steps = steps[steps.groupby('subj').cumcount() < max_days]
-#need to remove subject SBHY0202 they we in a wheelchair
-steps = steps[steps['subj'] != 'OND09_SBH0202']
-
-print('# subjects PRIOR to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
-
-
 
 '''
 #demogarphci details by group
 #AGE,SEX,MRTL_STATUS,EMPLOY_STATUS, LIVING_CIRCUM
-data = demodata[demodata['COHORT'].isin(group_name)]
+data = demodata[demodata['SUBJECT'].isin(group_name)]
 categ, cont = create_table(data, ['AGE'], ['SEX','COHORT', 'MRTL_STATUS','EMPLOY_STATUS', 'LIVING_CIRCUM'])
 for i in range(5):
     if i == 0:
@@ -113,25 +112,6 @@ for i in range(5):
     categ, cont = create_table(data, ['AGE'], ['SEX','MRTL_STATUS','EMPLOY_STATUS', 'LIVING_CIRCUM'])
     print (group_name[i], categ, cont)
 '''
-
-steps = pd.read_csv(nimbal_drive + path + 'Created_data\\bout_bins\\daily_values\\' + study + '_24hr_bout_width_daily_bins_with_unbouted.csv')
-
-#select only specific subjects
-steps = steps[steps['subj'].isin(subjects)]
-print('# subjects PRIOR to min and max days check - Group: ' + group_name + '   n=' + str(steps['subj'].nunique()))
-#loop through each subject to see if meets min days
-# Step 1: get total rows per subject
-counts = steps.groupby('subj')['subj'].transform('size')
-# Step 2: keep only valid subjects
-steps = steps[(counts >= min_days)]
-# Step 3: cap rows per subject at max_days
-steps = steps[steps.groupby('subj').cumcount() < max_days]
-
-#need to remove subject SBHY0202 they we in a wheelchair
-steps = steps[steps['subj'] != 'OND09_SBH0202']
-
-
-
 create_bins = False
 #Bins must be created before graphing - this creates the daily totals
 #does it for all subjects on the list provided regardless of number of days
@@ -139,7 +119,6 @@ create_bins = False
 if create_bins:
     for window in ['1010', '24hr', 'wake']:
         create_bin_files(window, study, root, nimbal_drive, paper_path, subjects, bin_list_steps, bin_width_time)
-
 
 
 #STEP 2 - SUMMARY DATA ACROSS WINDOWS AND GROUPS
@@ -163,28 +142,27 @@ if calc_basic_stats:
             step_vs_dur = True #run duraiton file
             calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, paper_path, subjects, group, min_days, max_days)
 
-           # SML_median, SML_std, SML_pct_median, SML_pct_std = bouts_SML(nimbal_drive, study, window, paper_path, group)
-
+            # SML_median, SML_std, SML_pct_median, SML_pct_std = bouts_SML(nimbal_drive, study, window, paper_path, group)
 
 #STEP 3 - plots and tables
-subject_tables = False
+#subject_tables = False
+#create_density = False
+#create_stride_time = False
+#calc_basic_stats = False
+#tables1 = False
+#tables2 = False
+#figure1 = True #swarm totals
+#figure1b = False
+#figure2 = False #KDE distibiton - bouts/unbouted
+#figure3 = False #bout disitbution - steps and %
+#figure4 = False #steps per class (s,m,l)
+#figure4b = False #% steps per class (s,m,l)
+#figure5 = False # 3 coffecint of varaition - bewteen day
+#figure6 = False
+#figure7 = False #gini
 
-create_density = False
-create_stride_time = False
-calc_basic_stats = False
-tables1 = False
-tables2 = False
-figure1 = True #swarm totals
-figure1b = False
-figure2 = False #KDE distibiton - bouts/unbouted
-figure3 = False #bout disitbution - steps and %
-figure4 = False #steps per class (s,m,l)
-figure4b = False #% steps per class (s,m,l)
-figure5 = False # 3 coffecint of varaition - bewteen day
-figure6 = False
-figure7 = False #gini
+
 common_path = nimbal_drive + paper_path + 'Created_data\\bout_bins\\'
-
 
 ##############################################################
 # Results part 1 - 24 vs 1010 vs wake  - Figure 1A
@@ -576,7 +554,6 @@ for index, group in enumerate(groups):
         plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
         plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n5.png")
         plt.close()
-
 
 
 summary1 = pd.concat(summary1, ignore_index=True)

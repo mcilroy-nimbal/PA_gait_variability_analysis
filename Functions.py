@@ -1041,17 +1041,17 @@ def get_demo_by_group (nclusters, demodata, subject_clusters):
     merged['MRTL_STATUS'] = merged['MRTL_STATUS'].apply(
         lambda x: 1 if x == 'Married' or x == 'Domestic Partnership' else 2)
     merged['SEX'] = merged['SEX'].apply(lambda x: 1 if x == 'FEMALE' else 2)
-    mergedemo_data['EMPLOY_STATUS'] = demo_data['EMPLOY_STATUS'].apply(lambda x: 1 if x == 'Working now' else 2)
+    merged['EMPLOY_STATUS'] = merged['EMPLOY_STATUS'].apply(lambda x: 1 if x == 'Working now' else 2)
     mapping = {'Community Dwelling': 1,'AD/MCI': 2, 'PD': 3, 'CVD': 4, 'ALS': 5, 'FTD': 6}
-    demo_data['COHORT'] = demo_data['COHORT'].map(mapping)
+    merged['COHORT'] = merged['COHORT'].map(mapping)
 
-    group_counts = demo_data.groupby('CLUSTER')['COHORT'].value_counts().unstack()
+    group_counts = merged.groupby('CLUSTER')['COHORT'].value_counts().unstack()
     print(group_counts)
-    sex_counts = demo_data.groupby('CLUSTER')['SEX'].value_counts().unstack()
+    sex_counts = merged.groupby('CLUSTER')['SEX'].value_counts().unstack()
     print(sex_counts)
-    work_counts = demo_data.groupby('CLUSTER')['EMPLOY_STATUS'].value_counts().unstack()
+    work_counts = merged.groupby('CLUSTER')['EMPLOY_STATUS'].value_counts().unstack()
     print(work_counts)
-    cohort_counts = demo_data.groupby('CLUSTER')['COHORT'].value_counts().unstack()
+    cohort_counts = merged.groupby('CLUSTER')['COHORT'].value_counts().unstack()
     print(cohort_counts)
 
     # Table 1
@@ -1064,7 +1064,7 @@ def get_demo_by_group (nclusters, demodata, subject_clusters):
             cluster_id = subject_clusters[subject_clusters['CLUSTER'] == i]
             print('Cluster ' + str(i) + ' - n: ' + str(len(cluster_id)))
 
-            cluster_demo = demo_data[demo_data['SUBJECT'].isin(cluster_id['Subject'])]
+            cluster_demo = merged[merged['SUBJECT'].isin(cluster_id['Subject'])]
             categ, cont = create_table(cluster_demo, cont_vars, categ_vars)
             categ_table = pd.concat([categ_table, categ], ignore_index=True)
             cont_table = pd.concat([cont_table, cont], ignore_index=True)
