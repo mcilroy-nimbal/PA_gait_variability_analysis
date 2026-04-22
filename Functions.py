@@ -1039,11 +1039,8 @@ def get_demo_by_group (nclusters, demodata, subject_clusters):
     print (result)
 
     merged['MRTL_STATUS'] = merged['MRTL_STATUS'].apply(
-        lambda x: 1 if x == 'Married' or x == 'Domestic Partnership' else 2)
-    merged['SEX'] = merged['SEX'].apply(lambda x: 1 if x == 'FEMALE' else 2)
-    merged['EMPLOY_STATUS'] = merged['EMPLOY_STATUS'].apply(lambda x: 1 if x == 'Working now' else 2)
-    mapping = {'Community Dwelling': 1,'AD/MCI': 2, 'PD': 3, 'CVD': 4, 'ALS': 5, 'FTD': 6}
-    merged['COHORT'] = merged['COHORT'].map(mapping)
+        lambda x: 'Married/DP' if x == 'Married' or x == 'Domestic Partnership' else 'Other')
+    merged['EMPLOY_STATUS'] = merged['EMPLOY_STATUS'].apply(lambda x: 'Working' if x == 'Working now' else 'Other')
 
     group_counts = merged.groupby('CLUSTER')['COHORT'].value_counts().unstack()
     print(group_counts)
@@ -1061,11 +1058,11 @@ def get_demo_by_group (nclusters, demodata, subject_clusters):
     categ_table = pd.DataFrame()
     cont_table = pd.DataFrame()
     for i in range(nclusters):
-            cluster_id = subject_clusters[subject_clusters['CLUSTER'] == i]
-            print('Cluster ' + str(i) + ' - n: ' + str(len(cluster_id)))
+            cluster = merged[merged['CLUSTER'] == i]
+            print('Cluster ' + str(i) + ' - n: ' + str(len(cluster)))
 
-            cluster_demo = merged[merged['SUBJECT'].isin(cluster_id['Subject'])]
-            categ, cont = create_table(cluster_demo, cont_vars, categ_vars)
+            categ, cont = create_table(cluster, cont_vars, categ_vars)
+
             categ_table = pd.concat([categ_table, categ], ignore_index=True)
             cont_table = pd.concat([cont_table, cont], ignore_index=True)
             print('pause')

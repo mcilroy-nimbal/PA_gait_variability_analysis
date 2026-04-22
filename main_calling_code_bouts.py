@@ -16,6 +16,8 @@ import openpyxl
 import warnings
 warnings.filterwarnings("ignore")
 
+##SET up and select subjects
+
 #set up file paths
 study = 'OND09'
 root = 'W:'
@@ -55,13 +57,14 @@ print('\nTotal # subjects in starting list: \t' + str(len(subject_cohort)) + '\n
 
 #keep on thos in the groups of interest
 selected = subject_cohort[subject_cohort["COHORT"].isin(group_name)]
+selected = selected.rename(columns={"SUBJECT": "subj"})
 print('\nTotal # subjects in all target groups list: \t' + str(len(selected)) + '\n')
 
 #STEP 1 - subject # list to include
 steps = pd.read_csv(nimbal_drive + paper_path + 'Created_data\\bout_bins\\daily_values\\' + study + '_24hr_bout_width_daily_bins_with_unbouted.csv')
 
 #select only specific subjects
-steps = steps[steps['subj'].isin(selected['SUBJECT'])]
+steps = steps[steps['subj'].isin(selected['subj'])]
 steps['Cohort'] = selected['COHORT']
 
 #loop through each subject to see if meets min days
@@ -74,10 +77,66 @@ steps = steps[steps.groupby('subj').cumcount() < max_days]
 
 #need to remove subject SBHY0202 they we in a wheelchair
 steps = steps[steps['subj'] != 'OND09_SBH0202']
-subject_cohort = subject_cohort[subject_cohort["SUBJECT"].isin(steps["subj"])]
+subject_cohort = selected[selected["subj"].isin(steps["subj"])]
 counts = subject_cohort.groupby("COHORT").size().reset_index(name="n")
 print(counts)
 print('\nTotal # subjects in starting list: \t' + str(len(subject_cohort)) + '\n')
+
+########################################
+#run simple check on steps file
+
+#confirm numebr of subjects and rows
+total_rows = len(steps)
+total_subjects = steps["subj"].nunique()
+number_days_subj = total_rows/total_subjects
+
+print('\nTotal # subjects in starting list: \t' + str(total_subjects) + '\n')
+print('\nTotal # number days / subject:  \t' + str(number_days_subj) + '\n')
+
+#total all rows for each subject to create a new 7 day total dataframe
+total_steps = steps.groupby("subj").sum()
+total_steps = total_steps.drop(columns=["visit","date","group","window","Cohort"])
+
+total_steps = total_steps.merge(selected, on="subj", how="left")
+
+unbouted = total_steps["window_not_bouted_strides"]
+short = total_steps["strides_<_5"] + total_steps["strides_<_10"] + total_steps["strides_<_30"]
+med = total_steps["strides_<_60"] + total_steps["strides_<_180"]
+long = total_steps["strides_<_600"] + total_steps["strides_>_600"]
+
+unbouted_pct = 100 * total_steps["window_not_bouted_strides"] / total_steps["window_total_strides"]
+short_pct = 100 * (total_steps["strides_<_5"] + total_steps["strides_<_10"]) / total_steps["window_total_strides"]
+med_pct = 100 * (total_steps["strides_<_30"]) / total_steps["window_total_strides"]
+long_pct = 100 * (total_steps["strides_<_60"]+total_steps["strides_<_180"] + total_steps["strides_<_600"] + total_steps["strides_>_600"]) / total_steps["window_total_strides"]
+
+df_pct = pd.DataFrame({'Unbouted': unbouted_pct, 'Short': short_pct, 'Medium': med_pct, "Long": long_pct})
+melted_df_pct = df_pct.melt(var_name='Bout class', value_name='% Total steps')
+
+df_tot = pd.DataFrame({'Unbouted': unbouted, 'Short': short, 'Medium': med, "Long": long})
+melted_df_tot = df_tot.melt(var_name='Bout class', value_name='% Total steps')
+
+plt.figure(figsize=(8, 6))
+# Create the swarm plot
+sns.boxplot(data=melted_df_pct, x="Bout class", y="% Total steps", showcaps=True, hue="Bout class",
+           boxprops={'facecolor': 'None'},  # transparent box so swarm is visible
+           showfliers=False)  # hide outliers (swarm will show them)
+# Overlay swarm plot
+sns.swarmplot(x='Bout class', y='% Total steps', data=melted_df_pct, hue="Bout class",
+           palette=["red", "magenta", "blue", "green"], size=4)
+
+plt.ylim(bottom=0)
+#plt.title('Group: '+grp)
+plt.xlabel('Bout classification', fontsize=14)
+
+plt.ylabel('% of total average unilateral steps / day', fontsize=14)
+plt.tight_layout()
+#plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_" + group + "_SML_percent_swarm_plot.png")
+plt.show()
+
+
+
+
+
 
 #subject lists
 group_lists = [0,1,2,3]
@@ -143,23 +202,6 @@ if calc_basic_stats:
             calc_basic_stride_bouts_stats(step_vs_dur, nimbal_drive, study, window, paper_path, subjects, group, min_days, max_days)
 
             # SML_median, SML_std, SML_pct_median, SML_pct_std = bouts_SML(nimbal_drive, study, window, paper_path, group)
-
-#STEP 3 - plots and tables
-#subject_tables = False
-#create_density = False
-#create_stride_time = False
-#calc_basic_stats = False
-#tables1 = False
-#tables2 = False
-#figure1 = True #swarm totals
-#figure1b = False
-#figure2 = False #KDE distibiton - bouts/unbouted
-#figure3 = False #bout disitbution - steps and %
-#figure4 = False #steps per class (s,m,l)
-#figure4b = False #% steps per class (s,m,l)
-#figure5 = False # 3 coffecint of varaition - bewteen day
-#figure6 = False
-#figure7 = False #gini
 
 
 common_path = nimbal_drive + paper_path + 'Created_data\\bout_bins\\'
@@ -498,63 +540,6 @@ for index, group in enumerate(groups):
         table1, table2 = get_demo_by_group(ncluster, demodata, subject_clusters)
         table1.to_csv(nimbal_drive + paper_path + "Figures_tables\\Tables\\Table_Clusters_3_cont_demo.csv")
         table2.to_csv(nimbal_drive + paper_path + "Figures_tables\\Tables\\Table_Clusters_3_cat_demo.csv")
-
-        #sum across subject days
-        print ('Run and plot cluster analysis....')
-        cluster_data = subset_cluster
-        ncluster = 4
-        data_out, labels = clustering(cluster_data, ncluster=ncluster)
-        subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: '1'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: '2'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: '3'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({3: '4'})
-        data_out['cluster'] = data_out['cluster'].replace({0: '1'})
-        data_out['cluster'] = data_out['cluster'].replace({1: '2'})
-        data_out['cluster'] = data_out['cluster'].replace({2: '3'})
-        data_out['cluster'] = data_out['cluster'].replace({3: '4'})
-
-        x = np.arange(len(cols))
-        plt.figure(figsize=(10, 6))
-        sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['1','2','3','4'], palette='Set2', linewidth=5)
-        plt.xlabel('Bout durations', fontsize=18)
-        plt.ylabel('Strides/day', fontsize=18)
-        plt.xticks(ticks=x, labels=cols, fontsize=16)
-        plt.yticks(fontsize=18)
-        plt.title('Bout pattern clusters', fontsize=24)
-        plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
-        plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n4.png")
-        plt.close()
-
-        #sum across subject days
-        print ('Run and plot cluster analysis....')
-        cluster_data = subset_cluster
-        ncluster = 5
-        data_out, labels = clustering(cluster_data, ncluster=ncluster)
-        subject_clusters = pd.DataFrame({'SUBJECT': cluster_data.index,'GROUP': labels})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({0: '1'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({1: '2'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({2: '3'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({3: '4'})
-        subject_clusters['GROUP'] = subject_clusters['GROUP'].replace({4: '5'})
-        data_out['cluster'] = data_out['cluster'].replace({0: '1'})
-        data_out['cluster'] = data_out['cluster'].replace({1: '2'})
-        data_out['cluster'] = data_out['cluster'].replace({2: '3'})
-        data_out['cluster'] = data_out['cluster'].replace({3: '4'})
-        data_out['cluster'] = data_out['cluster'].replace({4: '5'})
-
-        x = np.arange(len(cols))
-        plt.figure(figsize=(10, 6))
-        sns.lineplot(data=data_out, x='feature', y='value', hue='cluster', hue_order=['1','2','3','4','5'], palette='Set2', linewidth=5)
-        plt.xlabel('Bout durations', fontsize=18)
-        plt.ylabel('Strides/day', fontsize=18)
-        plt.xticks(ticks=x, labels=cols, fontsize=16)
-        plt.yticks(fontsize=18)
-        plt.title('Bout pattern clusters', fontsize=24)
-        plt.legend(title='Cluster', title_fontsize=20, fontsize=18)
-        plt.savefig(nimbal_drive + paper_path + "Figures_tables\\Figures\\Figure_ALL_clusters_n5.png")
-        plt.close()
-
 
 summary1 = pd.concat(summary1, ignore_index=True)
 summary1.to_csv(nimbal_drive+paper_path+"Figures_tables\\Tables\\Table_groups_SML_total_steps.csv")

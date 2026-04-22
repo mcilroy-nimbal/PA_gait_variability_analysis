@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <change beforePath="$PROJECT_DIR$/main_calling_code.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_calling_code.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stride_time_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/stride_time_analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/Functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_calling_code_bouts.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_calling_code_bouts.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,6 +61,7 @@
     "Python.gait_pattern_plots.executor": "Debug",
     "Python.main.executor": "Debug",
     "Python.main_calling_code.executor": "Debug",
+    "Python.main_calling_code_bouts.executor": "Debug",
     "Python.read_average_bouts.executor": "Debug",
     "Python.read_average_density.executor": "Debug",
     "Python.select_study_subjects.executor": "Debug",
@@ -68,7 +69,7 @@
     "Python.stride_time_analysis.executor": "Debug",
     "Python.variability_analysis_functions.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "C:/Users/wmcilroy/PycharmProjects/FFA analysis"
+    "last_opened_file_path": "C:/Users/wmcilroy/PycharmProjects/Posture_analysis_beth"
   }
 }]]></component>
   <component name="SharedIndexes">
