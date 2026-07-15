@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <change beforePath="$PROJECT_DIR$/Functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/Functions.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/check_steps_versus_posture.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_calling_code_bouts.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_calling_code_bouts.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -57,6 +58,7 @@
     "Python.Gait_pattern_paper_STEP3.executor": "Debug",
     "Python.STEP1_create_bout_bin_density_files.executor": "Debug",
     "Python.Step_PA_density_processing.executor": "Debug",
+    "Python.check_steps_versus_posture.executor": "Debug",
     "Python.create_bout_bin_and_density_files.executor": "Debug",
     "Python.gait_pattern_plots.executor": "Debug",
     "Python.main.executor": "Debug",
@@ -590,6 +592,16 @@
           <url>file://$PROJECT_DIR$/main_calling_code.py</url>
           <line>162</line>
           <option name="timeStamp" value="625" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main_calling_code_bouts.py</url>
+          <line>79</line>
+          <option name="timeStamp" value="626" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main_calling_code_bouts.py</url>
+          <line>71</line>
+          <option name="timeStamp" value="631" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

@@ -45,20 +45,28 @@ print('First 5 subject in list...' + str(master_subj_list[:5])+'\n')
 
 #select specific subjects from the study group
 #select ONDRI
-group_name = ['Community Dwelling', 'PD', 'AD/MCI', 'CVD']
+group_name = ['Community Dwelling', 'PD', 'AD/MCI', 'CVD', 'FTD', 'ALS']
 
 study = 'OND09'
 path = nimbal_drive + demo_path
 demodata = read_demo_ondri_data(path)
-subject_cohort = demodata[['SUBJECT','COHORT']]
+subject_cohort = demodata[['SUBJECT','COHORT','AGE']]
 counts = subject_cohort.groupby("COHORT").size().reset_index(name="n")
 print(counts)
 print('\nTotal # subjects in starting list: \t' + str(len(subject_cohort)) + '\n')
+
+over40 = subject_cohort[subject_cohort["AGE"] > 49]
 
 #keep on thos in the groups of interest
 selected = subject_cohort[subject_cohort["COHORT"].isin(group_name)]
 selected = selected.rename(columns={"SUBJECT": "subj"})
 print('\nTotal # subjects in all target groups list: \t' + str(len(selected)) + '\n')
+
+selected = over40[subject_cohort["COHORT"].isin(group_name)]
+selected = selected.rename(columns={"SUBJECT": "subj"})
+print('\nTotal # subjects in all target groups list: \t' + str(len(selected)) + '\n')
+counts = selected.groupby("COHORT").size().reset_index(name="n")
+print(counts)
 
 #STEP 1 - subject # list to include
 steps = pd.read_csv(nimbal_drive + paper_path + 'Created_data\\bout_bins\\daily_values\\' + study + '_24hr_bout_width_daily_bins_with_unbouted.csv')
