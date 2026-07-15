@@ -1,7 +1,10 @@
 import pandas as pd
+from pathlib import Path
+import os
 
 study = 'OND09'
-sub_set = 'pd_subset'
+#sub_set = 'pd_subset'
+sub_set = "all"
 root = 'W:'
 
 # sensor data path location
@@ -13,7 +16,21 @@ gait_path = root + '\\nimbalwear\\' + study + '\\analytics\\gait\\steps\\'
 bouts_output_path = root + '\\Annotated posture\\' + study + '\\' + sub_set + '\\analytics\\posture\\bouts\\'
 sites_output_path = root + '\\Annotated posture\\' + study + '\\' + sub_set + '\\analytics\\posture\\sites\\'
 
+# if doing 1 subject
 subject_id = 'SBH0279'
+
+#doing all that have posture bout data
+root = Path(bouts_output_path)
+bout_files = [p.name for p in root.rglob("*.csv")]
+
+subjects = []
+for p in bout_files:
+    stem = os.path.splitext(os.path.basename(p))[0]
+    parts = stem.split("_")
+    subjects.append(parts[1])
+unique_subjects = list(set(subjects))
+print('Number of subjects found: ' + str(len(unique_subjects)))
+
 steps_file = gait_path + study+"_"+subject_id+"_01_GAIT_STEPS.csv"
 posture_bouts_file = bouts_output_path + study +"_"+subject_id+"_01_posture_combined_bouts.csv"
 
