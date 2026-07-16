@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/check_steps_versus_posture.py" beforeDir="false" afterPath="$PROJECT_DIR$/check_steps_versus_posture.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,14 +87,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1742520861178</updated>
-    </task>
-    <task id="LOCAL-00011" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1744747023809</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1744747023809</updated>
     </task>
     <task id="LOCAL-00012" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
       <option name="closed" value="true" />
@@ -481,7 +472,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784138550058</updated>
     </task>
-    <option name="localTasksCounter" value="60" />
+    <task id="LOCAL-00060" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1784139996756</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1784139996756</updated>
+    </task>
+    <option name="localTasksCounter" value="61" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -604,8 +603,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/check_steps_versus_posture.py</url>
+          <line>25</line>
+          <option name="timeStamp" value="634" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/check_steps_versus_posture.py</url>
           <line>33</line>
-          <option name="timeStamp" value="633" />
+          <option name="timeStamp" value="635" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

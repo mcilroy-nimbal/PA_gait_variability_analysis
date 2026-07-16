@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import os
+import numpy as np
 
 study = 'OND09'
 #sub_set = 'pd_subset'
@@ -31,42 +32,58 @@ for p in bout_files:
 unique_subjects = list(set(subjects))
 print('Number of subjects found: ' + str(len(unique_subjects)))
 
-steps_file = gait_path + study+"_"+subject_id+"_01_GAIT_STEPS.csv"
-posture_bouts_file = bouts_output_path + study +"_"+subject_id+"_01_posture_combined_bouts.csv"
+df_list = []
+for subj in unique_subjects:
 
-# Load files
-bouts = pd.read_csv(posture_bouts_file)
-steps = pd.read_csv(steps_file)
+    steps_file = gait_path + study+"_"+subj+"_01_GAIT_STEPS.csv"
+    posture_bouts_file = bouts_output_path + study +"_"+subj+"_01_posture_combined_bouts.csv"
 
-steps_unbouted = steps[steps["gait_bout_num"] == 0]
-steps_bouted = steps[steps["gait_bout_num"] > 1]
+    # Load files
+    bouts = pd.read_csv(posture_bouts_file)
+    steps = pd.read_csv(steps_file)
 
-print("Total -  Unbouted:" + str(len(steps_unbouted)) + "   Bouted: " + str(len(steps_bouted)))
+    steps_unbouted = steps[steps["gait_bout_num"] == 0]
+    steps_bouted = steps[steps["gait_bout_num"] > 1]
 
-for name, steps in [("bouted", steps_bouted), ("unbouted", steps_unbouted)]:
+    print("Subject: "+subj+"  Total steps: -  Unbouted:" + str(len(steps_unbouted)) + "   Bouted: " + str(len(steps_bouted)))
 
-    # Convert to datetime
-    bouts["timestamp"] = pd.to_datetime(bouts["timestamp"])
-    bouts["end_timestamp"] = pd.to_datetime(bouts["end_timestamp"])
-    steps["step_time"] = pd.to_datetime(steps["step_time"])
 
-    mapping = {"stand":"stand", "transition":"stand", "sit":"sit", "sitstand":"sitstand", "reclined":"reclined",
-        "supine":"lying", "leftside":"lying", "rightside":"lying", "prone":"lying"}
-    bouts["posture_group"] = bouts["posture"].map(mapping)
 
-    # Sort step times
-    step_times = steps["step_time"].sort_values()
+    for name, steps in [("bouted", steps_bouted), ("unbouted", steps_unbouted), ("all", steps)]:
 
-    # Count steps within each bout
-    bouts["step_count"] = bouts.apply(lambda row: ((step_times >= row["timestamp"]) & (step_times <= row["end_timestamp"])).sum(), axis=1)
+        # Convert to datetime
+        bouts["timestamp"] = pd.to_datetime(bouts["timestamp"])
+        bouts["end_timestamp"] = pd.to_datetime(bouts["end_timestamp"])
+        steps["step_time"] = pd.to_datetime(steps["step_time"])
 
-    steps_by_posture = (bouts.groupby("posture_group")[["step_count", "duration"]].sum().reset_index())
+        mapping = {"stand":"stand", "transition":"stand", "sit":"sit", "sitstand":"sitstand", "reclined":"reclined",
+            "supine":"lying", "leftside":"lying", "rightside":"lying", "prone":"lying"}
+        bouts["posture_group"] = bouts["posture"].map(mapping)
 
-    total_steps = steps_by_posture["step_count"].sum()
-    total_duration = steps_by_posture["duration"].sum()
+        # Sort step times
+        step_times = steps["step_time"].sort_values()
 
-    steps_by_posture["percent_steps"] = (100 * steps_by_posture["step_count"] / total_steps).round(1)
-    steps_by_posture["percent_time"] = (100 * steps_by_posture["duration"] / total_duration).round(1)
+        # Count steps within each bout
+        bouts["step_count"] = bouts.apply(lambda row: ((step_times >= row["timestamp"]) & (step_times <= row["end_timestamp"])).sum(), axis=1)
 
-    print(name)
-    print(steps_by_posture)
+        steps_by_posture = (bouts.groupby("posture_group")[["step_count", "duration"]].sum().reset_index())
+
+        total_steps = steps_by_posture["step_count"].sum()
+        total_duration = steps_by_posture["duration"].sum()
+
+        steps_by_posture["percent_steps"] = (100 * steps_by_posture["step_count"] / total_steps).round(1)
+        steps_by_posture["percent_time"] = (100 * steps_by_posture["duration"] / total_duration).round(1)
+        steps_by_posture["subj"] = subj
+        steps_by_posture['bouted'] = name
+
+        print(name)
+        print(steps_by_posture)
+
+        df_list.append(steps_by_posture)
+
+# Combine all dataframes into one
+final_df = pd.concat(df_list, ignore_index=True)
+final_df.drop(columns=['subj'], inplace=True)
+summary = final_df.groupby(['bouted', 'posture_group']).agg(['mean', 'median', 'std', 'count'])
+print(summary)
+
