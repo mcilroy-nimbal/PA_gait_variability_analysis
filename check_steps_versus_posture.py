@@ -2,6 +2,21 @@ import pandas as pd
 from pathlib import Path
 import os
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+final_df = pd.read_csv("W:\\Annotated posture\\testing_unbouted_posture\\processed_0716.csv")
+g = sns.catplot(data=final_df, x="step_count", y="posture_group", hue="bouted", kind="boxen")
+g.set_axis_labels("Step_count", "Posture")
+g.set_titles("Bouted = {col_name}")
+for ax in g.axes.flat:
+    ax.tick_params(axis='x', rotation=45)
+plt.tight_layout()
+plt.show()
+
+
+'''
+
 
 study = 'OND09'
 #sub_set = 'pd_subset'
@@ -16,9 +31,10 @@ gait_path = root + '\\nimbalwear\\' + study + '\\analytics\\gait\\steps\\'
 # out put target folder - bouts for the combined and site for the individul sensor locations
 bouts_output_path = root + '\\Annotated posture\\' + study + '\\' + sub_set + '\\analytics\\posture\\bouts\\'
 sites_output_path = root + '\\Annotated posture\\' + study + '\\' + sub_set + '\\analytics\\posture\\sites\\'
+output_path = Path(root + '\\Annotated posture\\testing_unbouted_posture\\processed_0716.csv')
 
 # if doing 1 subject
-subject_id = 'SBH0279'
+#subject_id = 'SBH0279'
 
 #doing all that have posture bout data
 root = Path(bouts_output_path)
@@ -83,7 +99,11 @@ for subj in unique_subjects:
 
 # Combine all dataframes into one
 final_df = pd.concat(df_list, ignore_index=True)
+
+output_path = Path(root + '\\Annotated posture\\testing_unbouted_posture\\processed_0716.csv')
+final_df.to_csv(output_path, index=False)
+
 final_df.drop(columns=['subj'], inplace=True)
 summary = final_df.groupby(['bouted', 'posture_group']).agg(['mean', 'median', 'std', 'count'])
 print(summary)
-
+'''

@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="cd3333bf-1820-42bb-8bde-ef0d11b343a8" name="Changes" comment="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/check_steps_versus_posture.py" beforeDir="false" afterPath="$PROJECT_DIR$/check_steps_versus_posture.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,33 +46,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.AAIC2025_data.executor": "Debug",
-    "Python.Functions.executor": "Debug",
-    "Python.Gait_bout_basic_anal_graphs.executor": "Debug",
-    "Python.Gait_pattern_paper.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP1.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP2.executor": "Debug",
-    "Python.Gait_pattern_paper_STEP3.executor": "Debug",
-    "Python.STEP1_create_bout_bin_density_files.executor": "Debug",
-    "Python.Step_PA_density_processing.executor": "Debug",
-    "Python.check_steps_versus_posture.executor": "Debug",
-    "Python.create_bout_bin_and_density_files.executor": "Debug",
-    "Python.gait_pattern_plots.executor": "Debug",
-    "Python.main.executor": "Debug",
-    "Python.main_calling_code.executor": "Debug",
-    "Python.main_calling_code_bouts.executor": "Debug",
-    "Python.read_average_bouts.executor": "Debug",
-    "Python.read_average_density.executor": "Debug",
-    "Python.select_study_subjects.executor": "Debug",
-    "Python.select_study_subjects_SAProj.executor": "Debug",
-    "Python.stride_time_analysis.executor": "Debug",
-    "Python.variability_analysis_functions.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "C:/Users/wmcilroy/PycharmProjects/Posture_analysis_beth"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.AAIC2025_data.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Functions.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_bout_basic_anal_graphs.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP1.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP2.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Gait_pattern_paper_STEP3.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.STEP1_create_bout_bin_density_files.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Step_PA_density_processing.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.check_steps_versus_posture.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.create_bout_bin_and_density_files.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.gait_pattern_plots.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.main.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.main_calling_code.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.main_calling_code_bouts.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.read_average_bouts.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.read_average_density.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.select_study_subjects.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.select_study_subjects_SAProj.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.stride_time_analysis.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.variability_analysis_functions.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/wmcilroy/PycharmProjects/Posture_analysis_beth&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -87,14 +88,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1742520861178</updated>
-    </task>
-    <task id="LOCAL-00012" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
-      <option name="closed" value="true" />
-      <created>1744767162700</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1744767162700</updated>
     </task>
     <task id="LOCAL-00013" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
       <option name="closed" value="true" />
@@ -480,7 +473,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784139996756</updated>
     </task>
-    <option name="localTasksCounter" value="61" />
+    <task id="LOCAL-00061" summary="added patern paper analysis in this as well - so for gait pattern and vraibaility analysis">
+      <option name="closed" value="true" />
+      <created>1784166661012</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1784166661012</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -600,16 +601,6 @@
           <url>file://$PROJECT_DIR$/main_calling_code_bouts.py</url>
           <line>71</line>
           <option name="timeStamp" value="631" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/check_steps_versus_posture.py</url>
-          <line>25</line>
-          <option name="timeStamp" value="634" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/check_steps_versus_posture.py</url>
-          <line>33</line>
-          <option name="timeStamp" value="635" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
