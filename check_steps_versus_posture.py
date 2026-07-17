@@ -6,7 +6,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 final_df = pd.read_csv("W:\\Annotated posture\\testing_unbouted_posture\\processed_0716.csv")
-g = sns.catplot(data=final_df, x="step_count", y="posture_group", hue="bouted", kind="boxen")
+final_df = final_df[final_df['bouted'] != 'all']
+g = sns.catplot(data=final_df, x="percent_time", y="posture_group", hue="bouted", kind="boxen")
 g.set_axis_labels("Step_count", "Posture")
 g.set_titles("Bouted = {col_name}")
 for ax in g.axes.flat:
